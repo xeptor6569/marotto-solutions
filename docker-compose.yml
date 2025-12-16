@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    container_name: marotto-solutions
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_TELEMETRY_DISABLED=1
+      # Add WebDAV env vars here later
+    volumes:
+      - ./public:/app/public
+      # - ./.next:/app/.next # Careful with syncing .next in dev
