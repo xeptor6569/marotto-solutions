@@ -35,6 +35,16 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
     }
 }
 
+export async function getDocumentById(id: string): Promise<DocumentData | undefined> {
+    const types: DocumentType[] = ['invoice', 'estimate', 'receipt'];
+    for (const type of types) {
+        const docs = await getDocuments(type);
+        const found = docs.find(d => d.id === id);
+        if (found) return found;
+    }
+    return undefined;
+}
+
 export async function saveNewDocument(doc: DocumentData) {
     const config = await getAppConfig() as AppConfig;
     if (!config.webdavUrl) throw new Error("Not configured");

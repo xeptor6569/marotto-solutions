@@ -1,0 +1,31 @@
+[
+    {
+        "id": "RCPT-00022",
+        "number": 22,
+        "type": "receipt",
+        "date": "2025-12-04",
+        "customer": {
+            "id": "generated-id-1",
+            "name": "Elaine Zambetti",
+            "address": "1022 Main St\nAvoca, PA 18641"
+        },
+        "lineItems": [
+            {
+                "id": "item-1",
+                "description": "Snow Removal",
+                "quantity": 1,
+                "unitPrice": 50.00,
+                "total": 50.00
+            }
+        ],
+        "subtotal": 50.00,
+        "total": 50.00,
+        "status": "paid",
+        "tags": [
+            "Cash Payment"
+        ],
+        "notes": "Payment Method: Cash. Received By: Cameron Marotto",
+        "createdAt": "2025-12-04T12:00:00.000Z",
+        "updatedAt": "2025-12-16T12:00:00.000Z"
+    }
+]

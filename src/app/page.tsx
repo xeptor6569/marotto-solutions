@@ -1,5 +1,5 @@
-import { Container, Heading, Text, Flex, Button, Card, Grid, Link as RadixLink, Badge, Box } from "@radix-ui/themes";
-import { PlusIcon, SettingsIcon } from "lucide-react";
+import { Container, Heading, Text, Flex, Button, Card, Grid, Link as RadixLink, Badge, Box, DropdownMenu } from "@radix-ui/themes";
+import { SettingsIcon, ChevronDown, Upload } from "lucide-react";
 import Link from 'next/link'; // Next.js Link
 import { getDocuments } from "@/lib/data";
 
@@ -16,12 +16,29 @@ export default async function Home() {
       <Flex justify="between" align="center" mb="5">
         <Heading size="8">Marotto Solutions</Heading>
         <Flex gap="3">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <Button variant="solid" size="3">
+                Create New <ChevronDown size={16} />
+              </Button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+              <DropdownMenu.Item asChild>
+                <Link href="/estimates/new">Estimate</Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link href="/invoices/new">Invoice</Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link href="/receipts/new">Receipt</Link>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+
           <Button size="3" variant="soft" asChild>
-            <Link href="/estimates/new"><PlusIcon size={16} /> New Estimate</Link>
+            <Link href="/import"><Upload size={16} /> Import</Link>
           </Button>
-          <Button size="3" asChild>
-            <Link href="/invoices/new"><PlusIcon size={16} /> New Invoice</Link>
-          </Button>
+
           <Button size="3" variant="outline" asChild>
             <Link href="/settings"><SettingsIcon size={16} /></Link>
           </Button>
@@ -70,14 +87,34 @@ export default async function Home() {
           )}
         </Card>
 
-        {/* Quick Stats */}
+        {/* Recent Receipts (New Section or Replace Stats?) -> User asked for dashboard. 
+           I'll add a "Recent Receipts" card or just let them find it via search later.
+           For now, I'll add a Recent Receipts card if there's space or modify Invoices card to tabs?
+           Let's just add a Link to the stats numbers? Or simply add a new Card.
+           Actually, the user can use "Import" to see them? No.
+           I'll add a "Recent Receipts" card column or row.
+           Let's just change "Recent Invoices" to "Recent Documents" or add a third card for receipts.
+           I'll Replace "Quick Stats" with "Recent Receipts" for now since stats are boring.
+        */}
         <Card>
-          <Heading size="4" mb="3">Quick Stats</Heading>
-          <Flex direction="column" gap="2">
-            <Text size="2">Total Invoices: <strong>{invoices.length}</strong></Text>
-            <Text size="2">Total Estimates: <strong>{estimates.length}</strong></Text>
-            <Text size="2">Total Receipts: <strong>{receipts.length}</strong></Text>
-          </Flex>
+          <Heading size="4" mb="3">Recent Receipts</Heading>
+          {receipts.length === 0 ? (
+            <Text size="2" color="gray">No recent receipts.</Text>
+          ) : (
+            <Flex direction="column" gap="2">
+              {receipts.slice(0, 5).map(r => (
+                <Flex key={r.id} justify="between" align="center" asChild>
+                  <Link href={`/receipts/${r.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Text size="2" weight="bold">#{r.id}</Text>
+                      <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
+                    </Box>
+                    <Badge color="green">${r.total}</Badge>
+                  </Link>
+                </Flex>
+              ))}
+            </Flex>
+          )}
         </Card>
       </Grid>
     </Container>
