@@ -1,5 +1,5 @@
 import { createClient, WebDAVClient } from 'webdav';
-import { AppConfig, DocumentData } from './types';
+import { AppConfig, DocumentData, DocumentType } from './types';
 
 // This is a server-side only utility if we use env vars, 
 // OR client-side if we want to connect from browser directly (CORS issues possible).
@@ -54,7 +54,7 @@ export async function saveDocument(c: WebDAVClient, doc: DocumentData) {
     await c.putFileContents(filename, JSON.stringify(doc, null, 2));
 }
 
-export async function fetchDocuments(c: WebDAVClient, type: 'invoice' | 'estimate' | 'receipt'): Promise<DocumentData[]> {
+export async function fetchDocuments(c: WebDAVClient, type: DocumentType): Promise<DocumentData[]> {
     await ensureDataDir(c);
     const folder = `${DATA_DIR}/${type}s`;
     if ((await c.exists(folder)) === false) return [];

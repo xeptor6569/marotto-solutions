@@ -3,7 +3,7 @@
 import { saveAppConfig, getAppConfig } from '@/lib/config';
 import { AppConfig, DocumentData, LineItem, Customer, DocumentType } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
-import { saveNewDocument } from '@/lib/data';
+import { saveNewDocument, getNextNumber } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -26,6 +26,7 @@ export async function saveSettingsAction(formData: FormData) {
 
     await saveAppConfig(configUpdate);
     revalidatePath('/');
+    revalidatePath('/dashboard');
     return { success: true };
 }
 
@@ -89,6 +90,40 @@ export async function createInvoiceAction(formData: FormData) {
         throw new Error("Failed to save: " + e.message);
     }
 
-    revalidatePath('/');
-    redirect('/');
+    revalidatePath('/dashboard');
+    redirect('/dashboard');
+}
+
+export async function submitQuoteRequest(formData: FormData) {
+    const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const service = formData.get('service') as string;
+    const details = formData.get('details') as string;
+    const date = formData.get('date') as string;
+
+    const number = await getNextNumber('lead');
+
+    const doc: DocumentData = {
+        id: `LEAD-${number.toString().padStart(4, '0')}`,
+        number,
+        type: 'lead',
+        date: new Date().toISOString(),
+        customer: {
+            id: email, // simple dedupe key for now
+            name,
+            email,
+        },
+        lineItems: [], // No line items yet
+        subtotal: 0,
+        total: 0,
+        status: 'draft', // Draft lead
+        notes: `Service: ${service}\nRequested Date: ${date}\nDetails: ${details}`,
+        tags: ['new-lead'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    await saveNewDocument(doc);
+
+    redirect('/?submitted=true');
 }

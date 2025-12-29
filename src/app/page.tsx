@@ -1,122 +1,147 @@
-import { Container, Heading, Text, Flex, Button, Card, Grid, Link as RadixLink, Badge, Box, DropdownMenu } from "@radix-ui/themes";
-import { SettingsIcon, ChevronDown, Upload } from "lucide-react";
-import Link from 'next/link'; // Next.js Link
-import { getDocuments } from "@/lib/data";
+import { Container, Heading, Text, Flex, Button, Card, Grid, Box, Section, Separator } from "@radix-ui/themes";
+import Link from 'next/link';
+import { ArrowRight, Hammer, Monitor, Cpu, Code } from "lucide-react";
+import QuoteForm from "./components/QuoteForm";
 
-export default async function Home() {
-  const invoices = await getDocuments('invoice');
-  const estimates = await getDocuments('estimate');
-  const receipts = await getDocuments('receipt');
+export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string }> }) {
+    const { submitted } = await searchParams;
 
-  const recentInvoices = invoices.slice(0, 5);
-  const activeEstimates = estimates.filter(e => e.status !== 'void').slice(0, 5);
-
-  return (
-    <Container size="4" p="5">
-      <Flex justify="between" align="center" mb="5">
-        <Heading size="8">Marotto Solutions</Heading>
-        <Flex gap="3">
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <Button variant="solid" size="3">
-                Create New <ChevronDown size={16} />
-              </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Item asChild>
-                <Link href="/estimates/new">Estimate</Link>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item asChild>
-                <Link href="/invoices/new">Invoice</Link>
-              </DropdownMenu.Item>
-              <DropdownMenu.Item asChild>
-                <Link href="/receipts/new">Receipt</Link>
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-
-          <Button size="3" variant="soft" asChild>
-            <Link href="/import"><Upload size={16} /> Import</Link>
-          </Button>
-
-          <Button size="3" variant="outline" asChild>
-            <Link href="/settings"><SettingsIcon size={16} /></Link>
-          </Button>
-        </Flex>
-      </Flex>
-
-      <Grid columns={{ initial: '1', md: '3' }} gap="4">
-
-        {/* Recent Invoices */}
-        <Card>
-          <Heading size="4" mb="3">Recent Invoices</Heading>
-          {recentInvoices.length === 0 ? (
-            <Text size="2" color="gray">No recent invoices found.</Text>
-          ) : (
-            <Flex direction="column" gap="2">
-              {recentInvoices.map(inv => (
-                <Flex key={inv.id} justify="between" align="center">
-                  <Box>
-                    <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
-                    <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
-                  </Box>
-                  <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
+    return (
+        <Box>
+            {/* Navigation / Header */}
+            <Flex px="5" py="4" justify="between" align="center" style={{ borderBottom: '1px solid var(--gray-5)' }}>
+                <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <Heading size="5">Marotto Solutions</Heading>
+                </Link>
+                <Flex gap="4">
+                    {/* Hide Portal button in production builds, visible only in dev or if configured */}
+                    {process.env.NODE_ENV !== 'production' && (
+                        <Button variant="ghost" asChild>
+                            <Link href="/dashboard">Client Portal</Link>
+                        </Button>
+                    )}
                 </Flex>
-              ))}
             </Flex>
-          )}
-        </Card>
 
-        {/* Active Estimates */}
-        <Card>
-          <Heading size="4" mb="3">Active Estimates</Heading>
-          {activeEstimates.length === 0 ? (
-            <Text size="2" color="gray">No active estimates.</Text>
-          ) : (
-            <Flex direction="column" gap="2">
-              {activeEstimates.map(est => (
-                <Flex key={est.id} justify="between" align="center">
-                  <Box>
-                    <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
-                    <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
-                  </Box>
-                  <Badge color="blue">{est.status}</Badge>
-                </Flex>
-              ))}
-            </Flex>
-          )}
-        </Card>
+            <Container size="3">
+                {/* Hero Section */}
+                <Section size="3">
+                    <Flex direction="column" align="center" gap="5" style={{ textAlign: 'center' }}>
+                        <Heading size="9" style={{ maxWidth: 800 }}>
+                            Expert General Contracting & IT Services
+                        </Heading>
+                        <Text size="5" color="gray" style={{ maxWidth: 600 }}>
+                            From home renovations to custom PC builds and networking. One partner for your physical and digital infrastructure.
+                        </Text>
+                        <Flex gap="3" mt="4">
+                            <Button size="4" asChild>
+                                <Link href="#quote">Get a Quote <ArrowRight /></Link>
+                            </Button>
+                            <Button size="4" variant="soft" asChild>
+                                <Link href="#services">View Services</Link>
+                            </Button>
+                        </Flex>
+                    </Flex>
+                </Section>
 
-        {/* Recent Receipts (New Section or Replace Stats?) -> User asked for dashboard. 
-           I'll add a "Recent Receipts" card or just let them find it via search later.
-           For now, I'll add a Recent Receipts card if there's space or modify Invoices card to tabs?
-           Let's just add a Link to the stats numbers? Or simply add a new Card.
-           Actually, the user can use "Import" to see them? No.
-           I'll add a "Recent Receipts" card column or row.
-           Let's just change "Recent Invoices" to "Recent Documents" or add a third card for receipts.
-           I'll Replace "Quick Stats" with "Recent Receipts" for now since stats are boring.
-        */}
-        <Card>
-          <Heading size="4" mb="3">Recent Receipts</Heading>
-          {receipts.length === 0 ? (
-            <Text size="2" color="gray">No recent receipts.</Text>
-          ) : (
-            <Flex direction="column" gap="2">
-              {receipts.slice(0, 5).map(r => (
-                <Flex key={r.id} justify="between" align="center" asChild>
-                  <Link href={`/receipts/${r.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                    <Box>
-                      <Text size="2" weight="bold">#{r.id}</Text>
-                      <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
-                    </Box>
-                    <Badge color="green">${r.total}</Badge>
-                  </Link>
-                </Flex>
-              ))}
-            </Flex>
-          )}
-        </Card>
-      </Grid>
-    </Container>
-  );
+                <Separator size="4" />
+
+                {/* Services Section */}
+                <Section size="3" id="services">
+                    <Heading size="7" mb="5" align="center">Our Services</Heading>
+                    <Grid columns={{ initial: '1', sm: '2' }} gap="5">
+                        <Card size="3">
+                            <Flex gap="3" align="center" mb="2">
+                                <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                    <Hammer size={24} color="var(--accent-9)" />
+                                </Box>
+                                <Heading size="4">General Contracting</Heading>
+                            </Flex>
+                            <Text color="gray">
+                                Home repairs, renovations, and custom installations. Professional craftsmanship for your property needs.
+                            </Text>
+                        </Card>
+
+                        <Card size="3">
+                            <Flex gap="3" align="center" mb="2">
+                                <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                    <Monitor size={24} color="var(--accent-9)" />
+                                </Box>
+                                <Heading size="4">IT & Networking</Heading>
+                            </Flex>
+                            <Text color="gray">
+                                Home and small business networking, WiFi optimization, firewall configuration, and troubleshooting.
+                            </Text>
+                        </Card>
+
+                        <Card size="3">
+                            <Flex gap="3" align="center" mb="2">
+                                <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                    <Cpu size={24} color="var(--accent-9)" />
+                                </Box>
+                                <Heading size="4">Custom PC Building</Heading>
+                            </Flex>
+                            <Text color="gray">
+                                High-performance workstations and gaming rigs tailored to your specific requirements and budget.
+                            </Text>
+                        </Card>
+
+                        <Card size="3">
+                            <Flex gap="3" align="center" mb="2">
+                                <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                    <Code size={24} color="var(--accent-9)" />
+                                </Box>
+                                <Heading size="4">Programming & Automation</Heading>
+                            </Flex>
+                            <Text color="gray">
+                                Custom scripts, small web applications, and automation solutions to streamline your workflows.
+                            </Text>
+                        </Card>
+                    </Grid>
+                </Section>
+
+                <Separator size="4" />
+
+                {/* Quote Section */}
+                <Section size="3" id="quote">
+                    <Grid columns={{ initial: '1', md: '2' }} gap="8" align="center">
+                        <Box>
+                            <Heading size="7" mb="4">Ready to start?</Heading>
+                            <Text size="4" color="gray" mb="4">
+                                Tell us about your project. Whether it's fixing a leak or setting up a server rack, we're here to help.
+                            </Text>
+                            <Text size="4" color="gray">
+                                Fill out the form and we'll get back to you with an estimate and availability.
+                            </Text>
+                        </Box>
+                        <Box>
+                            {submitted ? (
+                                <Card size="3" style={{ backgroundColor: 'var(--green-3)' }}>
+                                    <Flex direction="column" align="center" py="5" gap="3">
+                                        <Heading size="5" color="green">Variable Received!</Heading>
+                                        <Text align="center">Thank you for your request. We will be in touch shortly.</Text>
+                                        <Button variant="outline" asChild>
+                                            <Link href="/">Submit Another</Link>
+                                        </Button>
+                                    </Flex>
+                                </Card>
+                            ) : (
+                                <QuoteForm />
+                            )}
+                        </Box>
+                    </Grid>
+                </Section>
+
+            </Container>
+
+            {/* Footer */}
+            <Box py="5" style={{ backgroundColor: 'var(--gray-2)' }}>
+                <Container size="3">
+                    <Text align="center" color="gray" size="2">
+                        &copy; {new Date().getFullYear()} Marotto Solutions. All rights reserved.
+                    </Text>
+                </Container>
+            </Box>
+        </Box>
+    );
 }

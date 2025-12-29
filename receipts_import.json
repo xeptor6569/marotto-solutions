@@ -1,0 +1,30 @@
+[
+  {
+    "id": "RCPT-00022",
+    "number": 22,
+    "type": "receipt",
+    "date": "2025-12-04",
+    "customer": {
+      "id": "gen-bva1q2uyl",
+      "name": "For Invoice No: 00022",
+      "address": ""
+    },
+    "lineItems": [
+      {
+        "id": "item-8a6wyuvnn",
+        "description": "Snow Removal",
+        "quantity": 1,
+        "unitPrice": 50,
+        "total": 50
+      }
+    ],
+    "subtotal": 50,
+    "total": 50,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2025-12-29T16:49:09.284Z",
+    "updatedAt": "2025-12-29T16:49:09.284Z"
+  }
+]

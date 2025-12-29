@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const pdf = require('pdf-parse');
 
 // Configuration
 const INPUT_DIR = path.join(__dirname, '../temp'); // Default looks in temp/
@@ -88,16 +89,23 @@ async function main() {
         process.exit(1);
     }
 
-    const files = fs.readdirSync(INPUT_DIR).filter(f => f.endsWith('.docx') && !f.startsWith('~$')); // Ignore Word temp files
-    console.log(`Found ${files.length} DOCX files in ${INPUT_DIR}`);
+    const files = fs.readdirSync(INPUT_DIR).filter(f => (f.endsWith('.docx') || f.endsWith('.pdf')) && !f.startsWith('~$')); // Ignore Word temp files
+    console.log(`Found ${files.length} files in ${INPUT_DIR}`);
 
     const receipts = [];
 
     for (const file of files) {
         const filePath = path.join(INPUT_DIR, file);
         try {
-            // Use macos textutil to convert to stdout
-            const txt = execSync(`textutil -convert txt "${filePath}" -stdout`, { encoding: 'utf-8' });
+            let txt = '';
+            if (file.endsWith('.pdf')) {
+                const dataBuffer = fs.readFileSync(filePath);
+                const pdfData = await pdf(dataBuffer);
+                txt = pdfData.text;
+            } else {
+                // Use macos textutil to convert to stdout
+                txt = execSync(`textutil -convert txt "${filePath}" -stdout`, { encoding: 'utf-8' });
+            }
             const receipt = parseReceiptText(txt, file);
             receipts.push(receipt);
             console.log(`Parsed ${file} -> ${receipt.id} ($${receipt.total})`);

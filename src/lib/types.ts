@@ -1,4 +1,4 @@
-export type DocumentType = 'invoice' | 'estimate' | 'receipt';
+export type DocumentType = 'invoice' | 'estimate' | 'receipt' | 'lead';
 
 export interface LineItem {
     id: string;
