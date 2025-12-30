@@ -1,0 +1,28 @@
+name: Deploy to Self-Hosted
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # If you have environment variables stored in GitHub Secrets, use this step:
+      # - name: Create .env file
+      #   run: |
+      #     echo "NEXT_TELEMETRY_DISABLED=1" >> .env
+      #     echo "ANOTHER_SECRET=${{ secrets.ANOTHER_SECRET }}" >> .env
+
+      - name: Deploy with Docker Compose
+        run: |
+          # Build and start containers in detached mode
+          # --build forces a rebuild of the image
+          docker compose up -d --build --remove-orphans
+
+      - name: Prune unused images
+        run: docker image prune -f
