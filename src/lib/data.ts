@@ -1,6 +1,45 @@
 import { getAppConfig } from './config';
 import { getWebDAVClient, fetchDocuments, saveDocument } from './webdav';
 import { AppConfig, DocumentData, DocumentType } from './types';
+import fs from 'fs/promises';
+import path from 'path';
+
+const LOCAL_DATA_DIR = path.join(process.cwd(), 'data');
+
+async function ensureLocalDir(dir: string) {
+    try {
+        await fs.access(dir);
+    } catch {
+        await fs.mkdir(dir, { recursive: true });
+    }
+}
+
+async function fetchDocumentsLocal(type: DocumentType): Promise<DocumentData[]> {
+    const dir = path.join(LOCAL_DATA_DIR, `${type}s`);
+    await ensureLocalDir(dir);
+
+    const files = await fs.readdir(dir);
+    const docs: DocumentData[] = [];
+
+    for (const file of files) {
+        if (file.endsWith('.json')) {
+            try {
+                const content = await fs.readFile(path.join(dir, file), 'utf-8');
+                docs.push(JSON.parse(content));
+            } catch (e) {
+                console.error(`Failed to parse local file ${file}`, e);
+            }
+        }
+    }
+
+    return docs;
+}
+
+async function saveDocumentLocal(doc: DocumentData) {
+    const dir = path.join(LOCAL_DATA_DIR, `${doc.type}s`);
+    await ensureLocalDir(dir);
+    await fs.writeFile(path.join(dir, `${doc.id}.json`), JSON.stringify(doc, null, 2));
+}
 
 // Simple in-memory cache for now (server lifetime). 
 // For production with multiple replicas, use Redis or just rely on WebDAV if fast enough.
@@ -10,8 +49,22 @@ const cache: Record<string, { data: DocumentData[], timestamp: number }> = {};
 
 export async function getDocuments(type: DocumentType): Promise<DocumentData[]> {
     const config = await getAppConfig() as AppConfig;
+    let docs: DocumentData[] = [];
+
     if (!config.webdavUrl || !config.webdavUsername) {
-        return [];
+        // Fallback to local storage
+        docs = await fetchDocumentsLocal(type);
+    } else {
+        try {
+            const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
+            docs = await fetchDocuments(client, type);
+        } catch (error) {
+            console.error(`Error fetching ${type}s from WebDAV:`, error);
+            // Fallback to local? Maybe not if configured but failed. 
+            // For now, return empty or local? Let's return local if WebDAV fails? 
+            // No, that might be confusing. Just log and return empty.
+            return [];
+        }
     }
 
     // Check cache
@@ -20,19 +73,11 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
         return cache[type].data;
     }
 
-    try {
-        const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
-        const docs = await fetchDocuments(client, type);
+    // Sort by date desc
+    docs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        // Sort by date desc
-        docs.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-        cache[type] = { data: docs, timestamp: now };
-        return docs;
-    } catch (error) {
-        console.error(`Error fetching ${type}s:`, error);
-        return [];
-    }
+    cache[type] = { data: docs, timestamp: now };
+    return docs;
 }
 
 export async function getDocumentById(id: string): Promise<DocumentData | undefined> {
@@ -47,10 +92,13 @@ export async function getDocumentById(id: string): Promise<DocumentData | undefi
 
 export async function saveNewDocument(doc: DocumentData) {
     const config = await getAppConfig() as AppConfig;
-    if (!config.webdavUrl) throw new Error("Not configured");
 
-    const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
-    await saveDocument(client, doc);
+    if (!config.webdavUrl) {
+        await saveDocumentLocal(doc);
+    } else {
+        const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
+        await saveDocument(client, doc);
+    }
 
     // Invalidate cache
     delete cache[doc.type];
