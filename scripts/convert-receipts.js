@@ -93,6 +93,7 @@ async function main() {
     console.log(`Found ${files.length} files in ${INPUT_DIR}`);
 
     const receipts = [];
+    const usedIds = new Set(); // Track used IDs to ensure uniqueness
 
     for (const file of files) {
         const filePath = path.join(INPUT_DIR, file);
@@ -107,6 +108,17 @@ async function main() {
                 txt = execSync(`textutil -convert txt "${filePath}" -stdout`, { encoding: 'utf-8' });
             }
             const receipt = parseReceiptText(txt, file);
+
+            // Ensure unique ID
+            let uniqueId = receipt.id;
+            let suffix = 1;
+            while (usedIds.has(uniqueId)) {
+                uniqueId = `${receipt.id}-${suffix}`;
+                suffix++;
+            }
+            receipt.id = uniqueId;
+            usedIds.add(uniqueId);
+
             receipts.push(receipt);
             console.log(`Parsed ${file} -> ${receipt.id} ($${receipt.total})`);
         } catch (e) {
