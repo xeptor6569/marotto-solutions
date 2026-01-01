@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Marotto Solutions Web Platform
+
+A unified web platform for **Marotto Solutions**, combining a public business homepage with a private internal dashboard for business management. The application handles service showcases, quote requests, and document management (Invoices, Estimates, Receipts).
+
+## Features
+
+### 🌍 Public Homepage
+- **Service Case**: Showcases General Contracting, IT/Networking, PC Building, and Programming services.
+- **Quote Request System**: Clients can submit project details and schedule preferences directly from the site.
+- **Responsive Design**: Built with Radix UI for a clean, modern, and accessible interface.
+
+### 🔐 Internal Dashboard (`/dashboard`)
+- **Document Management**: Create, view, and manage:
+  - **Invoices**: Track billing and payments.
+  - **Estimates**: Send quotes to clients.
+  - **Receipts**: Track business expenses.
+  - **Leads**: View incoming quote requests from the homepage.
+- **WebDAV Storage**: All data is stored as flat JSON files via WebDAV, allowing for easy self-hosting (e.g., Nextcloud) and data ownership.
+- **Import Tools**: Bulk import capabilities for receipt processing.
+
+## Tech Stack
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Language**: TypeScript
+- **Styling**: [Radix UI Themes](https://www.radix-ui.com/) & CSS Modules
+- **Icons**: Lucide React
+- **Storage**: WebDAV (JSON-based document store)
+- **Containerization**: Docker & Docker Compose
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── actions.ts       # Server Actions for forms and data mutations
+│   ├── page.tsx         # Public Homepage
+│   ├── proxy.ts         # Authentication Proxy Middleware
+│   ├── dashboard/       # Private Dashboard Gateway
+│   ├── estimates/       # Estimate management
+│   ├── invoices/        # Invoice management
+│   ├── receipts/        # Receipt management
+│   └── settings/        # App configuration (WebDAV connection)
+├── lib/
+│   ├── data.ts          # Data fetching logic
+│   ├── webdav.ts        # WebDAV client implementation
+│   └── types.ts         # TypeScript definitions
+└── scripts/
+    └── convert-receipts.js # Utility for batch processing receipts
+```
 
 ## Getting Started
 
-First, run the development server:
+### Local Development
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000).
+
+3. **Configure Storage**:
+   - Go to `/settings` or `/dashboard`.
+   - Configure your WebDAV URL and credentials to enable data persistence.
+
+### Docker Deployment
+
+The project includes a `Dockerfile` and `docker-compose.yml` for easy deployment.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+docker compose up -d --build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) (or your configured port) with your browser to see the result.
+The application will be available at port `3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Authentication
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This application is designed to sit behind an authentication proxy (like **Authentik** or **Authelia**). 
 
-## Learn More
+- **Middleware**: `src/proxy.ts` is configured to intercept requests.
+- **Configuration**: By default, it allows all traffic but serves as a placeholder for header-based authentication checks (e.g., verifying `X-authentik-username`).
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private repository for Marotto Solutions.
