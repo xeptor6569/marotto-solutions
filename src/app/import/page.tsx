@@ -1,13 +1,15 @@
 'use client';
 
 import { Container, Heading, Card, Button, Flex, Text, Callout, Code, Box } from "@radix-ui/themes";
-import { Upload, Info, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { Upload, Info, AlertTriangle, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 import { importDocumentsAction } from "./actions";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ImportPage() {
     const [status, setStatus] = useState<{ success: boolean, message: string } | null>(null);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -41,7 +43,12 @@ export default function ImportPage() {
 
     return (
         <Container size="2" p="5">
-            <Heading mb="4">Import Data</Heading>
+            <Flex justify="between" align="center" mb="4">
+                <Heading>Import Data</Heading>
+                <Button variant="soft" onClick={() => router.push('/dashboard')}>
+                    <ArrowLeft size={16} /> Back to Dashboard
+                </Button>
+            </Flex>
 
             <Card mb="4">
                 <Flex gap="3" align="start">
@@ -75,9 +82,16 @@ export default function ImportPage() {
                             </Callout.Root>
                         )}
 
-                        <Button type="submit" loading={loading} disabled={loading}>
-                            <Upload size={16} /> Import Documents
-                        </Button>
+                        <Flex gap="2">
+                            <Button type="submit" loading={loading} disabled={loading}>
+                                <Upload size={16} /> Import Documents
+                            </Button>
+                            {status?.success && (
+                                <Button variant="soft" onClick={() => router.push('/dashboard')}>
+                                    View Imported Documents
+                                </Button>
+                            )}
+                        </Flex>
                     </Flex>
                 </form>
             </Card>
