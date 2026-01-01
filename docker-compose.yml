@@ -10,5 +10,8 @@ services:
       # Add WebDAV env vars here later
     volumes:
       - ./public:/app/public
-      - ./data:/app/data
+      - marotto_data:/app/data
       # - ./.next:/app/.next # Careful with syncing .next in dev
+
+volumes:
+  marotto_data:
