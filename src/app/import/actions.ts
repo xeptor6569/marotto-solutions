@@ -48,6 +48,7 @@ export async function importDocumentsAction(formData: FormData) {
         }
 
         revalidatePath('/');
+        revalidatePath('/dashboard');
         return { success: true, count, errors };
 
     } catch (e: any) {

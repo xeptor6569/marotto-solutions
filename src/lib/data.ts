@@ -51,6 +51,12 @@ const CACHE_TTL = 30 * 1000; // 30 seconds
 const cache: Record<string, { data: DocumentData[], timestamp: number }> = {};
 
 export async function getDocuments(type: DocumentType): Promise<DocumentData[]> {
+    // Check cache first
+    const now = Date.now();
+    if (cache[type] && (now - cache[type].timestamp < CACHE_TTL)) {
+        return cache[type].data;
+    }
+
     const config = await getAppConfig() as AppConfig;
     let docs: DocumentData[] = [];
 
@@ -68,12 +74,6 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
             // No, that might be confusing. Just log and return empty.
             return [];
         }
-    }
-
-    // Check cache
-    const now = Date.now();
-    if (cache[type] && (now - cache[type].timestamp < CACHE_TTL)) {
-        return cache[type].data;
     }
 
     // Sort by date desc
