@@ -10,4 +10,5 @@ services:
       # Add WebDAV env vars here later
     volumes:
       - ./public:/app/public
+      - ./data:/app/data
       # - ./.next:/app/.next # Careful with syncing .next in dev
