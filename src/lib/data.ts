@@ -8,9 +8,12 @@ const LOCAL_DATA_DIR = path.join(process.cwd(), 'data');
 
 async function ensureLocalDir(dir: string) {
     try {
-        await fs.access(dir);
-    } catch {
-        await fs.mkdir(dir, { recursive: true });
+        await fs.mkdir(dir, { recursive: true, mode: 0o777 });
+    } catch (error: any) {
+        // If directory already exists, that's fine
+        if (error.code !== 'EEXIST') {
+            throw error;
+        }
     }
 }
 
