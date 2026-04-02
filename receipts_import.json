@@ -1,0 +1,198 @@
+[
+  {
+    "id": "RCPT-00022",
+    "number": 22,
+    "type": "receipt",
+    "date": "2025-12-04",
+    "customer": {
+      "id": "gen-ahyvyjmbd",
+      "name": "Elaine Zambetti",
+      "address": "1022 Main St\nAvoca, PA 18641"
+    },
+    "lineItems": [
+      {
+        "id": "item-2m7auruaj",
+        "description": "● Snow Removal",
+        "quantity": 1,
+        "unitPrice": 50,
+        "total": 50
+      }
+    ],
+    "subtotal": 50,
+    "total": 50,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.393Z",
+    "updatedAt": "2026-01-02T18:49:41.393Z"
+  },
+  {
+    "id": "RCPT-00023",
+    "number": 23,
+    "type": "receipt",
+    "date": "2025-12-04",
+    "customer": {
+      "id": "gen-o612c5eby",
+      "name": "Elaine Zambetti",
+      "address": "44 Caroll St\nPittston, PA 18640"
+    },
+    "lineItems": [
+      {
+        "id": "item-b7slmp190",
+        "description": "● Snow Removal",
+        "quantity": 1,
+        "unitPrice": 35,
+        "total": 35
+      }
+    ],
+    "subtotal": 35,
+    "total": 35,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.402Z",
+    "updatedAt": "2026-01-02T18:49:41.402Z"
+  },
+  {
+    "id": "RCPT-00027",
+    "number": 27,
+    "type": "receipt",
+    "date": "2025-12-17",
+    "customer": {
+      "id": "gen-8grsgnoc0",
+      "name": "For Invoice No: 00027",
+      "address": ""
+    },
+    "lineItems": [
+      {
+        "id": "item-f0cfnorqi",
+        "description": "Plumbing Services – Replacement of 2 leaking sink strainers and hose.",
+        "quantity": 1,
+        "unitPrice": 152.93,
+        "total": 152.93
+      }
+    ],
+    "subtotal": 152.93,
+    "total": 152.93,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.480Z",
+    "updatedAt": "2026-01-02T18:49:41.480Z"
+  },
+  {
+    "id": "RCPT-00030",
+    "number": 30,
+    "type": "receipt",
+    "date": "2025-12-28",
+    "customer": {
+      "id": "gen-y5sgqxy7w",
+      "name": "For Invoice No: 00030",
+      "address": ""
+    },
+    "lineItems": [
+      {
+        "id": "item-gzcp7gi49",
+        "description": "Ice & Snow Removal",
+        "quantity": 1,
+        "unitPrice": 50,
+        "total": 50
+      }
+    ],
+    "subtotal": 50,
+    "total": 50,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.550Z",
+    "updatedAt": "2026-01-02T18:49:41.550Z"
+  },
+  {
+    "id": "RCPT-00025",
+    "number": 25,
+    "type": "receipt",
+    "date": "2025-12-17",
+    "customer": {
+      "id": "gen-j4dg0xi3w",
+      "name": "For Invoice No: 00025",
+      "address": ""
+    },
+    "lineItems": [
+      {
+        "id": "item-5ycx3n567",
+        "description": "Snow Removal",
+        "quantity": 1,
+        "unitPrice": 35,
+        "total": 35
+      }
+    ],
+    "subtotal": 35,
+    "total": 35,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.625Z",
+    "updatedAt": "2026-01-02T18:49:41.625Z"
+  },
+  {
+    "id": "RCPT-00029",
+    "number": 29,
+    "type": "receipt",
+    "date": "2025-12-28",
+    "customer": {
+      "id": "gen-fu9fxvwmg",
+      "name": "Elaine Zambetti",
+      "address": "1022 Main St\nAvoca, PA 18641"
+    },
+    "lineItems": [
+      {
+        "id": "item-qmf2q8ngk",
+        "description": "● Snow Removal",
+        "quantity": 1,
+        "unitPrice": 35,
+        "total": 35
+      }
+    ],
+    "subtotal": 35,
+    "total": 35,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.635Z",
+    "updatedAt": "2026-01-02T18:49:41.635Z"
+  },
+  {
+    "id": "RCPT-00030-1",
+    "number": 30,
+    "type": "receipt",
+    "date": "2025-12-28",
+    "customer": {
+      "id": "gen-6cvij1xln",
+      "name": "Elaine Zambetti",
+      "address": "1022 Main St\nAvoca, PA 18641"
+    },
+    "lineItems": [
+      {
+        "id": "item-embd4gp09",
+        "description": "● Ice & Snow Removal",
+        "quantity": 1,
+        "unitPrice": 50,
+        "total": 50
+      }
+    ],
+    "subtotal": 50,
+    "total": 50,
+    "status": "paid",
+    "tags": [
+      "Imported"
+    ],
+    "createdAt": "2026-01-02T18:49:41.641Z",
+    "updatedAt": "2026-01-02T18:49:41.641Z"
+  }
+]

@@ -1,9 +1,17 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Link as RadixLink, Badge, Box, DropdownMenu } from "@radix-ui/themes";
 import { SettingsIcon, ChevronDown, Upload } from "lucide-react";
 import Link from 'next/link'; // Next.js Link
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { getDocuments } from "@/lib/data";
 
 export default async function Home() {
+  const session = await auth();
+
+  if (!session) {
+    redirect("/auth/signin?callbackUrl=/dashboard");
+  }
+
   const invoices = await getDocuments('invoice');
   const estimates = await getDocuments('estimate');
   const receipts = await getDocuments('receipt');

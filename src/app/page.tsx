@@ -13,14 +13,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                 <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Heading size="5">Marotto Solutions</Heading>
                 </Link>
-                <Flex gap="4">
-                    {/* Hide Portal button in production builds, visible only in dev or if configured */}
-                    {process.env.NODE_ENV !== 'production' && (
-                        <Button variant="ghost" asChild>
-                            <Link href="/dashboard">Client Portal</Link>
-                        </Button>
-                    )}
-                </Flex>
             </Flex>
 
             <Container size="3">
