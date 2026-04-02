@@ -13,9 +13,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      - name: Validate required secrets
+        env:
+          APP_PORT: ${{ secrets.APP_PORT }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          EMAIL_SERVER: ${{ secrets.EMAIL_SERVER }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        run: |
+          missing=0
+          for name in APP_PORT NEXTAUTH_SECRET EMAIL_SERVER EMAIL_FROM; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing required secret: $name"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Create .env file
         run: |
           echo "APP_PORT=${{ secrets.APP_PORT }}" >> .env
+          if [ -n "${{ secrets.NEXTAUTH_SECRET }}" ]; then
+            echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
+          fi
+          if [ -n "${{ secrets.EMAIL_SERVER }}" ]; then
+            echo "EMAIL_SERVER=${{ secrets.EMAIL_SERVER }}" >> .env
+          fi
+          if [ -n "${{ secrets.EMAIL_FROM }}" ]; then
+            echo "EMAIL_FROM=${{ secrets.EMAIL_FROM }}" >> .env
+          fi
           if [ -n "${{ vars.NEXT_TELEMETRY_DISABLED }}" ]; then
             echo "NEXT_TELEMETRY_DISABLED=${{ vars.NEXT_TELEMETRY_DISABLED }}" >> .env
           fi
