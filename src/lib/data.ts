@@ -84,7 +84,7 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
 }
 
 export async function getDocumentById(id: string): Promise<DocumentData | undefined> {
-    const types: DocumentType[] = ['invoice', 'estimate', 'receipt'];
+    const types: DocumentType[] = ['invoice', 'estimate', 'quote', 'receipt'];
     for (const type of types) {
         const docs = await getDocuments(type);
         const found = docs.find(d => d.id === id);

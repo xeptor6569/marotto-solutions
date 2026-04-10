@@ -76,8 +76,11 @@ export async function createInvoiceAction(formData: FormData) {
     const subtotal = items.reduce((acc, item) => acc + item.total, 0);
     const total = subtotal; // Add tax logic if needed
 
-    // ID Prefix
-    const prefix = type === 'invoice' ? 'INV' : type === 'estimate' ? 'EST' : 'RCT';
+    const prefix =
+        type === 'invoice' ? 'INV' :
+        type === 'estimate' ? 'EST' :
+        type === 'quote' ? 'QTE' :
+        'RCT';
 
     const doc: DocumentData = {
         id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,

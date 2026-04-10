@@ -17,7 +17,7 @@ export default function AdminDocumentList({
     type,
     docs,
 }: {
-    type: "invoice" | "estimate";
+    type: "invoice" | "estimate" | "quote";
     docs: DocumentData[];
 }) {
     const [query, setQuery] = useState("");
@@ -82,7 +82,9 @@ export default function AdminDocumentList({
                     <Table.Root>
                         <Table.Header>
                             <Table.Row>
-                                <Table.ColumnHeaderCell>{type === "invoice" ? "Invoice #" : "Estimate #"}</Table.ColumnHeaderCell>
+                                <Table.ColumnHeaderCell>
+                                    {type === "invoice" ? "Invoice #" : type === "quote" ? "Quote #" : "Estimate #"}
+                                </Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>Customer</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell align="right">Total</Table.ColumnHeaderCell>

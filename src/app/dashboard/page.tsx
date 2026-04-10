@@ -1,5 +1,5 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
-import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList } from "lucide-react";
+import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList, BadgeCheck } from "lucide-react";
 import Link from 'next/link';
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -14,10 +14,12 @@ export default async function Home() {
 
   const invoices = await getDocuments('invoice');
   const estimates = await getDocuments('estimate');
+  const quotes = await getDocuments('quote');
   const receipts = await getDocuments('receipt');
 
   const recentInvoices = invoices.slice(0, 5);
   const activeEstimates = estimates.filter(e => e.status !== 'void').slice(0, 5);
+  const activeQuotes = quotes.filter(q => q.status !== 'void').slice(0, 5);
 
   return (
     <Container size="4" p="5">
@@ -26,7 +28,7 @@ export default async function Home() {
           <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
             <Heading size="8">Marotto Solutions</Heading>
           </Link>
-          <Text size="3" color="gray">Quick view of invoices, estimates, and receipts.</Text>
+          <Text size="3" color="gray">Quick view of invoices, estimates, quotes, and receipts.</Text>
         </Box>
         <Flex gap="3" wrap="wrap">
           <DropdownMenu.Root>
@@ -38,6 +40,9 @@ export default async function Home() {
             <DropdownMenu.Content>
               <DropdownMenu.Item asChild>
                 <Link href="/estimates/new">Estimate</Link>
+              </DropdownMenu.Item>
+              <DropdownMenu.Item asChild>
+                <Link href="/quotes/new">Quote</Link>
               </DropdownMenu.Item>
               <DropdownMenu.Item asChild>
                 <Link href="/invoices/new">Invoice</Link>
@@ -58,7 +63,7 @@ export default async function Home() {
         </Flex>
       </Flex>
 
-      <Grid columns={{ initial: '1', sm: '3' }} gap="4" mb="5">
+      <Grid columns={{ initial: '1', sm: '2', lg: '4' }} gap="4" mb="5">
         <Card>
           <Flex align="center" gap="3">
             <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
@@ -79,6 +84,15 @@ export default async function Home() {
         </Card>
         <Card>
           <Flex align="center" gap="3">
+            <Box style={{ color: "var(--teal-9)" }}><BadgeCheck size={18} /></Box>
+            <Box>
+              <Text size="2" color="gray">Active Quotes</Text>
+              <Heading size="6">{activeQuotes.length}</Heading>
+            </Box>
+          </Flex>
+        </Card>
+        <Card>
+          <Flex align="center" gap="3">
             <Box style={{ color: "var(--green-9)" }}><ReceiptText size={18} /></Box>
             <Box>
               <Text size="2" color="gray">Receipts</Text>
@@ -88,7 +102,7 @@ export default async function Home() {
         </Card>
       </Grid>
 
-      <Grid columns={{ initial: '1', md: '3' }} gap="4">
+      <Grid columns={{ initial: '1', md: '2', lg: '4' }} gap="4">
 
         {/* Recent Invoices */}
         <Card>
@@ -129,6 +143,28 @@ export default async function Home() {
                       <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
                     </Box>
                     <Badge color="blue">{est.status}</Badge>
+                  </Link>
+                </Flex>
+              ))}
+            </Flex>
+          )}
+        </Card>
+
+        <Card>
+          <Heading size="4" mb="3">Active Quotes</Heading>
+          {activeQuotes.length === 0 ? (
+            <Text size="2" color="gray">No active quotes.</Text>
+          ) : (
+            <Flex direction="column" gap="2">
+              {activeQuotes.map((q) => (
+                <Flex key={q.id} justify="between" align="center" asChild>
+                  <Link href={`/quotes/${q.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Text size="2" weight="bold">#{q.number} - {q.customer.name}</Text>
+                      {q.title ? <Box><Text size="1">{q.title}</Text></Box> : null}
+                      <Box><Text size="1" color="gray">{new Date(q.date).toLocaleDateString()}</Text></Box>
+                    </Box>
+                    <Badge color="blue">{q.status}</Badge>
                   </Link>
                 </Flex>
               ))}

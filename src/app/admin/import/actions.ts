@@ -10,7 +10,7 @@ function isValidDocument(doc: any): doc is DocumentData {
         typeof doc === 'object' &&
         doc !== null &&
         typeof doc.id === 'string' &&
-        (doc.type === 'invoice' || doc.type === 'estimate' || doc.type === 'receipt') &&
+        (doc.type === 'invoice' || doc.type === 'estimate' || doc.type === 'quote' || doc.type === 'receipt') &&
         typeof doc.number === 'number'
     );
 }

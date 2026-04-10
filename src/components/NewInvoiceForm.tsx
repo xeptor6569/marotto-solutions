@@ -13,7 +13,7 @@ export default function NewDocumentForm({
     redirectTo,
 }: {
     nextNumber: number,
-    type: 'invoice' | 'estimate' | 'receipt',
+    type: 'invoice' | 'estimate' | 'quote' | 'receipt',
     initialData?: DocumentData,
     redirectTo?: string
 }) {
@@ -25,7 +25,10 @@ export default function NewDocumentForm({
 
     const currentStatus = initialData?.status || 'draft';
     const docLabel = type.charAt(0).toUpperCase() + type.slice(1);
-    const notesLabel = type === 'estimate' ? 'Project Description' : 'Notes';
+    const notesLabel =
+        type === 'estimate' ? 'Project Description' :
+        type === 'quote' ? 'Scope & terms' :
+        'Notes';
     const actionButtons = type === 'invoice'
         ? [
             { intent: 'draft', label: 'Save Draft', variant: 'soft' as const },
@@ -36,6 +39,11 @@ export default function NewDocumentForm({
             ? [
                 { intent: 'draft', label: 'Save Draft', variant: 'soft' as const },
                 { intent: 'sent', label: 'Save & Finalize', variant: 'solid' as const },
+            ]
+        : type === 'quote'
+            ? [
+                { intent: 'draft', label: 'Save Draft', variant: 'soft' as const },
+                { intent: 'sent', label: 'Issue quote', variant: 'solid' as const },
             ]
             : [
                 { intent: currentStatus, label: `Save ${docLabel}`, variant: 'solid' as const },
@@ -78,6 +86,16 @@ export default function NewDocumentForm({
                         <Heading>
                             {initialData ? 'Edit' : 'New'} {docLabel} #{initialData?.number || nextNumber}
                         </Heading>
+                        {type === 'estimate' ? (
+                            <Text size="2" color="gray" mt="2" style={{ maxWidth: 520 }}>
+                                Flexible estimate — line items can include options; totals are indicative until scope is finalized.
+                            </Text>
+                        ) : null}
+                        {type === 'quote' ? (
+                            <Text size="2" color="gray" mt="2" style={{ maxWidth: 520 }}>
+                                Firm quote — the total is the agreed price for the work you describe here and in the line items.
+                            </Text>
+                        ) : null}
                         <Flex mt="2" gap="2" wrap="wrap" align="center">
                             <Text size="2" color="gray">Current status</Text>
                             <Badge color={currentStatus === 'paid' ? 'green' : currentStatus === 'sent' ? 'blue' : currentStatus === 'void' ? 'red' : 'orange'}>
@@ -135,20 +153,27 @@ export default function NewDocumentForm({
                         name="notes"
                         placeholder={type === "estimate"
                             ? "Describe the project scope, material choices, and any assumptions."
-                            : "Optional notes to include on this document."}
-                        rows={type === "estimate" ? 7 : 4}
+                            : type === "quote"
+                                ? "State what is included, timing, warranty, payment expectations, or other binding terms."
+                                : "Optional notes to include on this document."}
+                        rows={type === "estimate" || type === "quote" ? 7 : 4}
                         defaultValue={initialData?.notes}
                     />
                 </Card>
 
                 <Card>
                     <Heading size="3" mb="3">Items</Heading>
+                    {type === 'quote' ? (
+                        <Text size="2" color="gray" mb="3" as="p">
+                            Enter the agreed quantities and unit prices — the document total is the decided price for the customer.
+                        </Text>
+                    ) : null}
                     <Table.Root>
                         <Table.Header>
                             <Table.Row>
                                 <Table.ColumnHeaderCell width="50%">Description</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
-                                <Table.ColumnHeaderCell>Price</Table.ColumnHeaderCell>
+                                <Table.ColumnHeaderCell>{type === 'quote' ? 'Unit price' : 'Price'}</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>Total</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
                             </Table.Row>

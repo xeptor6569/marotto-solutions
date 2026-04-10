@@ -2,16 +2,12 @@ import { Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix
 import Link from "next/link";
 import type { DocumentData } from "@/lib/types";
 import { getAppConfig } from "@/lib/config";
+import { DOC_LABEL } from "@/lib/document-labels";
+import { auth } from "@/lib/auth";
 import PrintButton from "@/components/PrintButton";
 import ShareButton from "@/components/ShareButton";
+import EmailDocumentButton from "@/components/EmailDocumentButton";
 import BackButton from "@/components/BackButton";
-
-const DOC_TITLE: Record<DocumentData["type"], string> = {
-    invoice: "Invoice",
-    estimate: "Estimate",
-    receipt: "Receipt",
-    lead: "Lead",
-};
 
 function getStatusColor(status: DocumentData["status"]) {
     if (status === "paid") return "#166534";
@@ -35,8 +31,9 @@ export default async function DocumentPreview({
     backHref?: string;
     editHref?: string;
 }) {
+    const session = await auth();
     const config = await getAppConfig();
-    const docTitle = DOC_TITLE[doc.type] ?? "Document";
+    const docTitle = DOC_LABEL[doc.type] ?? "Document";
     const billToLabel = doc.type === "receipt" ? "Received From" : "Bill To";
     const sharePath = doc.type === "lead" ? "/" : `/${doc.type}s/${doc.id}`;
     const shareTitle = `${docTitle} ${doc.id}`;
@@ -55,6 +52,16 @@ export default async function DocumentPreview({
                         </Button>
                     ) : null}
                     <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                    {doc.type !== "lead" ? (
+                        <EmailDocumentButton
+                            documentId={doc.id}
+                            sharePath={sharePath}
+                            docTitle={docTitle}
+                            defaultTo={doc.customer.email}
+                            canSendViaServer={!!session}
+                            serverEmailConfigured={!!process.env.EMAIL_SERVER}
+                        />
+                    ) : null}
                     <PrintButton label={docTitle} />
                 </Flex>
             </Flex>
@@ -136,7 +143,7 @@ export default async function DocumentPreview({
                             }}
                         >
                             <Text size="2" weight="bold" style={{ color: "#374151", textTransform: "uppercase" }}>
-                                {doc.type === "estimate" ? "Project Details" : "Notes"}
+                                {doc.type === "estimate" ? "Project Details" : doc.type === "quote" ? "Scope & terms" : "Notes"}
                             </Text>
                             <Text as="div" mt="2" style={{ color: "#111827", whiteSpace: "pre-line", lineHeight: 1.6 }}>
                                 {doc.notes}
@@ -210,6 +217,24 @@ export default async function DocumentPreview({
                                     </Text>
                                 </Box>
                             ) : null}
+                        </Box>
+                    ) : null}
+
+                    {doc.type === "estimate" || doc.type === "quote" ? (
+                        <Box
+                            mb="4"
+                            style={{
+                                padding: "12px 16px",
+                                border: "1px solid #d1d5db",
+                                borderRadius: 8,
+                                background: "#fffbeb",
+                            }}
+                        >
+                            <Text size="2" style={{ color: "#78350f", lineHeight: 1.5 }}>
+                                {doc.type === "estimate"
+                                    ? "Flexible estimate: figures are indicative and may change with final scope, materials, or site conditions."
+                                    : "Firm quote: the total below is the agreed price for the work described in this document unless you attach a written change order."}
+                            </Text>
                         </Box>
                     ) : null}
 

@@ -1,4 +1,4 @@
-export type DocumentType = 'invoice' | 'estimate' | 'receipt' | 'lead';
+export type DocumentType = 'invoice' | 'estimate' | 'quote' | 'receipt' | 'lead';
 
 export interface LineItem {
     id: string;
@@ -41,5 +41,6 @@ export interface AppConfig {
     webdavPassword?: string; // Ideally not saved in plain text if possible, but for self-hosted we might need to.
     lastInvoiceNumber: number;
     lastEstimateNumber: number;
+    lastQuoteNumber: number;
     lastReceiptNumber: number;
 }
