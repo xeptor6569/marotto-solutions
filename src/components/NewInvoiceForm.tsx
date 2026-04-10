@@ -1,21 +1,48 @@
 'use client';
 
-import { Container, Heading, Card, Button, Flex, Box, Text, TextField, Grid, Table, TextArea, Select as RadixSelect } from "@radix-ui/themes";
+import { Heading, Card, Button, Flex, Box, Text, TextField, Grid, Table, TextArea, Badge } from "@radix-ui/themes";
 import { PlusIcon, TrashIcon, SaveIcon } from "lucide-react";
-import { useState, useActionState } from 'react';
-import { createInvoiceAction } from '@/app/actions'; // We need this action
-import { DocumentData, LineItem, Customer } from "@/lib/types";
+import { useState } from 'react';
+import { createInvoiceAction } from '@/app/actions';
+import { DocumentData, LineItem } from "@/lib/types";
 
-// Note: Radix Select is a bit complex in forms without a wrapper or controlled state.
-// Simplifying for initial implementation.
-
-export default function NewDocumentForm({ nextNumber, type }: { nextNumber: number, type: 'invoice' | 'estimate' | 'receipt' }) {
+export default function NewDocumentForm({
+    nextNumber,
+    type,
+    initialData,
+    redirectTo,
+}: {
+    nextNumber: number,
+    type: 'invoice' | 'estimate' | 'receipt',
+    initialData?: DocumentData,
+    redirectTo?: string
+}) {
     const [lineItems, setLineItems] = useState<LineItem[]>([
-        { id: '1', description: 'Service', quantity: 1, unitPrice: 0, total: 0 }
+        ...(initialData?.lineItems?.length
+            ? initialData.lineItems
+            : [{ id: '1', description: 'Service', details: '', quantity: 1, unitPrice: 0, total: 0 }])
     ]);
 
+    const currentStatus = initialData?.status || 'draft';
+    const docLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    const notesLabel = type === 'estimate' ? 'Project Description' : 'Notes';
+    const actionButtons = type === 'invoice'
+        ? [
+            { intent: 'draft', label: 'Save Draft', variant: 'soft' as const },
+            { intent: 'sent', label: 'Save as Sent', variant: 'solid' as const },
+            { intent: 'paid', label: 'Save as Paid', variant: 'outline' as const },
+        ]
+        : type === 'estimate'
+            ? [
+                { intent: 'draft', label: 'Save Draft', variant: 'soft' as const },
+                { intent: 'sent', label: 'Save & Finalize', variant: 'solid' as const },
+            ]
+            : [
+                { intent: currentStatus, label: `Save ${docLabel}`, variant: 'solid' as const },
+            ];
+
     const addLineItem = () => {
-        setLineItems([...lineItems, { id: crypto.randomUUID(), description: '', quantity: 1, unitPrice: 0, total: 0 }]);
+        setLineItems([...lineItems, { id: crypto.randomUUID(), description: '', details: '', quantity: 1, unitPrice: 0, total: 0 }]);
     };
 
     const removeLineItem = (id: string) => {
@@ -24,7 +51,7 @@ export default function NewDocumentForm({ nextNumber, type }: { nextNumber: numb
         }
     };
 
-    const updateLineItem = (id: string, field: keyof LineItem, value: any) => {
+    const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
         setLineItems(lineItems.map(item => {
             if (item.id === id) {
                 const updated = { ...item, [field]: value };
@@ -38,19 +65,34 @@ export default function NewDocumentForm({ nextNumber, type }: { nextNumber: numb
     };
 
     const subtotal = lineItems.reduce((acc, item) => acc + item.total, 0);
-
-    // Note: For a real form, I'd use React Hook Form + Zod.
-    // Implementing a basic form submission via Action for now.
-    // We need to serialize line items into hidden input or handle submit manually.
-
     return (
         <form action={createInvoiceAction}>
             <input type="hidden" name="type" value={type} />
+            <input type="hidden" name="documentId" value={initialData?.id || ''} />
+            <input type="hidden" name="createdAt" value={initialData?.createdAt || ''} />
+            <input type="hidden" name="redirectTo" value={redirectTo || `/admin`} />
+            <input type="hidden" name="currentStatus" value={currentStatus} />
             <Flex direction="column" gap="5">
-                <Flex justify="between" align="center">
-                    <Heading>New {type.charAt(0).toUpperCase() + type.slice(1)} #{nextNumber}</Heading>
-                    <input type="hidden" name="number" value={nextNumber} />
-                    <Button type="submit"><SaveIcon size={16} /> Save {type.charAt(0).toUpperCase() + type.slice(1)}</Button>
+                <Flex direction={{ initial: 'column', md: 'row' }} justify="between" align={{ initial: 'start', md: 'center' }} gap="3">
+                    <Box>
+                        <Heading>
+                            {initialData ? 'Edit' : 'New'} {docLabel} #{initialData?.number || nextNumber}
+                        </Heading>
+                        <Flex mt="2" gap="2" wrap="wrap" align="center">
+                            <Text size="2" color="gray">Current status</Text>
+                            <Badge color={currentStatus === 'paid' ? 'green' : currentStatus === 'sent' ? 'blue' : currentStatus === 'void' ? 'red' : 'orange'}>
+                                {currentStatus}
+                            </Badge>
+                        </Flex>
+                    </Box>
+                    <input type="hidden" name="number" value={initialData?.number || nextNumber} />
+                    <Flex gap="2" wrap="wrap">
+                        {actionButtons.map((button) => (
+                            <Button key={button.label} type="submit" name="intent" value={button.intent} variant={button.variant}>
+                                <SaveIcon size={16} /> {button.label}
+                            </Button>
+                        ))}
+                    </Flex>
                 </Flex>
 
                 <Grid columns={{ initial: '1', md: '2' }} gap="4">
@@ -59,15 +101,15 @@ export default function NewDocumentForm({ nextNumber, type }: { nextNumber: numb
                         <Flex direction="column" gap="3">
                             <Box>
                                 <Text as="label" size="2">Name</Text>
-                                <TextField.Root name="customerName" placeholder="Client Name" required />
+                                <TextField.Root name="customerName" placeholder="Client Name" defaultValue={initialData?.customer?.name} required />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Email</Text>
-                                <TextField.Root name="customerEmail" type="email" placeholder="client@example.com" />
+                                <TextField.Root name="customerEmail" type="email" placeholder="client@example.com" defaultValue={initialData?.customer?.email} />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Address</Text>
-                                <TextArea name="customerAddress" placeholder="Street, City, Zip" />
+                                <TextArea name="customerAddress" placeholder="Street, City, Zip" defaultValue={initialData?.customer?.address} />
                             </Box>
                         </Flex>
                     </Card>
@@ -77,15 +119,27 @@ export default function NewDocumentForm({ nextNumber, type }: { nextNumber: numb
                         <Flex direction="column" gap="3">
                             <Box>
                                 <Text as="label" size="2">Date</Text>
-                                <TextField.Root name="date" type="date" defaultValue={new Date().toISOString().split('T')[0]} required />
+                                <TextField.Root name="date" type="date" defaultValue={initialData?.date?.split('T')[0] || new Date().toISOString().split('T')[0]} required />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Due Date</Text>
-                                <TextField.Root name="dueDate" type="date" />
+                                <TextField.Root name="dueDate" type="date" defaultValue={initialData?.dueDate?.split('T')[0]} />
                             </Box>
                         </Flex>
                     </Card>
                 </Grid>
+
+                <Card>
+                    <Heading size="3" mb="3">{notesLabel}</Heading>
+                    <TextArea
+                        name="notes"
+                        placeholder={type === "estimate"
+                            ? "Describe the project scope, material choices, and any assumptions."
+                            : "Optional notes to include on this document."}
+                        rows={type === "estimate" ? 7 : 4}
+                        defaultValue={initialData?.notes}
+                    />
+                </Card>
 
                 <Card>
                     <Heading size="3" mb="3">Items</Heading>
@@ -108,8 +162,19 @@ export default function NewDocumentForm({ nextNumber, type }: { nextNumber: numb
                                             onChange={e => updateLineItem(item.id, 'description', e.target.value)}
                                             placeholder="Description"
                                         />
+                                        {type === 'estimate' ? (
+                                            <Box mt="2">
+                                                <TextArea
+                                                    value={item.details || ''}
+                                                    onChange={e => updateLineItem(item.id, 'details', e.target.value)}
+                                                    placeholder="Add scope, install approach, material option notes, or client-facing details."
+                                                    rows={4}
+                                                />
+                                            </Box>
+                                        ) : null}
                                         {/* Hidden inputs to pass array data to Server Action */}
                                         <input type="hidden" name={`items[${index}][description]`} value={item.description} />
+                                        <input type="hidden" name={`items[${index}][details]`} value={item.details || ''} />
                                     </Table.Cell>
                                     <Table.Cell>
                                         <TextField.Root

@@ -1,5 +1,5 @@
-import { Container, Heading, Text, Flex, Button, Card, Grid, Link as RadixLink, Badge, Box, DropdownMenu } from "@radix-ui/themes";
-import { SettingsIcon, ChevronDown, Upload, LogOut, ArrowLeft, Users } from "lucide-react";
+import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
+import { SettingsIcon, ChevronDown, Upload, LogOut, FileText, ReceiptText, ClipboardList, Users } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { auth, signOut } from "@/lib/auth";
@@ -24,12 +24,15 @@ export default async function AdminDashboard() {
 
     return (
         <Container size="4" p="5">
-            <Flex justify="between" align="center" mb="5">
-                <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <Heading size="8">Marotto Solutions</Heading>
-                </Link>
-                <Flex gap="3" align="center">
-                    <Flex direction="column" align="end" gap="1">
+            <Flex direction={{ initial: "column", md: "row" }} justify="between" align={{ initial: "start", md: "center" }} gap="4" mb="5">
+                <Box>
+                    <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+                        <Heading size="8">Marotto Solutions</Heading>
+                    </Link>
+                    <Text size="3" color="gray">Admin dashboard for documents, receipts, and incoming leads.</Text>
+                </Box>
+                <Flex gap="3" align="center" wrap="wrap" justify={{ initial: "start", md: "end" }}>
+                    <Flex direction="column" align={{ initial: "start", md: "end" }} gap="1">
                         <Text size="2" weight="bold">{session.user?.email}</Text>
                         <form action={async () => {
                             'use server';
@@ -65,26 +68,73 @@ export default async function AdminDashboard() {
                     </Button>
 
                     <Button size="3" variant="outline" asChild>
-                        <Link href="/admin/settings"><SettingsIcon size={16} /></Link>
+                        <Link href="/admin/settings"><SettingsIcon size={16} /> Settings</Link>
                     </Button>
                 </Flex>
             </Flex>
 
+            <Grid columns={{ initial: '1', sm: '2', lg: '4' }} gap="4" mb="5">
+                <Card>
+                    <Flex align="center" gap="3">
+                        <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
+                        <Box>
+                            <Text size="2" color="gray">Invoices</Text>
+                            <Heading size="6">{invoices.length}</Heading>
+                        </Box>
+                    </Flex>
+                </Card>
+                <Card>
+                    <Flex align="center" gap="3">
+                        <Box style={{ color: "var(--amber-9)" }}><ClipboardList size={18} /></Box>
+                        <Box>
+                            <Text size="2" color="gray">Active Estimates</Text>
+                            <Heading size="6">{activeEstimates.length}</Heading>
+                        </Box>
+                    </Flex>
+                </Card>
+                <Card>
+                    <Flex align="center" gap="3">
+                        <Box style={{ color: "var(--green-9)" }}><ReceiptText size={18} /></Box>
+                        <Box>
+                            <Text size="2" color="gray">Receipts</Text>
+                            <Heading size="6">{receipts.length}</Heading>
+                        </Box>
+                    </Flex>
+                </Card>
+                <Card>
+                    <Flex align="center" gap="3">
+                        <Box style={{ color: "var(--violet-9)" }}><Users size={18} /></Box>
+                        <Box>
+                            <Text size="2" color="gray">Leads</Text>
+                            <Heading size="6">{leads.length}</Heading>
+                        </Box>
+                    </Flex>
+                </Card>
+            </Grid>
+
             <Grid columns={{ initial: '1', md: '2', lg: '4' }} gap="4">
                 {/* Recent Invoices */}
                 <Card>
-                    <Heading size="4" mb="3">Recent Invoices</Heading>
+                    <Flex justify="between" align="center" mb="3">
+                        <Heading size="4">Recent Invoices</Heading>
+                        <Button asChild size="1" variant="soft">
+                            <Link href="/admin/invoices">View all</Link>
+                        </Button>
+                    </Flex>
                     {recentInvoices.length === 0 ? (
                         <Text size="2" color="gray">No recent invoices found.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
                             {recentInvoices.map(inv => (
-                                <Flex key={inv.id} justify="between" align="center">
-                                    <Box>
-                                        <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
-                                        <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
-                                    </Box>
-                                    <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
+                                <Flex key={inv.id} justify="between" align="center" asChild>
+                                    <Link href={`/admin/invoices/${inv.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                                        <Box>
+                                            <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
+                                            {inv.title ? <Box><Text size="1">{inv.title}</Text></Box> : null}
+                                            <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
+                                        </Box>
+                                        <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
+                                    </Link>
                                 </Flex>
                             ))}
                         </Flex>
@@ -93,18 +143,26 @@ export default async function AdminDashboard() {
 
                 {/* Active Estimates */}
                 <Card>
-                    <Heading size="4" mb="3">Active Estimates</Heading>
+                    <Flex justify="between" align="center" mb="3">
+                        <Heading size="4">Active Estimates</Heading>
+                        <Button asChild size="1" variant="soft">
+                            <Link href="/admin/estimates">View all</Link>
+                        </Button>
+                    </Flex>
                     {activeEstimates.length === 0 ? (
                         <Text size="2" color="gray">No active estimates.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
                             {activeEstimates.map(est => (
-                                <Flex key={est.id} justify="between" align="center">
-                                    <Box>
-                                        <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
-                                        <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
-                                    </Box>
-                                    <Badge color="blue">{est.status}</Badge>
+                                <Flex key={est.id} justify="between" align="center" asChild>
+                                    <Link href={`/admin/estimates/${est.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                                        <Box>
+                                            <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
+                                            {est.title ? <Box><Text size="1">{est.title}</Text></Box> : null}
+                                            <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
+                                        </Box>
+                                        <Badge color="blue">{est.status}</Badge>
+                                    </Link>
                                 </Flex>
                             ))}
                         </Flex>

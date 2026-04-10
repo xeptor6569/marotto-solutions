@@ -43,7 +43,8 @@ export default function SignInPage() {
                 if (result?.error) {
                     setError('Invalid email or password. Please try again.');
                 } else if (result?.url) {
-                    window.location.href = result.url;
+                    const safeUrl = new URL(result.url, window.location.origin);
+                    window.location.href = `${safeUrl.pathname}${safeUrl.search}${safeUrl.hash}`;
                 }
             }
         } catch (err) {

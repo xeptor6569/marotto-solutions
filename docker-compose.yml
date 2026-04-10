@@ -7,7 +7,7 @@ services:
       - "${APP_PORT:-3081}:3000"
     environment:
       - DATABASE_URL=${DATABASE_URL:-postgresql://marotto:marotto_password@postgres:5432/marotto_db}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3081}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:${APP_PORT:-3081}}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - EMAIL_SERVER=${EMAIL_SERVER}
       - EMAIL_FROM=${EMAIL_FROM}

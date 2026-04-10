@@ -1,0 +1,38 @@
+{
+  "id": "INV-0001",
+  "number": 1,
+  "type": "invoice",
+  "date": "2026-04-06",
+  "dueDate": "",
+  "customer": {
+    "id": "ea5ddb51-1643-45b6-afb7-77f174e40dbd",
+    "name": "ca",
+    "email": "me@test.com",
+    "address": "123"
+  },
+  "lineItems": [
+    {
+      "id": "79919608-deff-4507-ad58-a9d2419eb5b7",
+      "description": "Service",
+      "details": "",
+      "quantity": 1,
+      "unitPrice": 279.34,
+      "total": 279.34
+    },
+    {
+      "id": "67b3b430-fea5-49c0-a575-2dfb9f1ffdb2",
+      "description": "Mat",
+      "details": "",
+      "quantity": 2,
+      "unitPrice": 20,
+      "total": 40
+    }
+  ],
+  "subtotal": 319.34,
+  "total": 319.34,
+  "notes": "random details It now covers the real route structure, NextAuth + Prisma auth flow, JSON/WebDAV document storage, Postgres usage, local setup, Docker defaults, scripts, document workflows, and the current admin/dashboard split.\r\n\r\n",
+  "status": "sent",
+  "tags": [],
+  "createdAt": "2026-04-06T01:24:07.840Z",
+  "updatedAt": "2026-04-06T01:48:04.249Z"
+}

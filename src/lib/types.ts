@@ -3,6 +3,7 @@ export type DocumentType = 'invoice' | 'estimate' | 'receipt' | 'lead';
 export interface LineItem {
     id: string;
     description: string;
+    details?: string;
     quantity: number;
     unitPrice: number;
     total: number;

@@ -1,6 +1,6 @@
-import { Container, Heading, Text, Flex, Button, Card, Grid, Link as RadixLink, Badge, Box, DropdownMenu } from "@radix-ui/themes";
-import { SettingsIcon, ChevronDown, Upload } from "lucide-react";
-import Link from 'next/link'; // Next.js Link
+import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
+import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList } from "lucide-react";
+import Link from 'next/link';
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getDocuments } from "@/lib/data";
@@ -21,11 +21,14 @@ export default async function Home() {
 
   return (
     <Container size="4" p="5">
-      <Flex justify="between" align="center" mb="5">
-        <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          <Heading size="8">Marotto Solutions</Heading>
-        </Link>
-        <Flex gap="3">
+      <Flex direction={{ initial: 'column', md: 'row' }} justify="between" align={{ initial: 'start', md: 'center' }} gap="4" mb="5">
+        <Box>
+          <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Heading size="8">Marotto Solutions</Heading>
+          </Link>
+          <Text size="3" color="gray">Quick view of invoices, estimates, and receipts.</Text>
+        </Box>
+        <Flex gap="3" wrap="wrap">
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <Button variant="solid" size="3">
@@ -50,10 +53,40 @@ export default async function Home() {
           </Button>
 
           <Button size="3" variant="outline" asChild>
-            <Link href="/settings"><SettingsIcon size={16} /></Link>
+            <Link href="/settings"><SettingsIcon size={16} /> Settings</Link>
           </Button>
         </Flex>
       </Flex>
+
+      <Grid columns={{ initial: '1', sm: '3' }} gap="4" mb="5">
+        <Card>
+          <Flex align="center" gap="3">
+            <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
+            <Box>
+              <Text size="2" color="gray">Invoices</Text>
+              <Heading size="6">{invoices.length}</Heading>
+            </Box>
+          </Flex>
+        </Card>
+        <Card>
+          <Flex align="center" gap="3">
+            <Box style={{ color: "var(--amber-9)" }}><ClipboardList size={18} /></Box>
+            <Box>
+              <Text size="2" color="gray">Active Estimates</Text>
+              <Heading size="6">{activeEstimates.length}</Heading>
+            </Box>
+          </Flex>
+        </Card>
+        <Card>
+          <Flex align="center" gap="3">
+            <Box style={{ color: "var(--green-9)" }}><ReceiptText size={18} /></Box>
+            <Box>
+              <Text size="2" color="gray">Receipts</Text>
+              <Heading size="6">{receipts.length}</Heading>
+            </Box>
+          </Flex>
+        </Card>
+      </Grid>
 
       <Grid columns={{ initial: '1', md: '3' }} gap="4">
 
@@ -65,12 +98,15 @@ export default async function Home() {
           ) : (
             <Flex direction="column" gap="2">
               {recentInvoices.map(inv => (
-                <Flex key={inv.id} justify="between" align="center">
-                  <Box>
-                    <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
-                    <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
-                  </Box>
-                  <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
+                <Flex key={inv.id} justify="between" align="center" asChild>
+                  <Link href={`/invoices/${inv.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
+                      {inv.title ? <Box><Text size="1">{inv.title}</Text></Box> : null}
+                      <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
+                    </Box>
+                    <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
+                  </Link>
                 </Flex>
               ))}
             </Flex>
@@ -85,27 +121,21 @@ export default async function Home() {
           ) : (
             <Flex direction="column" gap="2">
               {activeEstimates.map(est => (
-                <Flex key={est.id} justify="between" align="center">
-                  <Box>
-                    <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
-                    <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
-                  </Box>
-                  <Badge color="blue">{est.status}</Badge>
+                <Flex key={est.id} justify="between" align="center" asChild>
+                  <Link href={`/estimates/${est.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
+                    <Box>
+                      <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
+                      {est.title ? <Box><Text size="1">{est.title}</Text></Box> : null}
+                      <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
+                    </Box>
+                    <Badge color="blue">{est.status}</Badge>
+                  </Link>
                 </Flex>
               ))}
             </Flex>
           )}
         </Card>
 
-        {/* Recent Receipts (New Section or Replace Stats?) -> User asked for dashboard. 
-           I'll add a "Recent Receipts" card or just let them find it via search later.
-           For now, I'll add a Recent Receipts card if there's space or modify Invoices card to tabs?
-           Let's just add a Link to the stats numbers? Or simply add a new Card.
-           Actually, the user can use "Import" to see them? No.
-           I'll add a "Recent Receipts" card column or row.
-           Let's just change "Recent Invoices" to "Recent Documents" or add a third card for receipts.
-           I'll Replace "Quick Stats" with "Recent Receipts" for now since stats are boring.
-        */}
         <Card>
           <Heading size="4" mb="3">Recent Receipts</Heading>
           {receipts.length === 0 ? (

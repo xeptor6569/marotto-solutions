@@ -7,6 +7,13 @@ import { saveNewDocument, getNextNumber } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+function resolveDocumentStatus(type: DocumentType, intent: string | null, fallback: DocumentData['status'] = 'draft'): DocumentData['status'] {
+    if (intent === 'draft') return 'draft';
+    if (intent === 'sent') return 'sent';
+    if (intent === 'paid' && type === 'invoice') return 'paid';
+    return fallback;
+}
+
 export async function saveSettingsAction(formData: FormData) {
     const url = formData.get('webdavUrl') as string;
     const username = formData.get('webdavUsername') as string;
@@ -31,10 +38,17 @@ export async function saveSettingsAction(formData: FormData) {
 }
 
 export async function createInvoiceAction(formData: FormData) {
+    const documentId = formData.get('documentId') as string | null;
+    const createdAt = (formData.get('createdAt') as string) || new Date().toISOString();
+    const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
     const number = Number(formData.get('number'));
     const date = formData.get('date') as string;
     const dueDate = formData.get('dueDate') as string;
+    const notes = (formData.get('notes') as string) || '';
     const type = (formData.get('type') as string) as DocumentType || 'invoice';
+    const currentStatus = ((formData.get('currentStatus') as DocumentData['status']) || 'draft');
+    const intent = formData.get('intent') as string | null;
+    const status = resolveDocumentStatus(type, intent, currentStatus);
 
     const customer: Customer = {
         id: crypto.randomUUID(),
@@ -51,6 +65,7 @@ export async function createInvoiceAction(formData: FormData) {
         items.push({
             id: crypto.randomUUID(),
             description: formData.get(`items[${i}][description]`) as string,
+            details: (formData.get(`items[${i}][details]`) as string) || '',
             quantity: Number(formData.get(`items[${i}][quantity]`)),
             unitPrice: Number(formData.get(`items[${i}][unitPrice]`)),
             total: Number(formData.get(`items[${i}][quantity]`)) * Number(formData.get(`items[${i}][unitPrice]`))
@@ -65,7 +80,7 @@ export async function createInvoiceAction(formData: FormData) {
     const prefix = type === 'invoice' ? 'INV' : type === 'estimate' ? 'EST' : 'RCT';
 
     const doc: DocumentData = {
-        id: `${prefix}-${String(number).padStart(4, '0')}`,
+        id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,
         number,
         type,
         date,
@@ -74,9 +89,10 @@ export async function createInvoiceAction(formData: FormData) {
         lineItems: items,
         subtotal,
         total,
-        status: 'draft',
+        notes,
+        status,
         tags: [],
-        createdAt: new Date().toISOString(),
+        createdAt,
         updatedAt: new Date().toISOString()
     };
 
@@ -91,7 +107,12 @@ export async function createInvoiceAction(formData: FormData) {
     }
 
     revalidatePath('/dashboard');
-    redirect('/dashboard');
+    revalidatePath('/admin');
+    revalidatePath(`/admin/${type}s`);
+    revalidatePath(`/${type}s`);
+    revalidatePath(`/admin/${type}s/${doc.id}`);
+    revalidatePath(`/${type}s/${doc.id}`);
+    redirect(redirectTo);
 }
 
 export async function submitQuoteRequest(formData: FormData) {
