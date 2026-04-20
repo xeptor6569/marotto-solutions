@@ -13,12 +13,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
-      - name: Validate required secrets
+      - name: Validate required configuration
         env:
           APP_PORT: ${{ secrets.APP_PORT }}
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           EMAIL_SERVER: ${{ secrets.EMAIL_SERVER }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
         run: |
           missing=0
           for name in APP_PORT NEXTAUTH_SECRET EMAIL_SERVER EMAIL_FROM; do
@@ -27,6 +28,10 @@ jobs:
               missing=1
             fi
           done
+          if [ -z "${NEXTAUTH_URL}" ]; then
+            echo "::error::Missing required environment variable NEXTAUTH_URL (GitHub prod → Variables)"
+            missing=1
+          fi
           if [ "$missing" -ne 0 ]; then
             exit 1
           fi
@@ -34,6 +39,7 @@ jobs:
       - name: Create .env file
         run: |
           echo "APP_PORT=${{ secrets.APP_PORT }}" >> .env
+          echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}" >> .env
           if [ -n "${{ secrets.NEXTAUTH_SECRET }}" ]; then
             echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           fi
