@@ -19,6 +19,8 @@ export interface Customer {
 
 export interface DocumentData {
     id: string; // e.g., INV-0001
+    /** Optional short label shown in lists and preview chrome. */
+    title?: string;
     number: number; // 1
     type: DocumentType;
     date: string; // ISO string
@@ -35,6 +37,30 @@ export interface DocumentData {
     updatedAt: string;
 }
 
+export type PaymentMethodKey =
+    | 'cash'
+    | 'check'
+    | 'zelle'
+    | 'cashApp'
+    | 'paypal'
+    | 'venmo'
+    | 'applePay'
+    | 'stripe';
+
+export interface PaymentMethodEntry {
+    enabled: boolean;
+    label: string;
+    value?: string;
+    note?: string;
+    comingSoon?: boolean;
+}
+
+export interface BillingConfig {
+    checkPayableTo: string;
+    paymentInstructions: string;
+    paymentMethods: Record<PaymentMethodKey, PaymentMethodEntry>;
+}
+
 export interface AppConfig {
     webdavUrl: string;
     webdavUsername: string; // Saved in local storage or env
@@ -43,4 +69,5 @@ export interface AppConfig {
     lastEstimateNumber: number;
     lastQuoteNumber: number;
     lastReceiptNumber: number;
+    billing?: BillingConfig;
 }

@@ -6,10 +6,9 @@ import { saveSettingsAction } from "@/app/actions";
 import { AppConfig, PaymentMethodKey } from "@/lib/types";
 import { CheckCircle, XCircle } from "lucide-react";
 
-const initialState = {
-    success: false,
-    error: '',
-};
+type SaveSettingsState = { success: boolean; error?: string };
+
+const initialState: SaveSettingsState = { success: false };
 
 const paymentMethodFields: Array<{ key: PaymentMethodKey; valueLabel: string; noteLabel: string }> = [
     { key: 'cash', valueLabel: 'Label Override', noteLabel: 'Cash Note' },
@@ -31,10 +30,12 @@ export default function SettingsForm({ config }: { config: Partial<AppConfig> })
     // But saveSettingsAction currently signature is (FormData) => ...
     // Let's wrapping it.
 
-    const [state, formAction, isPending] = useActionState(async (_prevState: typeof initialState, formData: FormData) => {
-        const result = await saveSettingsAction(formData);
-        return result;
-    }, initialState);
+    const [state, formAction, isPending] = useActionState(
+        async (_prevState: SaveSettingsState, formData: FormData): Promise<SaveSettingsState> => {
+            return saveSettingsAction(formData);
+        },
+        initialState,
+    );
 
     return (
         <form action={formAction}>
