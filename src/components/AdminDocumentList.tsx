@@ -6,6 +6,8 @@ import { Badge, Box, Button, Card, Flex, Table, Text, TextField } from "@radix-u
 import { Search } from "lucide-react";
 import type { DocumentData } from "@/lib/types";
 
+export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
+
 function badgeColor(status: DocumentData["status"]) {
     if (status === "paid") return "green";
     if (status === "void") return "red";
@@ -13,21 +15,50 @@ function badgeColor(status: DocumentData["status"]) {
     return "orange";
 }
 
-function docNumberLabel(type: "invoice" | "estimate" | "quote") {
+function adminPluralPath(type: AdminDocumentListType): string {
+    const paths: Record<AdminDocumentListType, string> = {
+        invoice: "invoices",
+        estimate: "estimates",
+        quote: "quotes",
+        receipt: "receipts",
+        lead: "leads",
+    };
+    return paths[type];
+}
+
+function adminBase(type: AdminDocumentListType): string {
+    return `/admin/${adminPluralPath(type)}`;
+}
+
+function docNumberLabel(type: AdminDocumentListType) {
     if (type === "invoice") return "Invoice #";
     if (type === "quote") return "Quote #";
-    return "Estimate #";
+    if (type === "estimate") return "Estimate #";
+    if (type === "receipt") return "Receipt #";
+    return "Lead #";
+}
+
+function searchPlaceholder(type: AdminDocumentListType) {
+    if (type === "lead") return "Search leads by id, number, name, email, notes…";
+    return `Search ${type}s by number, id, customer…`;
+}
+
+function typePluralLabel(type: AdminDocumentListType): string {
+    if (type === "receipt") return "receipts";
+    return `${type}s`;
 }
 
 export default function AdminDocumentList({
     type,
     docs,
 }: {
-    type: "invoice" | "estimate" | "quote";
+    type: AdminDocumentListType;
     docs: DocumentData[];
 }) {
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState<"all" | DocumentData["status"]>("all");
+    const base = adminBase(type);
+    const showEdit = type !== "lead";
 
     const filteredDocs = useMemo(() => {
         return docs.filter((doc) => {
@@ -36,13 +67,15 @@ export default function AdminDocumentList({
                 || doc.id.toLowerCase().includes(q)
                 || String(doc.number).includes(q)
                 || (doc.customer.name || "").toLowerCase().includes(q)
-                || (doc.customer.email || "").toLowerCase().includes(q);
+                || (doc.customer.email || "").toLowerCase().includes(q)
+                || (doc.notes || "").toLowerCase().includes(q);
             const matchesStatus = status === "all" || doc.status === status;
             return matchesQuery && matchesStatus;
         });
     }, [docs, query, status]);
 
     const numberLabel = docNumberLabel(type);
+    const plural = typePluralLabel(type);
 
     return (
         <Flex direction="column" gap="4" className="admin-document-list">
@@ -51,7 +84,7 @@ export default function AdminDocumentList({
                     <Box style={{ flex: 1, minWidth: "min(100%, 200px)" }}>
                         <Text as="label" size="2">Search</Text>
                         <TextField.Root
-                            placeholder={`Search ${type}s by number, id, customer...`}
+                            placeholder={searchPlaceholder(type)}
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                         >
@@ -93,7 +126,7 @@ export default function AdminDocumentList({
             {filteredDocs.length === 0 ? (
                 <Card>
                     <Flex direction="column" align="center" gap="2" py="7">
-                        <Text size="4" color="gray">No {type}s match your filters.</Text>
+                        <Text size="4" color="gray">No {plural} match your filters.</Text>
                     </Flex>
                 </Card>
             ) : (
@@ -131,11 +164,13 @@ export default function AdminDocumentList({
                                     </Flex>
                                     <Flex gap="2" style={{ width: "100%" }}>
                                         <Button asChild size="2" variant="soft" style={{ flex: 1 }}>
-                                            <Link href={`/admin/${type}s/${doc.id}`}>Preview</Link>
+                                            <Link href={`${base}/${doc.id}`}>Preview</Link>
                                         </Button>
-                                        <Button asChild size="2" style={{ flex: 1 }}>
-                                            <Link href={`/admin/${type}s/${doc.id}/edit`}>Edit</Link>
-                                        </Button>
+                                        {showEdit ? (
+                                            <Button asChild size="2" style={{ flex: 1 }}>
+                                                <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
+                                            </Button>
+                                        ) : null}
                                     </Flex>
                                 </Flex>
                             </Card>
@@ -145,7 +180,7 @@ export default function AdminDocumentList({
                     {/* Desktop: table */}
                     <Card className="admin-doc-list-desktop" style={{ padding: 0, overflow: "hidden" }}>
                         <Box style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-                            <Table.Root style={{ minWidth: 640 }}>
+                            <Table.Root style={{ minWidth: showEdit ? 640 : 520 }}>
                                 <Table.Header>
                                     <Table.Row>
                                         <Table.ColumnHeaderCell>
@@ -178,11 +213,13 @@ export default function AdminDocumentList({
                                             <Table.Cell>
                                                 <Flex gap="2" wrap="wrap">
                                                     <Button asChild size="1" variant="soft">
-                                                        <Link href={`/admin/${type}s/${doc.id}`}>Preview</Link>
+                                                        <Link href={`${base}/${doc.id}`}>Preview</Link>
                                                     </Button>
-                                                    <Button asChild size="1">
-                                                        <Link href={`/admin/${type}s/${doc.id}/edit`}>Edit</Link>
-                                                    </Button>
+                                                    {showEdit ? (
+                                                        <Button asChild size="1">
+                                                            <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
+                                                        </Button>
+                                                    ) : null}
                                                 </Flex>
                                             </Table.Cell>
                                         </Table.Row>

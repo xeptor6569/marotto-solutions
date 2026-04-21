@@ -19,8 +19,10 @@ export default async function AdminDashboard() {
     const leads = await getDocuments('lead');
 
     const recentInvoices = invoices.slice(0, 5);
-    const activeEstimates = estimates.filter(e => e.status !== 'void').slice(0, 5);
-    const activeQuotes = quotes.filter(q => q.status !== 'void').slice(0, 5);
+    const activeEstimatesList = estimates.filter((e) => e.status !== "void");
+    const activeQuotesList = quotes.filter((q) => q.status !== "void");
+    const recentActiveEstimates = activeEstimatesList.slice(0, 5);
+    const recentActiveQuotes = activeQuotesList.slice(0, 5);
     const recentReceipts = receipts.slice(0, 5);
     const recentLeads = leads.slice(0, 5);
 
@@ -79,52 +81,78 @@ export default async function AdminDashboard() {
             </Flex>
 
             <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '5' }} gap="4" mb="5">
-                <Card>
-                    <Flex align="center" gap="3">
-                        <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
-                        <Box>
-                            <Text size="2" color="gray">Invoices</Text>
-                            <Heading size="6">{invoices.length}</Heading>
-                        </Box>
-                    </Flex>
-                </Card>
-                <Card>
-                    <Flex align="center" gap="3">
-                        <Box style={{ color: "var(--amber-9)" }}><ClipboardList size={18} /></Box>
-                        <Box>
-                            <Text size="2" color="gray">Active Estimates</Text>
-                            <Heading size="6">{activeEstimates.length}</Heading>
-                        </Box>
-                    </Flex>
-                </Card>
-                <Card>
-                    <Flex align="center" gap="3">
-                        <Box style={{ color: "var(--teal-9)" }}><BadgeCheck size={18} /></Box>
-                        <Box>
-                            <Text size="2" color="gray">Active Quotes</Text>
-                            <Heading size="6">{activeQuotes.length}</Heading>
-                        </Box>
-                    </Flex>
-                </Card>
-                <Card>
-                    <Flex align="center" gap="3">
-                        <Box style={{ color: "var(--green-9)" }}><ReceiptText size={18} /></Box>
-                        <Box>
-                            <Text size="2" color="gray">Receipts</Text>
-                            <Heading size="6">{receipts.length}</Heading>
-                        </Box>
-                    </Flex>
-                </Card>
-                <Card>
-                    <Flex align="center" gap="3">
-                        <Box style={{ color: "var(--violet-9)" }}><Users size={18} /></Box>
-                        <Box>
-                            <Text size="2" color="gray">Leads</Text>
-                            <Heading size="6">{leads.length}</Heading>
-                        </Box>
-                    </Flex>
-                </Card>
+                <Link href="/admin/invoices" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Invoices</Text>
+                                <Heading size="6">{invoices.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/estimates" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--amber-9)" }}><ClipboardList size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Active Estimates</Text>
+                                <Heading size="6">{activeEstimatesList.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/quotes" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--teal-9)" }}><BadgeCheck size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Active Quotes</Text>
+                                <Heading size="6">{activeQuotesList.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/receipts" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--green-9)" }}><ReceiptText size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Receipts</Text>
+                                <Heading size="6">{receipts.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/leads" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--violet-9)" }}><Users size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Leads</Text>
+                                <Heading size="6">{leads.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
             </Grid>
+
+            <style>{`
+                .admin-stat-card {
+                    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+                }
+                a:focus-visible .admin-stat-card {
+                    outline: 2px solid var(--blue-9);
+                    outline-offset: 2px;
+                }
+                @media (hover: hover) {
+                    a:hover .admin-stat-card {
+                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                        border-color: var(--gray-8);
+                    }
+                }
+            `}</style>
 
             <Grid columns={{ initial: '1', md: '2', lg: '3' }} gap="4">
                 {/* Recent Invoices */}
@@ -173,11 +201,11 @@ export default async function AdminDashboard() {
                             <Link href="/admin/estimates">View all</Link>
                         </Button>
                     </Flex>
-                    {activeEstimates.length === 0 ? (
+                    {recentActiveEstimates.length === 0 ? (
                         <Text size="2" color="gray">No active estimates.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
-                            {activeEstimates.map(est => (
+                            {recentActiveEstimates.map(est => (
                                 <Link
                                     key={est.id}
                                     href={`/admin/estimates/${est.id}`}
@@ -211,11 +239,11 @@ export default async function AdminDashboard() {
                             <Link href="/admin/quotes">View all</Link>
                         </Button>
                     </Flex>
-                    {activeQuotes.length === 0 ? (
+                    {recentActiveQuotes.length === 0 ? (
                         <Text size="2" color="gray">No active quotes.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
-                            {activeQuotes.map((q) => (
+                            {recentActiveQuotes.map((q) => (
                                 <Link
                                     key={q.id}
                                     href={`/admin/quotes/${q.id}`}
@@ -243,7 +271,12 @@ export default async function AdminDashboard() {
 
                 {/* Recent Receipts */}
                 <Card>
-                    <Heading size="4" mb="3">Recent Receipts</Heading>
+                    <Flex justify="between" align="center" mb="3">
+                        <Heading size="4">Recent Receipts</Heading>
+                        <Button asChild size="1" variant="soft">
+                            <Link href="/admin/receipts">View all</Link>
+                        </Button>
+                    </Flex>
                     {recentReceipts.length === 0 ? (
                         <Text size="2" color="gray">No recent receipts.</Text>
                     ) : (
@@ -275,16 +308,27 @@ export default async function AdminDashboard() {
 
                 {/* Recent Leads */}
                 <Card>
-                    <Heading size="4" mb="3">Recent Leads</Heading>
+                    <Flex justify="between" align="center" mb="3">
+                        <Heading size="4">Recent Leads</Heading>
+                        <Button asChild size="1" variant="soft">
+                            <Link href="/admin/leads">View all</Link>
+                        </Button>
+                    </Flex>
                     {recentLeads.length === 0 ? (
                         <Text size="2" color="gray">No leads yet.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
-                            {recentLeads.map(lead => (
-                                <Flex key={lead.id} direction="column" gap="1">
-                                    <Text size="2" weight="bold">{lead.customer.name}</Text>
-                                    <Text size="1" color="gray">{new Date(lead.date).toLocaleDateString()}</Text>
-                                </Flex>
+                            {recentLeads.map((lead) => (
+                                <Link
+                                    key={lead.id}
+                                    href={`/admin/leads/${lead.id}`}
+                                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                                >
+                                    <Flex direction="column" gap="1" py="1">
+                                        <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{lead.customer.name}</Text>
+                                        <Text size="1" color="gray">{new Date(lead.date).toLocaleDateString()}</Text>
+                                    </Flex>
+                                </Link>
                             ))}
                         </Flex>
                     )}
