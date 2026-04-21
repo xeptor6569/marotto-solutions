@@ -1,13 +1,15 @@
 import { Container } from "@radix-ui/themes";
 import NewDocumentForm from "@/components/NewInvoiceForm"; // Assuming I didn't rename the file yet, just component default export
 import { getNextNumber } from "@/lib/data";
+import { getClientOptions } from "@/lib/clients";
 
 export default async function NewInvoicePage() {
     const nextNumber = await getNextNumber('invoice');
+    const clients = await getClientOptions();
 
     return (
         <Container size="3" p="5">
-            <NewDocumentForm nextNumber={nextNumber} type="invoice" />
+            <NewDocumentForm nextNumber={nextNumber} type="invoice" clients={clients} />
         </Container>
     );
 }

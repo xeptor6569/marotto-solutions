@@ -2,9 +2,11 @@ import { Container, Flex, Heading } from "@radix-ui/themes";
 import NewDocumentForm from "@/components/NewInvoiceForm";
 import { getNextNumber } from "@/lib/data";
 import BackButton from "@/components/BackButton";
+import { getClientOptions } from "@/lib/clients";
 
 export default async function NewReceiptPage() {
     const nextNumber = await getNextNumber('receipt');
+    const clients = await getClientOptions();
 
     return (
         <Container size="3" p="5">
@@ -12,7 +14,7 @@ export default async function NewReceiptPage() {
                 <Heading>Create New Receipt</Heading>
                 <BackButton />
             </Flex>
-            <NewDocumentForm nextNumber={nextNumber} type="receipt" />
+            <NewDocumentForm nextNumber={nextNumber} type="receipt" clients={clients} />
         </Container>
     );
 }

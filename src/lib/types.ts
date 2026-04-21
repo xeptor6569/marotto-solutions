@@ -15,6 +15,19 @@ export interface Customer {
     email?: string;
     address?: string;
     phone?: string;
+    clientId?: string;
+}
+
+export type PaymentKind = 'partial' | 'down_payment' | 'final';
+
+export interface PaymentEntry {
+    id: string;
+    amount: number;
+    date: string;
+    method?: string;
+    notes?: string;
+    kind: PaymentKind;
+    receiptId?: string;
 }
 
 export interface DocumentData {
@@ -35,6 +48,9 @@ export interface DocumentData {
     tags: string[];
     createdAt: string;
     updatedAt: string;
+    payments?: PaymentEntry[];
+    paidAmount?: number;
+    balanceDue?: number;
 }
 
 export type PaymentMethodKey =

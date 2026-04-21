@@ -40,12 +40,14 @@ export default async function DocumentPreview({
     const activePaymentMethods = doc.type === "invoice"
         ? Object.values(config.billing?.paymentMethods || {}).filter((method) => method.enabled)
         : [];
+    const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
+    const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
 
     return (
-        <Container size="3" p="5" className="print-container">
-            <Flex justify="between" mb="4" className="no-print">
+        <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
+            <Flex justify="between" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
                 {showBackButton ? <BackButton href={backHref} /> : <Box />}
-                <Flex gap="2">
+                <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
                     {editHref ? (
                         <Button asChild variant="soft">
                             <Link href={editHref}>Edit {docTitle}</Link>
@@ -66,9 +68,9 @@ export default async function DocumentPreview({
                 </Flex>
             </Flex>
 
-            <Card size="3" style={{ padding: "40px", background: "white", color: "#111827", border: "1px solid #d1d5db" }}>
+            <Card size="3" className="doc-card" style={{ background: "white", color: "#111827", border: "1px solid #d1d5db" }}>
                 <div className="receipt-content">
-                    <Flex justify="between" align="start" mb="6">
+                    <Flex justify="between" align="start" mb="6" className="doc-header">
                         <Box>
                             <Heading size="8" style={{ color: "#111827", marginBottom: 4 }}>MAROTTO</Heading>
                             <Text size="3" weight="bold" style={{ color: "#374151", letterSpacing: "2px" }}>SOLUTIONS</Text>
@@ -78,7 +80,7 @@ export default async function DocumentPreview({
                                 <Text as="div" size="2" style={{ color: "#1f2937" }}>(570) 332-9262</Text>
                             </Box>
                         </Box>
-                        <Box style={{ textAlign: "right" }}>
+                        <Box className="doc-meta" style={{ textAlign: "right" }}>
                             <Heading size="8" style={{ color: "#4b5563", textTransform: "uppercase" }}>{docTitle}</Heading>
                             <Flex direction="column" mt="2">
                                 <Text size="2" weight="bold" style={{ color: "#4b5563" }}>{docTitle.toUpperCase()} #</Text>
@@ -104,33 +106,35 @@ export default async function DocumentPreview({
                         {doc.customer.email ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.email}</Text> : null}
                     </Box>
 
-                    <Table.Root variant="surface" style={{ width: "100%", marginBottom: "30px" }}>
-                        <Table.Header>
-                            <Table.Row style={{ background: "#f3f4f6" }}>
-                                <Table.ColumnHeaderCell style={{ color: "#1f2937" }}>Description</Table.ColumnHeaderCell>
-                                <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Qty</Table.ColumnHeaderCell>
-                                <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Unit</Table.ColumnHeaderCell>
-                                <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Amount</Table.ColumnHeaderCell>
-                            </Table.Row>
-                        </Table.Header>
-                        <Table.Body>
-                            {doc.lineItems.map((item) => (
-                                <Table.Row key={item.id}>
-                                    <Table.Cell>
-                                        <Text weight="bold" style={{ color: "#111827" }}>{item.description}</Text>
-                                        {item.details ? (
-                                            <Text as="div" size="2" mt="2" style={{ color: "#374151", whiteSpace: "pre-line", lineHeight: 1.5 }}>
-                                                {item.details}
-                                            </Text>
-                                        ) : null}
-                                    </Table.Cell>
-                                    <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity}</Text></Table.Cell>
-                                    <Table.Cell align="right"><Text style={{ color: "#111827" }}>${item.unitPrice.toFixed(2)}</Text></Table.Cell>
-                                    <Table.Cell align="right"><Text style={{ color: "#111827" }}>${item.total.toFixed(2)}</Text></Table.Cell>
+                    <Box className="doc-table-wrap">
+                        <Table.Root variant="surface" style={{ width: "100%", marginBottom: "30px", minWidth: 560 }}>
+                            <Table.Header>
+                                <Table.Row style={{ background: "#f3f4f6" }}>
+                                    <Table.ColumnHeaderCell style={{ color: "#1f2937" }}>Description</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Qty</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Unit</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Amount</Table.ColumnHeaderCell>
                                 </Table.Row>
-                            ))}
-                        </Table.Body>
-                    </Table.Root>
+                            </Table.Header>
+                            <Table.Body>
+                                {doc.lineItems.map((item) => (
+                                    <Table.Row key={item.id}>
+                                        <Table.Cell>
+                                            <Text weight="bold" style={{ color: "#111827" }}>{item.description}</Text>
+                                            {item.details ? (
+                                                <Text as="div" size="2" mt="2" style={{ color: "#374151", whiteSpace: "pre-line", lineHeight: 1.5 }}>
+                                                    {item.details}
+                                                </Text>
+                                            ) : null}
+                                        </Table.Cell>
+                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity}</Text></Table.Cell>
+                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${item.unitPrice.toFixed(2)}</Text></Table.Cell>
+                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${item.total.toFixed(2)}</Text></Table.Cell>
+                                    </Table.Row>
+                                ))}
+                            </Table.Body>
+                        </Table.Root>
+                    </Box>
 
                     {doc.notes ? (
                         <Box
@@ -238,8 +242,8 @@ export default async function DocumentPreview({
                         </Box>
                     ) : null}
 
-                    <Flex justify="between" align="end">
-                        <Box>
+                    <Flex justify="between" align="end" className="doc-summary">
+                        <Box className="doc-status">
                             <Text
                                 size="5"
                                 weight="bold"
@@ -257,7 +261,19 @@ export default async function DocumentPreview({
                             </Text>
                         </Box>
 
-                        <Box style={{ width: "240px" }}>
+                        <Box className="doc-totals" style={{ width: "240px" }}>
+                            {doc.type === "invoice" ? (
+                                <>
+                                    <Flex justify="between" py="2">
+                                        <Text size="2" style={{ color: "#4b5563" }}>Paid</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${paidAmount.toFixed(2)}</Text>
+                                    </Flex>
+                                    <Flex justify="between" py="2">
+                                        <Text size="2" style={{ color: "#4b5563" }}>Balance Due</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${balanceDue.toFixed(2)}</Text>
+                                    </Flex>
+                                </>
+                            ) : null}
                             <Flex justify="between" py="2">
                                 <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
                                 <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
@@ -272,6 +288,44 @@ export default async function DocumentPreview({
             </Card>
 
             <style>{`
+              .doc-card {
+                padding: 40px;
+              }
+              .doc-table-wrap {
+                overflow-x: auto;
+              }
+              @media (max-width: 768px) {
+                .doc-card {
+                  padding: 18px;
+                }
+                .doc-toolbar {
+                  align-items: stretch;
+                }
+                .doc-toolbar-actions {
+                  width: 100%;
+                }
+                .doc-toolbar-actions > * {
+                  flex: 1 1 calc(50% - 8px);
+                }
+                .doc-header {
+                  flex-direction: column;
+                  gap: 14px;
+                }
+                .doc-meta {
+                  text-align: left !important;
+                }
+                .doc-summary {
+                  flex-direction: column;
+                  align-items: stretch;
+                  gap: 16px;
+                }
+                .doc-status {
+                  align-self: flex-start;
+                }
+                .doc-totals {
+                  width: 100% !important;
+                }
+              }
               @media print {
                 body { background: white; }
                 .no-print { display: none !important; }

@@ -9,10 +9,16 @@ export default async function AdminQuotesPage() {
     const quotes = await getDocuments("quote");
 
     return (
-        <Container size="4" p="5">
-            <Flex justify="between" align="center" mb="5">
+        <Container size="4" p={{ initial: "3", sm: "5" }}>
+            <Flex
+                justify="between"
+                align={{ initial: "stretch", sm: "center" }}
+                direction={{ initial: "column", sm: "row" }}
+                gap="3"
+                mb="5"
+            >
                 <Heading size="7">Quotes</Heading>
-                <Flex gap="2">
+                <Flex gap="2" wrap="wrap" justify={{ initial: "start", sm: "end" }}>
                     <Button asChild>
                         <Link href="/admin/quotes/new"><Plus size={16} /> New Quote</Link>
                     </Button>

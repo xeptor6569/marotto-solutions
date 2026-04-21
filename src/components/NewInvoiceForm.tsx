@@ -4,18 +4,21 @@ import { Heading, Card, Button, Flex, Box, Text, TextField, Grid, Table, TextAre
 import { PlusIcon, TrashIcon, SaveIcon } from "lucide-react";
 import { useState } from 'react';
 import { createInvoiceAction } from '@/app/actions';
-import { DocumentData, LineItem } from "@/lib/types";
+import { DocumentData, LineItem, PaymentEntry, PaymentKind } from "@/lib/types";
+import { ClientOption } from "@/lib/clients";
 
 export default function NewDocumentForm({
     nextNumber,
     type,
     initialData,
     redirectTo,
+    clients = [],
 }: {
     nextNumber: number,
     type: 'invoice' | 'estimate' | 'quote' | 'receipt',
     initialData?: DocumentData,
-    redirectTo?: string
+    redirectTo?: string,
+    clients?: ClientOption[]
 }) {
     const [lineItems, setLineItems] = useState<LineItem[]>([
         ...(initialData?.lineItems?.length
@@ -24,6 +27,13 @@ export default function NewDocumentForm({
     ]);
 
     const currentStatus = initialData?.status || 'draft';
+    const [selectedClientId, setSelectedClientId] = useState(initialData?.customer?.clientId || '');
+    const [payments] = useState<PaymentEntry[]>(initialData?.payments || []);
+    const [paymentAmount, setPaymentAmount] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState('');
+    const [paymentKind, setPaymentKind] = useState<PaymentKind>('partial');
+    const [paymentNotes, setPaymentNotes] = useState('');
+    const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
     const docLabel = type.charAt(0).toUpperCase() + type.slice(1);
     const notesLabel =
         type === 'estimate' ? 'Project Description' :
@@ -34,6 +44,7 @@ export default function NewDocumentForm({
             { intent: 'draft', label: 'Save Draft', variant: 'soft' as const },
             { intent: 'sent', label: 'Save as Sent', variant: 'solid' as const },
             { intent: 'paid', label: 'Save as Paid', variant: 'outline' as const },
+            { intent: 'record_payment', label: 'Record Payment', variant: 'outline' as const },
         ]
         : type === 'estimate'
             ? [
@@ -73,6 +84,22 @@ export default function NewDocumentForm({
     };
 
     const subtotal = lineItems.reduce((acc, item) => acc + item.total, 0);
+    const paidAmount = (initialData?.paidAmount ?? payments.reduce((acc, payment) => acc + payment.amount, 0));
+    const balanceDue = Math.max(0, subtotal - paidAmount);
+
+    const handleClientChange = (id: string) => {
+        setSelectedClientId(id);
+        const selected = clients.find((client) => client.id === id);
+        if (!selected) return;
+        const setInputValue = (name: string, value: string) => {
+            const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
+            if (input) input.value = value;
+        };
+        setInputValue('customerName', selected.name || '');
+        setInputValue('customerEmail', selected.email || '');
+        setInputValue('customerAddress', selected.address || '');
+    };
+
     return (
         <form action={createInvoiceAction}>
             <input type="hidden" name="type" value={type} />
@@ -80,6 +107,10 @@ export default function NewDocumentForm({
             <input type="hidden" name="createdAt" value={initialData?.createdAt || ''} />
             <input type="hidden" name="redirectTo" value={redirectTo || `/admin`} />
             <input type="hidden" name="currentStatus" value={currentStatus} />
+            <input type="hidden" name="clientId" value={selectedClientId} />
+            <input type="hidden" name="paymentsJson" value={JSON.stringify(payments)} />
+            <input type="hidden" name="paidAmount" value={paidAmount} />
+            <input type="hidden" name="balanceDue" value={balanceDue} />
             <Flex direction="column" gap="5">
                 <Flex direction={{ initial: 'column', md: 'row' }} justify="between" align={{ initial: 'start', md: 'center' }} gap="3">
                     <Box>
@@ -117,6 +148,21 @@ export default function NewDocumentForm({
                     <Card>
                         <Heading size="3" mb="3">Customer Information</Heading>
                         <Flex direction="column" gap="3">
+                            {clients.length > 0 ? (
+                                <Box>
+                                    <Text as="label" size="2">Select Existing Client</Text>
+                                    <select
+                                        value={selectedClientId}
+                                        onChange={(e) => handleClientChange(e.target.value)}
+                                        style={{ width: '100%', marginTop: 6, borderRadius: 8, minHeight: 36, padding: '0 10px' }}
+                                    >
+                                        <option value="">Manual entry</option>
+                                        {clients.map((client) => (
+                                            <option key={client.id} value={client.id}>{client.name}</option>
+                                        ))}
+                                    </select>
+                                </Box>
+                            ) : null}
                             <Box>
                                 <Text as="label" size="2">Name</Text>
                                 <TextField.Root name="customerName" placeholder="Client Name" defaultValue={initialData?.customer?.name} required />
@@ -237,6 +283,57 @@ export default function NewDocumentForm({
                         <Heading size="4">Total: ${subtotal.toFixed(2)}</Heading>
                     </Flex>
                 </Card>
+
+                {type === 'invoice' ? (
+                    <Card>
+                        <Heading size="3" mb="3">Payments</Heading>
+                        <Text size="2" color="gray">Paid: ${paidAmount.toFixed(2)} · Balance due: ${balanceDue.toFixed(2)}</Text>
+                        {payments.length > 0 ? (
+                            <Box mt="3">
+                                {payments.map((payment) => (
+                                    <Text key={payment.id} as="div" size="2">
+                                        {new Date(payment.date).toLocaleDateString()} - ${payment.amount.toFixed(2)} ({payment.kind.replace('_', ' ')})
+                                        {payment.receiptId ? ` -> ${payment.receiptId}` : ''}
+                                    </Text>
+                                ))}
+                            </Box>
+                        ) : null}
+                        <Grid columns={{ initial: '1', md: '2' }} gap="3" mt="3">
+                            <Box>
+                                <Text as="label" size="2">Amount</Text>
+                                <TextField.Root name="paymentAmount" type="number" min="0" step="0.01" value={paymentAmount} onChange={(e) => setPaymentAmount(e.target.value)} />
+                            </Box>
+                            <Box>
+                                <Text as="label" size="2">Date</Text>
+                                <TextField.Root name="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
+                            </Box>
+                            <Box>
+                                <Text as="label" size="2">Method</Text>
+                                <TextField.Root name="paymentMethod" placeholder="Cash, check, zelle..." value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} />
+                            </Box>
+                            <Box>
+                                <Text as="label" size="2">Payment Type</Text>
+                                <select
+                                    name="paymentKind"
+                                    value={paymentKind}
+                                    onChange={(e) => setPaymentKind(e.target.value as PaymentKind)}
+                                    style={{ width: '100%', marginTop: 6, borderRadius: 8, minHeight: 36, padding: '0 10px' }}
+                                >
+                                    <option value="partial">Partial payment</option>
+                                    <option value="down_payment">Down payment</option>
+                                    <option value="final">Final payment</option>
+                                </select>
+                            </Box>
+                        </Grid>
+                        <Box mt="3">
+                            <Text as="label" size="2">Payment Notes</Text>
+                            <TextArea name="paymentNotes" value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} />
+                        </Box>
+                        <Text size="1" color="gray" mt="2" as="p">
+                            Use &quot;Record Payment&quot; to save this invoice, append payment history, and auto-create a receipt.
+                        </Text>
+                    </Card>
+                ) : null}
             </Flex>
         </form>
     );

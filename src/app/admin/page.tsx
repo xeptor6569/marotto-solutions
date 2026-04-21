@@ -25,7 +25,7 @@ export default async function AdminDashboard() {
     const recentLeads = leads.slice(0, 5);
 
     return (
-        <Container size="4" p="5">
+        <Container size="4" p={{ initial: "3", sm: "5" }}>
             <Flex direction={{ initial: "column", md: "row" }} justify="between" align={{ initial: "start", md: "center" }} gap="4" mb="5">
                 <Box>
                     <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -140,16 +140,26 @@ export default async function AdminDashboard() {
                     ) : (
                         <Flex direction="column" gap="2">
                             {recentInvoices.map(inv => (
-                                <Flex key={inv.id} justify="between" align="center" asChild>
-                                    <Link href={`/admin/invoices/${inv.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                                        <Box>
-                                            <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
+                                <Link
+                                    key={inv.id}
+                                    href={`/admin/invoices/${inv.id}`}
+                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                                >
+                                    <Flex
+                                        direction={{ initial: "column", sm: "row" }}
+                                        justify="between"
+                                        align={{ initial: "start", sm: "center" }}
+                                        gap="2"
+                                        py="1"
+                                    >
+                                        <Box style={{ minWidth: 0, flex: 1 }}>
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>#{inv.number} — {inv.customer.name}</Text>
                                             {inv.title ? <Box><Text size="1">{inv.title}</Text></Box> : null}
                                             <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
                                         </Box>
-                                        <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
-                                    </Link>
-                                </Flex>
+                                        <Badge color={inv.status === 'paid' ? 'green' : 'orange'} style={{ flexShrink: 0 }}>{inv.status}</Badge>
+                                    </Flex>
+                                </Link>
                             ))}
                         </Flex>
                     )}
@@ -168,16 +178,26 @@ export default async function AdminDashboard() {
                     ) : (
                         <Flex direction="column" gap="2">
                             {activeEstimates.map(est => (
-                                <Flex key={est.id} justify="between" align="center" asChild>
-                                    <Link href={`/admin/estimates/${est.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                                        <Box>
-                                            <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
+                                <Link
+                                    key={est.id}
+                                    href={`/admin/estimates/${est.id}`}
+                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                                >
+                                    <Flex
+                                        direction={{ initial: "column", sm: "row" }}
+                                        justify="between"
+                                        align={{ initial: "start", sm: "center" }}
+                                        gap="2"
+                                        py="1"
+                                    >
+                                        <Box style={{ minWidth: 0, flex: 1 }}>
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>#{est.number} — {est.customer.name}</Text>
                                             {est.title ? <Box><Text size="1">{est.title}</Text></Box> : null}
                                             <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
                                         </Box>
-                                        <Badge color="blue">{est.status}</Badge>
-                                    </Link>
-                                </Flex>
+                                        <Badge color="blue" style={{ flexShrink: 0 }}>{est.status}</Badge>
+                                    </Flex>
+                                </Link>
                             ))}
                         </Flex>
                     )}
@@ -196,16 +216,26 @@ export default async function AdminDashboard() {
                     ) : (
                         <Flex direction="column" gap="2">
                             {activeQuotes.map((q) => (
-                                <Flex key={q.id} justify="between" align="center" asChild>
-                                    <Link href={`/admin/quotes/${q.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                                        <Box>
-                                            <Text size="2" weight="bold">#{q.number} - {q.customer.name}</Text>
+                                <Link
+                                    key={q.id}
+                                    href={`/admin/quotes/${q.id}`}
+                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                                >
+                                    <Flex
+                                        direction={{ initial: "column", sm: "row" }}
+                                        justify="between"
+                                        align={{ initial: "start", sm: "center" }}
+                                        gap="2"
+                                        py="1"
+                                    >
+                                        <Box style={{ minWidth: 0, flex: 1 }}>
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>#{q.number} — {q.customer.name}</Text>
                                             {q.title ? <Box><Text size="1">{q.title}</Text></Box> : null}
                                             <Box><Text size="1" color="gray">{new Date(q.date).toLocaleDateString()}</Text></Box>
                                         </Box>
-                                        <Badge color="blue">{q.status}</Badge>
-                                    </Link>
-                                </Flex>
+                                        <Badge color="blue" style={{ flexShrink: 0 }}>{q.status}</Badge>
+                                    </Flex>
+                                </Link>
                             ))}
                         </Flex>
                     )}
@@ -219,15 +249,25 @@ export default async function AdminDashboard() {
                     ) : (
                         <Flex direction="column" gap="2">
                             {recentReceipts.slice(0, 5).map(r => (
-                                <Flex key={r.id} justify="between" align="center" asChild>
-                                    <Link href={`/admin/receipts/${r.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
-                                        <Box>
-                                            <Text size="2" weight="bold">#{r.id}</Text>
+                                <Link
+                                    key={r.id}
+                                    href={`/admin/receipts/${r.id}`}
+                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                                >
+                                    <Flex
+                                        direction={{ initial: "column", sm: "row" }}
+                                        justify="between"
+                                        align={{ initial: "start", sm: "center" }}
+                                        gap="2"
+                                        py="1"
+                                    >
+                                        <Box style={{ minWidth: 0, flex: 1 }}>
+                                            <Text size="2" weight="bold">{r.id}</Text>
                                             <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
                                         </Box>
-                                        <Badge color="green">${r.total}</Badge>
-                                    </Link>
-                                </Flex>
+                                        <Badge color="green" style={{ flexShrink: 0 }}>${r.total.toFixed(2)}</Badge>
+                                    </Flex>
+                                </Link>
                             ))}
                         </Flex>
                     )}

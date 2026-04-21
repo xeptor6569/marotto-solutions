@@ -6,7 +6,17 @@ import { useState } from 'react';
 import { deleteClient } from './actions';
 import { useRouter } from 'next/navigation';
 
-export default function DeleteClientButton({ clientId, clientName }: { clientId: string; clientName: string }) {
+export default function DeleteClientButton({
+    clientId,
+    clientName,
+    size = '1',
+    fullWidth = false,
+}: {
+    clientId: string;
+    clientName: string;
+    size?: '1' | '2' | '3';
+    fullWidth?: boolean;
+}) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -25,7 +35,7 @@ export default function DeleteClientButton({ clientId, clientName }: { clientId:
     return (
         <AlertDialog.Root open={open} onOpenChange={setOpen}>
             <AlertDialog.Trigger>
-                <Button size="1" variant="soft" color="red">
+                <Button size={size} variant="soft" color="red" style={fullWidth ? { width: '100%' } : undefined}>
                     <Trash2 size={14} />
                 </Button>
             </AlertDialog.Trigger>

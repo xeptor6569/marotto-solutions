@@ -3,10 +3,12 @@ import { getDocumentById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import NewDocumentForm from "@/components/NewInvoiceForm";
 import BackButton from "@/components/BackButton";
+import { getClientOptions } from "@/lib/clients";
 
 export default async function EditInvoicePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const doc = await getDocumentById(id);
+    const clients = await getClientOptions();
 
     if (!doc || doc.type !== "invoice") {
         notFound();
@@ -23,6 +25,7 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
                 type="invoice"
                 initialData={doc}
                 redirectTo={`/admin/invoices/${doc.id}`}
+                clients={clients}
             />
         </Container>
     );
