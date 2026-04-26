@@ -212,11 +212,11 @@ export default function AdminDocumentList({
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Flex gap="2" wrap="wrap">
-                                                    <Button asChild size="1" variant="soft">
+                                                    <Button asChild size="2" variant="soft">
                                                         <Link href={`${base}/${doc.id}`}>Preview</Link>
                                                     </Button>
                                                     {showEdit ? (
-                                                        <Button asChild size="1">
+                                                        <Button asChild size="2">
                                                             <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
                                                         </Button>
                                                     ) : null}

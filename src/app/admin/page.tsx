@@ -1,9 +1,10 @@
-import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
-import { SettingsIcon, ChevronDown, Upload, LogOut, FileText, ReceiptText, ClipboardList, Users, BadgeCheck } from "lucide-react";
+import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "@radix-ui/themes";
+import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
-import { auth, signOut } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import AdminDashboardToolbar from "@/components/AdminDashboardToolbar";
 
 export default async function AdminDashboard() {
     const session = await auth();
@@ -35,49 +36,7 @@ export default async function AdminDashboard() {
                     </Link>
                     <Text size="3" color="gray">Admin dashboard for invoices, estimates, quotes, receipts, and leads.</Text>
                 </Box>
-                <Flex gap="3" align="center" wrap="wrap" justify={{ initial: "start", md: "end" }}>
-                    <Flex direction="column" align={{ initial: "start", md: "end" }} gap="1">
-                        <Text size="2" weight="bold">{session.user?.email}</Text>
-                        <form action={async () => {
-                            'use server';
-                            await signOut({ redirectTo: '/' });
-                        }}>
-                            <Button variant="ghost" size="1" type="submit">
-                                <LogOut size={14} /> Sign out
-                            </Button>
-                        </form>
-                    </Flex>
-
-                    <DropdownMenu.Root>
-                        <DropdownMenu.Trigger>
-                            <Button variant="solid" size="3">
-                                Create New <ChevronDown size={16} />
-                            </Button>
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content>
-                            <DropdownMenu.Item asChild>
-                                <Link href="/admin/estimates/new">Estimate</Link>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item asChild>
-                                <Link href="/admin/quotes/new">Quote</Link>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item asChild>
-                                <Link href="/admin/invoices/new">Invoice</Link>
-                            </DropdownMenu.Item>
-                            <DropdownMenu.Item asChild>
-                                <Link href="/admin/receipts/new">Receipt</Link>
-                            </DropdownMenu.Item>
-                        </DropdownMenu.Content>
-                    </DropdownMenu.Root>
-
-                    <Button size="3" variant="soft" asChild>
-                        <Link href="/admin/import"><Upload size={16} /> Import</Link>
-                    </Button>
-
-                    <Button size="3" variant="outline" asChild>
-                        <Link href="/admin/settings"><SettingsIcon size={16} /> Settings</Link>
-                    </Button>
-                </Flex>
+                <AdminDashboardToolbar email={session.user?.email ?? ""} />
             </Flex>
 
             <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '5' }} gap="4" mb="5">

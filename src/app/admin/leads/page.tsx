@@ -1,23 +1,27 @@
-import { Container, Flex, Heading } from "@radix-ui/themes";
+import { Container, Button } from "@radix-ui/themes";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import BackButton from "@/components/BackButton";
 import AdminDocumentList from "@/components/AdminDocumentList";
+import AdminListPageHeader from "@/components/AdminListPageHeader";
 
 export default async function AdminLeadsPage() {
     const leads = await getDocuments("lead");
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
-            <Flex
-                justify="between"
-                align={{ initial: "stretch", sm: "center" }}
-                direction={{ initial: "column", sm: "row" }}
-                gap="3"
-                mb="5"
-            >
-                <Heading size="7">Leads</Heading>
-                <BackButton href="/admin" />
-            </Flex>
+            <AdminListPageHeader
+                title="Leads"
+                actions={
+                    <>
+                        <Button asChild size="2" variant="solid">
+                            <Link href="/admin/leads/create"><Plus size={14} /> New lead</Link>
+                        </Button>
+                        <BackButton href="/admin" />
+                    </>
+                }
+            />
 
             <AdminDocumentList type="lead" docs={leads} />
         </Container>

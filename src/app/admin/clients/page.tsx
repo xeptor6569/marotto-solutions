@@ -1,9 +1,10 @@
-import { Container, Flex, Heading, Button, Card, Text } from "@radix-ui/themes";
+import { Container, Button, Card, Flex, Text } from "@radix-ui/themes";
 import { Plus } from "lucide-react";
 import { getClients } from "./actions";
 import ClientForm from "./ClientForm";
 import BackButton from "@/components/BackButton";
 import AdminClientsList from "@/components/AdminClientsList";
+import AdminListPageHeader from "@/components/AdminListPageHeader";
 
 export default async function ClientsPage() {
     const result = await getClients();
@@ -11,25 +12,21 @@ export default async function ClientsPage() {
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
-            <Flex
-                justify="between"
-                align={{ initial: "stretch", sm: "center" }}
-                direction={{ initial: "column", sm: "row" }}
-                gap="3"
-                mb="5"
-            >
-                <Heading size="7">Clients</Heading>
-                <Flex gap="2" wrap="wrap" justify={{ initial: "start", sm: "end" }}>
-                    <ClientForm
-                        trigger={
-                            <Button>
-                                <Plus size={16} /> Add Client
-                            </Button>
-                        }
-                    />
-                    <BackButton />
-                </Flex>
-            </Flex>
+            <AdminListPageHeader
+                title="Clients"
+                actions={
+                    <>
+                        <ClientForm
+                            trigger={
+                                <Button size="2" variant="solid">
+                                    <Plus size={14} /> Add client
+                                </Button>
+                            }
+                        />
+                        <BackButton href="/admin" />
+                    </>
+                }
+            />
 
             {clients.length === 0 ? (
                 <Card>
@@ -38,8 +35,8 @@ export default async function ClientsPage() {
                         <Text size="2" color="gray">Add your first client to get started</Text>
                         <ClientForm
                             trigger={
-                                <Button size="3">
-                                    <Plus size={16} /> Add Client
+                                <Button size="2" variant="solid">
+                                    <Plus size={14} /> Add client
                                 </Button>
                             }
                         />

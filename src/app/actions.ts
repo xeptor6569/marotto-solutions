@@ -1,9 +1,10 @@
 'use server';
 
+import { signOut } from '@/lib/auth';
 import { saveAppConfig } from '@/lib/config';
 import { AppConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
-import { saveNewDocument, getNextNumber } from '@/lib/data';
+import { saveNewDocument, getNextNumber, getDocumentById } from '@/lib/data';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -60,14 +61,25 @@ export async function createInvoiceAction(formData: FormData) {
     const paymentMethod = (formData.get('paymentMethod') as string) || '';
     const paymentNotes = (formData.get('paymentNotes') as string) || '';
     const selectedClientId = (formData.get('clientId') as string) || '';
+    const selectedLeadId = (formData.get('leadId') as string) || '';
 
     const customer: Customer = {
         id: crypto.randomUUID(),
         name: formData.get('customerName') as string,
         email: formData.get('customerEmail') as string,
         address: formData.get('customerAddress') as string,
+        phone: ((formData.get('customerPhone') as string) || '').trim() || undefined,
         clientId: selectedClientId || undefined,
+        leadId: selectedLeadId || undefined,
     };
+
+    if (selectedLeadId) {
+        const leadDoc = await getDocumentById(selectedLeadId);
+        if (leadDoc?.type === 'lead') {
+            customer.leadId = selectedLeadId;
+            customer.id = leadDoc.customer.id;
+        }
+    }
 
     // Parse items from flat form data
     // items[0][description], items[0][quantity]...
@@ -182,11 +194,60 @@ export async function createInvoiceAction(formData: FormData) {
 
     revalidatePath('/dashboard');
     revalidatePath('/admin');
+    if (selectedLeadId) {
+        revalidatePath('/admin/leads');
+    }
     revalidatePath(`/admin/${type}s`);
     revalidatePath(`/${type}s`);
     revalidatePath(`/admin/${type}s/${doc.id}`);
     revalidatePath(`/${type}s/${doc.id}`);
     redirect(redirectTo);
+}
+
+export async function createLeadAction(formData: FormData) {
+    const name = (formData.get('name') as string)?.trim();
+    if (!name) {
+        throw new Error('Name is required');
+    }
+    const email = ((formData.get('email') as string) || '').trim();
+    const phone = ((formData.get('phone') as string) || '').trim();
+    const address = ((formData.get('address') as string) || '').trim();
+    const notes = ((formData.get('notes') as string) || '').trim();
+
+    const number = await getNextNumber('lead');
+    const customerId = email || crypto.randomUUID();
+
+    const doc: DocumentData = {
+        id: `LEAD-${String(number).padStart(4, '0')}`,
+        number,
+        type: 'lead',
+        date: new Date().toISOString(),
+        customer: {
+            id: customerId,
+            name,
+            email: email || undefined,
+            phone: phone || undefined,
+            address: address || undefined,
+        },
+        lineItems: [],
+        subtotal: 0,
+        total: 0,
+        status: 'draft',
+        notes: notes || undefined,
+        tags: ['lead', 'manual'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    await saveNewDocument(doc);
+    revalidatePath('/admin');
+    revalidatePath('/admin/leads');
+    revalidatePath(`/admin/leads/${doc.id}`);
+    redirect(`/admin/leads/${doc.id}`);
+}
+
+export async function signOutFromAdmin() {
+    await signOut({ redirectTo: '/' });
 }
 
 function initialDataPayments(formData: FormData): PaymentEntry[] {

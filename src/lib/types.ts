@@ -16,6 +16,8 @@ export interface Customer {
     address?: string;
     phone?: string;
     clientId?: string;
+    /** When set, ties this document to a lead record (e.g. for a future client portal). */
+    leadId?: string;
 }
 
 export type PaymentKind = 'partial' | 'down_payment' | 'final';

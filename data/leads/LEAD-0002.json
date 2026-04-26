@@ -1,0 +1,22 @@
+{
+  "id": "LEAD-0002",
+  "number": 2,
+  "type": "lead",
+  "date": "2026-04-22T01:46:52.369Z",
+  "customer": {
+    "id": "birmlex@verizon.net",
+    "name": "Donna Ricker",
+    "email": "birmlex@verizon.net"
+  },
+  "lineItems": [],
+  "subtotal": 0,
+  "total": 0,
+  "status": "draft",
+  "notes": "Family & Friends. Bob and Donna Ricker",
+  "tags": [
+    "lead",
+    "manual"
+  ],
+  "createdAt": "2026-04-22T01:46:52.369Z",
+  "updatedAt": "2026-04-22T01:46:52.369Z"
+}

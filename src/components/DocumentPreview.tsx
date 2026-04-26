@@ -104,6 +104,10 @@ export default async function DocumentPreview({
                         <Heading size="4" mt="1" style={{ color: "#111827" }}>{doc.customer.name}</Heading>
                         <Text as="div" size="2" style={{ whiteSpace: "pre-line", color: "#1f2937" }}>{doc.customer.address}</Text>
                         {doc.customer.email ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.email}</Text> : null}
+                        {doc.customer.phone ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.phone}</Text> : null}
+                        {doc.customer.leadId && doc.type !== "lead" ? (
+                            <Text as="div" size="1" color="gray" mt="2">Linked lead: {doc.customer.leadId}</Text>
+                        ) : null}
                     </Box>
 
                     <Box className="doc-table-wrap">

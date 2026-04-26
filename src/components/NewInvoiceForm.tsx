@@ -6,6 +6,9 @@ import { useState } from 'react';
 import { createInvoiceAction } from '@/app/actions';
 import { DocumentData, LineItem, PaymentEntry, PaymentKind } from "@/lib/types";
 import { ClientOption } from "@/lib/clients";
+import type { LeadOption } from "@/lib/leads";
+
+const nativeSelectStyle = { width: "100%", marginTop: 6, borderRadius: 8, minHeight: 36, padding: "0 10px" } as const;
 
 export default function NewDocumentForm({
     nextNumber,
@@ -13,12 +16,14 @@ export default function NewDocumentForm({
     initialData,
     redirectTo,
     clients = [],
+    leads = [],
 }: {
     nextNumber: number,
     type: 'invoice' | 'estimate' | 'quote' | 'receipt',
     initialData?: DocumentData,
     redirectTo?: string,
-    clients?: ClientOption[]
+    clients?: ClientOption[],
+    leads?: LeadOption[],
 }) {
     const [lineItems, setLineItems] = useState<LineItem[]>([
         ...(initialData?.lineItems?.length
@@ -28,6 +33,7 @@ export default function NewDocumentForm({
 
     const currentStatus = initialData?.status || 'draft';
     const [selectedClientId, setSelectedClientId] = useState(initialData?.customer?.clientId || '');
+    const [selectedLeadId, setSelectedLeadId] = useState(initialData?.customer?.leadId || '');
     const [payments] = useState<PaymentEntry[]>(initialData?.payments || []);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('');
@@ -87,17 +93,33 @@ export default function NewDocumentForm({
     const paidAmount = (initialData?.paidAmount ?? payments.reduce((acc, payment) => acc + payment.amount, 0));
     const balanceDue = Math.max(0, subtotal - paidAmount);
 
+    const setCustomerInputValue = (name: string, value: string) => {
+        const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
+        if (input) input.value = value;
+    };
+
+    const handleLeadChange = (id: string) => {
+        setSelectedLeadId(id);
+        setSelectedClientId('');
+        if (!id) return;
+        const selected = leads.find((lead) => lead.id === id);
+        if (!selected) return;
+        setCustomerInputValue('customerName', selected.name || '');
+        setCustomerInputValue('customerEmail', selected.email || '');
+        setCustomerInputValue('customerPhone', selected.phone || '');
+        setCustomerInputValue('customerAddress', selected.address || '');
+    };
+
     const handleClientChange = (id: string) => {
         setSelectedClientId(id);
+        setSelectedLeadId('');
+        if (!id) return;
         const selected = clients.find((client) => client.id === id);
         if (!selected) return;
-        const setInputValue = (name: string, value: string) => {
-            const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
-            if (input) input.value = value;
-        };
-        setInputValue('customerName', selected.name || '');
-        setInputValue('customerEmail', selected.email || '');
-        setInputValue('customerAddress', selected.address || '');
+        setCustomerInputValue('customerName', selected.name || '');
+        setCustomerInputValue('customerEmail', selected.email || '');
+        setCustomerInputValue('customerPhone', '');
+        setCustomerInputValue('customerAddress', selected.address || '');
     };
 
     return (
@@ -108,6 +130,7 @@ export default function NewDocumentForm({
             <input type="hidden" name="redirectTo" value={redirectTo || `/admin`} />
             <input type="hidden" name="currentStatus" value={currentStatus} />
             <input type="hidden" name="clientId" value={selectedClientId} />
+            <input type="hidden" name="leadId" value={selectedLeadId} />
             <input type="hidden" name="paymentsJson" value={JSON.stringify(payments)} />
             <input type="hidden" name="paidAmount" value={paidAmount} />
             <input type="hidden" name="balanceDue" value={balanceDue} />
@@ -137,7 +160,7 @@ export default function NewDocumentForm({
                     <input type="hidden" name="number" value={initialData?.number || nextNumber} />
                     <Flex gap="2" wrap="wrap">
                         {actionButtons.map((button) => (
-                            <Button key={button.label} type="submit" name="intent" value={button.intent} variant={button.variant}>
+                            <Button key={button.label} type="submit" name="intent" value={button.intent} variant={button.variant} size="2">
                                 <SaveIcon size={16} /> {button.label}
                             </Button>
                         ))}
@@ -148,20 +171,42 @@ export default function NewDocumentForm({
                     <Card>
                         <Heading size="3" mb="3">Customer Information</Heading>
                         <Flex direction="column" gap="3">
+                            {leads.length > 0 ? (
+                                <Box>
+                                    <Text as="label" size="2">Select existing lead</Text>
+                                    <select
+                                        value={selectedLeadId}
+                                        onChange={(e) => handleLeadChange(e.target.value)}
+                                        style={nativeSelectStyle}
+                                    >
+                                        <option value="">None</option>
+                                        {leads.map((lead) => (
+                                            <option key={lead.id} value={lead.id}>
+                                                #{lead.number} — {lead.name}{lead.email ? ` (${lead.email})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Box>
+                            ) : null}
                             {clients.length > 0 ? (
                                 <Box>
-                                    <Text as="label" size="2">Select Existing Client</Text>
+                                    <Text as="label" size="2">Select existing client</Text>
                                     <select
                                         value={selectedClientId}
                                         onChange={(e) => handleClientChange(e.target.value)}
-                                        style={{ width: '100%', marginTop: 6, borderRadius: 8, minHeight: 36, padding: '0 10px' }}
+                                        style={nativeSelectStyle}
                                     >
-                                        <option value="">Manual entry</option>
+                                        <option value="">None</option>
                                         {clients.map((client) => (
                                             <option key={client.id} value={client.id}>{client.name}</option>
                                         ))}
                                     </select>
                                 </Box>
+                            ) : null}
+                            {(leads.length > 0 || clients.length > 0) ? (
+                                <Text size="1" color="gray">
+                                    Link a lead or saved client so documents can be matched to the same person when they sign in later.
+                                </Text>
                             ) : null}
                             <Box>
                                 <Text as="label" size="2">Name</Text>
@@ -170,6 +215,10 @@ export default function NewDocumentForm({
                             <Box>
                                 <Text as="label" size="2">Email</Text>
                                 <TextField.Root name="customerEmail" type="email" placeholder="client@example.com" defaultValue={initialData?.customer?.email} />
+                            </Box>
+                            <Box>
+                                <Text as="label" size="2">Phone</Text>
+                                <TextField.Root name="customerPhone" type="tel" placeholder="Optional" defaultValue={initialData?.customer?.phone} />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Address</Text>
@@ -317,7 +366,7 @@ export default function NewDocumentForm({
                                     name="paymentKind"
                                     value={paymentKind}
                                     onChange={(e) => setPaymentKind(e.target.value as PaymentKind)}
-                                    style={{ width: '100%', marginTop: 6, borderRadius: 8, minHeight: 36, padding: '0 10px' }}
+                                    style={nativeSelectStyle}
                                 >
                                     <option value="partial">Partial payment</option>
                                     <option value="down_payment">Down payment</option>
