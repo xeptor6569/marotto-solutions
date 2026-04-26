@@ -30,6 +30,9 @@ export default function AdminDashboardToolbar({ email }: { email: string }) {
                         </DropdownMenu.Item>
                         <DropdownMenu.Separator />
                         <DropdownMenu.Item asChild>
+                            <Link href="/admin/jobs/create">Job</Link>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Item asChild>
                             <Link href="/admin/estimates/new">Estimate</Link>
                         </DropdownMenu.Item>
                         <DropdownMenu.Item asChild>
@@ -53,6 +56,9 @@ export default function AdminDashboardToolbar({ email }: { email: string }) {
                     <Link href="/admin/settings">
                         <Settings size={14} aria-hidden /> Settings
                     </Link>
+                </Button>
+                <Button asChild size="2" variant="soft">
+                    <Link href="/admin/jobs">Jobs</Link>
                 </Button>
                 <form action={signOutFromAdmin} style={{ display: "inline-flex" }}>
                     <Button type="submit" variant="ghost" size="2">

@@ -5,6 +5,7 @@ import { saveAppConfig } from '@/lib/config';
 import { AppConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById } from '@/lib/data';
+import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -62,6 +63,7 @@ export async function createInvoiceAction(formData: FormData) {
     const paymentNotes = (formData.get('paymentNotes') as string) || '';
     const selectedClientId = (formData.get('clientId') as string) || '';
     const selectedLeadId = (formData.get('leadId') as string) || '';
+    const selectedJobId = (formData.get('jobId') as string) || '';
 
     const customer: Customer = {
         id: crypto.randomUUID(),
@@ -71,6 +73,7 @@ export async function createInvoiceAction(formData: FormData) {
         phone: ((formData.get('customerPhone') as string) || '').trim() || undefined,
         clientId: selectedClientId || undefined,
         leadId: selectedLeadId || undefined,
+        jobId: selectedJobId || undefined,
     };
 
     if (selectedLeadId) {
@@ -113,6 +116,7 @@ export async function createInvoiceAction(formData: FormData) {
         date,
         dueDate,
         customer,
+        jobId: selectedJobId || undefined,
         lineItems: items,
         subtotal,
         total,
@@ -161,6 +165,7 @@ export async function createInvoiceAction(formData: FormData) {
                     type: 'receipt',
                     date: latestPayment.date,
                     customer: doc.customer,
+                    jobId: doc.jobId,
                     lineItems: [
                         {
                             id: crypto.randomUUID(),
@@ -197,6 +202,10 @@ export async function createInvoiceAction(formData: FormData) {
     if (selectedLeadId) {
         revalidatePath('/admin/leads');
     }
+    if (selectedJobId) {
+        revalidatePath('/admin/jobs');
+        revalidatePath(`/admin/jobs/${selectedJobId}`);
+    }
     revalidatePath(`/admin/${type}s`);
     revalidatePath(`/${type}s`);
     revalidatePath(`/admin/${type}s/${doc.id}`);
@@ -213,6 +222,7 @@ export async function createLeadAction(formData: FormData) {
     const phone = ((formData.get('phone') as string) || '').trim();
     const address = ((formData.get('address') as string) || '').trim();
     const notes = ((formData.get('notes') as string) || '').trim();
+    const selectedJobId = ((formData.get('jobId') as string) || '').trim();
 
     const number = await getNextNumber('lead');
     const customerId = email || crypto.randomUUID();
@@ -228,7 +238,9 @@ export async function createLeadAction(formData: FormData) {
             email: email || undefined,
             phone: phone || undefined,
             address: address || undefined,
+            jobId: selectedJobId || undefined,
         },
+        jobId: selectedJobId || undefined,
         lineItems: [],
         subtotal: 0,
         total: 0,
@@ -243,11 +255,42 @@ export async function createLeadAction(formData: FormData) {
     revalidatePath('/admin');
     revalidatePath('/admin/leads');
     revalidatePath(`/admin/leads/${doc.id}`);
+    if (selectedJobId) {
+        revalidatePath('/admin/jobs');
+        revalidatePath(`/admin/jobs/${selectedJobId}`);
+    }
     redirect(`/admin/leads/${doc.id}`);
 }
 
 export async function signOutFromAdmin() {
     await signOut({ redirectTo: '/' });
+}
+
+export async function createJobAction(input: {
+    name: string;
+    description?: string;
+    status?: string;
+    clientId?: string;
+    leadId?: string;
+}) {
+    const name = input.name?.trim();
+    if (!name) {
+        return { success: false as const, error: 'Job name is required' as const };
+    }
+    const job = await createJob({
+        name,
+        description: input.description?.trim() || '',
+        status: input.status || 'active',
+        clientId: input.clientId || '',
+        leadId: input.leadId || '',
+    });
+    revalidatePath('/admin');
+    revalidatePath('/admin/jobs');
+    return { success: true as const, job };
+}
+
+export async function getJobOptionsForForm(params?: { clientId?: string; leadId?: string }) {
+    return getJobOptions(params);
 }
 
 function initialDataPayments(formData: FormData): PaymentEntry[] {

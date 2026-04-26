@@ -18,6 +18,8 @@ export interface Customer {
     clientId?: string;
     /** When set, ties this document to a lead record (e.g. for a future client portal). */
     leadId?: string;
+    /** Job grouping key for future client portal + document timelines. */
+    jobId?: string;
 }
 
 export type PaymentKind = 'partial' | 'down_payment' | 'final';
@@ -50,9 +52,19 @@ export interface DocumentData {
     tags: string[];
     createdAt: string;
     updatedAt: string;
+    /** Optional grouping key that links this document to a Prisma Job. */
+    jobId?: string;
     payments?: PaymentEntry[];
     paidAmount?: number;
     balanceDue?: number;
+}
+
+export interface JobOption {
+    id: string;
+    name: string;
+    status: string;
+    clientId?: string | null;
+    leadId?: string | null;
 }
 
 export type PaymentMethodKey =

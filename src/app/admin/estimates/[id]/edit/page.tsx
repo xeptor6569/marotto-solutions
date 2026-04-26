@@ -9,7 +9,7 @@ import AdminListPageHeader from "@/components/AdminListPageHeader";
 export default async function EditEstimatePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const doc = await getDocumentById(id);
-    const { clients, leads } = await getDocumentFormPickers();
+    const { clients, leads, jobs } = await getDocumentFormPickers();
 
     if (!doc || doc.type !== "estimate") {
         notFound();
@@ -28,6 +28,7 @@ export default async function EditEstimatePage({ params }: { params: Promise<{ i
                 redirectTo={`/admin/estimates/${doc.id}`}
                 clients={clients}
                 leads={leads}
+                jobs={jobs}
             />
         </Container>
     );

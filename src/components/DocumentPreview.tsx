@@ -108,6 +108,9 @@ export default async function DocumentPreview({
                         {doc.customer.leadId && doc.type !== "lead" ? (
                             <Text as="div" size="1" color="gray" mt="2">Linked lead: {doc.customer.leadId}</Text>
                         ) : null}
+                        {doc.jobId ? (
+                            <Text as="div" size="1" color="gray" mt="1">Linked job: {doc.jobId}</Text>
+                        ) : null}
                     </Box>
 
                     <Box className="doc-table-wrap">

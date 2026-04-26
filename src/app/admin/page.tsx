@@ -1,10 +1,11 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "@radix-ui/themes";
-import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck } from "lucide-react";
+import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminDashboardToolbar from "@/components/AdminDashboardToolbar";
+import { getJobs } from "@/lib/jobs";
 
 export default async function AdminDashboard() {
     const session = await auth();
@@ -18,6 +19,7 @@ export default async function AdminDashboard() {
     const quotes = await getDocuments('quote');
     const receipts = await getDocuments('receipt');
     const leads = await getDocuments('lead');
+    const jobs = await getJobs();
 
     const recentInvoices = invoices.slice(0, 5);
     const activeEstimatesList = estimates.filter((e) => e.status !== "void");
@@ -39,7 +41,7 @@ export default async function AdminDashboard() {
                 <AdminDashboardToolbar email={session.user?.email ?? ""} />
             </Flex>
 
-            <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '5' }} gap="4" mb="5">
+            <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '6' }} gap="4" mb="5">
                 <Link href="/admin/invoices" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                     <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
                         <Flex align="center" gap="3">
@@ -91,6 +93,17 @@ export default async function AdminDashboard() {
                             <Box>
                                 <Text size="2" color="gray">Leads</Text>
                                 <Heading size="6">{leads.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/jobs" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--indigo-9)" }}><Briefcase size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Jobs</Text>
+                                <Heading size="6">{jobs.length}</Heading>
                             </Box>
                         </Flex>
                     </Card>

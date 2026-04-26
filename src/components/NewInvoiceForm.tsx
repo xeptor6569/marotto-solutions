@@ -2,9 +2,9 @@
 
 import { Heading, Card, Button, Flex, Box, Text, TextField, Grid, Table, TextArea, Badge } from "@radix-ui/themes";
 import { PlusIcon, TrashIcon, SaveIcon } from "lucide-react";
-import { useState } from 'react';
-import { createInvoiceAction } from '@/app/actions';
-import { DocumentData, LineItem, PaymentEntry, PaymentKind } from "@/lib/types";
+import { useState, useTransition } from 'react';
+import { createInvoiceAction, createJobAction } from '@/app/actions';
+import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption } from "@/lib/types";
 import { ClientOption } from "@/lib/clients";
 import type { LeadOption } from "@/lib/leads";
 
@@ -17,6 +17,7 @@ export default function NewDocumentForm({
     redirectTo,
     clients = [],
     leads = [],
+    jobs = [],
 }: {
     nextNumber: number,
     type: 'invoice' | 'estimate' | 'quote' | 'receipt',
@@ -24,6 +25,7 @@ export default function NewDocumentForm({
     redirectTo?: string,
     clients?: ClientOption[],
     leads?: LeadOption[],
+    jobs?: JobOption[],
 }) {
     const [lineItems, setLineItems] = useState<LineItem[]>([
         ...(initialData?.lineItems?.length
@@ -34,6 +36,12 @@ export default function NewDocumentForm({
     const currentStatus = initialData?.status || 'draft';
     const [selectedClientId, setSelectedClientId] = useState(initialData?.customer?.clientId || '');
     const [selectedLeadId, setSelectedLeadId] = useState(initialData?.customer?.leadId || '');
+    const [selectedJobId, setSelectedJobId] = useState(initialData?.jobId || initialData?.customer?.jobId || '');
+    const [jobOptions, setJobOptions] = useState<JobOption[]>(jobs);
+    const [newJobName, setNewJobName] = useState('');
+    const [newJobDescription, setNewJobDescription] = useState('');
+    const [jobError, setJobError] = useState('');
+    const [isCreatingJob, startCreateJob] = useTransition();
     const [payments] = useState<PaymentEntry[]>(initialData?.payments || []);
     const [paymentAmount, setPaymentAmount] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('');
@@ -122,6 +130,39 @@ export default function NewDocumentForm({
         setCustomerInputValue('customerAddress', selected.address || '');
     };
 
+    const handleCreateJob = () => {
+        const name = newJobName.trim();
+        if (!name) {
+            setJobError('Job name is required');
+            return;
+        }
+        setJobError('');
+        startCreateJob(async () => {
+            const result = await createJobAction({
+                name,
+                description: newJobDescription.trim(),
+                clientId: selectedClientId || undefined,
+                leadId: selectedLeadId || undefined,
+            });
+            if (!result.success) {
+                setJobError(result.error || 'Unable to create job');
+                return;
+            }
+            const created = result.job;
+            const option: JobOption = {
+                id: created.id,
+                name: created.name,
+                status: created.status,
+                clientId: created.clientId,
+                leadId: created.leadId,
+            };
+            setJobOptions((prev) => [option, ...prev.filter((item) => item.id !== option.id)]);
+            setSelectedJobId(option.id);
+            setNewJobName('');
+            setNewJobDescription('');
+        });
+    };
+
     return (
         <form action={createInvoiceAction}>
             <input type="hidden" name="type" value={type} />
@@ -131,6 +172,7 @@ export default function NewDocumentForm({
             <input type="hidden" name="currentStatus" value={currentStatus} />
             <input type="hidden" name="clientId" value={selectedClientId} />
             <input type="hidden" name="leadId" value={selectedLeadId} />
+            <input type="hidden" name="jobId" value={selectedJobId} />
             <input type="hidden" name="paymentsJson" value={JSON.stringify(payments)} />
             <input type="hidden" name="paidAmount" value={paidAmount} />
             <input type="hidden" name="balanceDue" value={balanceDue} />
@@ -171,6 +213,44 @@ export default function NewDocumentForm({
                     <Card>
                         <Heading size="3" mb="3">Customer Information</Heading>
                         <Flex direction="column" gap="3">
+                            {jobOptions.length > 0 ? (
+                                <Box>
+                                    <Text as="label" size="2">Select existing job</Text>
+                                    <select
+                                        value={selectedJobId}
+                                        onChange={(e) => setSelectedJobId(e.target.value)}
+                                        style={nativeSelectStyle}
+                                    >
+                                        <option value="">None</option>
+                                        {jobOptions.map((job) => (
+                                            <option key={job.id} value={job.id}>
+                                                {job.name} ({job.status})
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Box>
+                            ) : null}
+                            <Box>
+                                <Text as="label" size="2">Quick create job</Text>
+                                <Flex mt="1" gap="2" direction={{ initial: 'column', sm: 'row' }}>
+                                    <TextField.Root
+                                        placeholder="Job name"
+                                        value={newJobName}
+                                        onChange={(e) => setNewJobName(e.target.value)}
+                                    />
+                                    <Button type="button" variant="soft" onClick={handleCreateJob} disabled={isCreatingJob}>
+                                        {isCreatingJob ? 'Creating...' : 'Create Job'}
+                                    </Button>
+                                </Flex>
+                                <TextArea
+                                    mt="2"
+                                    placeholder="Optional job description"
+                                    rows={2}
+                                    value={newJobDescription}
+                                    onChange={(e) => setNewJobDescription(e.target.value)}
+                                />
+                                {jobError ? <Text as="p" size="1" color="red" mt="1">{jobError}</Text> : null}
+                            </Box>
                             {leads.length > 0 ? (
                                 <Box>
                                     <Text as="label" size="2">Select existing lead</Text>

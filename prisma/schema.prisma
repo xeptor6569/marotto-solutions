@@ -67,6 +67,39 @@ model Client {
   phone     String?
   address   String?
   notes     String?
+  jobs      Job[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Job {
+  id          String          @id @default(uuid())
+  name        String
+  status      String          @default("active")
+  description String?
+  clientId    String?
+  leadId      String?
+  client      Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  attachments JobAttachment[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([clientId])
+  @@index([leadId])
+  @@index([status])
+}
+
+model JobAttachment {
+  id         String   @id @default(uuid())
+  jobId      String
+  filename   String
+  mimeType   String
+  sizeBytes  Int
+  storagePath String
+  note       String?
+  uploadedAt DateTime @default(now())
+  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([uploadedAt])
 }

@@ -9,7 +9,7 @@ import AdminListPageHeader from "@/components/AdminListPageHeader";
 export default async function EditQuotePage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const doc = await getDocumentById(id);
-    const { clients, leads } = await getDocumentFormPickers();
+    const { clients, leads, jobs } = await getDocumentFormPickers();
 
     if (!doc || doc.type !== "quote") {
         notFound();
@@ -28,6 +28,7 @@ export default async function EditQuotePage({ params }: { params: Promise<{ id: 
                 redirectTo={`/admin/quotes/${doc.id}`}
                 clients={clients}
                 leads={leads}
+                jobs={jobs}
             />
         </Container>
     );

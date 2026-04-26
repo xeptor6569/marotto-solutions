@@ -2,6 +2,7 @@
 
 import { Box, Button, Card, Flex, Table, Text } from "@radix-ui/themes";
 import { Mail, Phone, MapPin, Edit } from "lucide-react";
+import Link from "next/link";
 import ClientForm from "@/app/admin/clients/ClientForm";
 import DeleteClientButton from "@/app/admin/clients/DeleteClientButton";
 
@@ -54,6 +55,13 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                             </Flex>
                             <Text size="1" color="gray">Added {new Date(client.createdAt).toLocaleDateString()}</Text>
                             <Flex gap="2" style={{ width: "100%" }}>
+                                <Box style={{ flex: 1, minWidth: 0 }}>
+                                    <Button asChild size="2" variant="soft" style={{ width: "100%" }}>
+                                        <Link href={`/admin/jobs/create?clientId=${encodeURIComponent(client.id)}&name=${encodeURIComponent(`${client.name} job`)}`}>
+                                            New Job
+                                        </Link>
+                                    </Button>
+                                </Box>
                                 <Box style={{ flex: 1, minWidth: 0 }}>
                                     <ClientForm
                                         client={client}
@@ -128,6 +136,11 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                                     </Table.Cell>
                                     <Table.Cell>
                                         <Flex gap="2">
+                                            <Button asChild size="1" variant="soft">
+                                                <Link href={`/admin/jobs/create?clientId=${encodeURIComponent(client.id)}&name=${encodeURIComponent(`${client.name} job`)}`}>
+                                                    Job
+                                                </Link>
+                                            </Button>
                                             <ClientForm
                                                 client={client}
                                                 trigger={

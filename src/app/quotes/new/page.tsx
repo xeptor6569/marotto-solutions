@@ -5,11 +5,11 @@ import { getDocumentFormPickers } from "@/lib/document-form-pickers";
 
 export default async function NewQuotePage() {
     const nextNumber = await getNextNumber('quote');
-    const { clients, leads } = await getDocumentFormPickers();
+    const { clients, leads, jobs } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p="5">
-            <NewDocumentForm nextNumber={nextNumber} type="quote" clients={clients} leads={leads} />
+            <NewDocumentForm nextNumber={nextNumber} type="quote" clients={clients} leads={leads} jobs={jobs} />
         </Container>
     );
 }
