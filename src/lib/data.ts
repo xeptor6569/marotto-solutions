@@ -49,6 +49,12 @@ async function saveDocumentLocal(doc: DocumentData) {
 // Since it's for 1 user, direct WebDAV with short cache is okay.
 const CACHE_TTL = 30 * 1000; // 30 seconds
 const cache: Record<string, { data: DocumentData[], timestamp: number }> = {};
+const NUMBER_BASELINE: Partial<Record<DocumentType, number>> = {
+    invoice: 200,
+    estimate: 200,
+    quote: 200,
+    receipt: 200,
+};
 
 export async function getDocuments(type: DocumentType): Promise<DocumentData[]> {
     // Check cache first
@@ -112,8 +118,9 @@ export async function getNextNumber(type: DocumentType): Promise<number> {
     // Optimization: Store last number in config (less reliable if files added externally) or dedicated counter file.
     // Simpler/Robust: Scan all.
     const docs = await getDocuments(type);
-    if (docs.length === 0) return 1;
+    const baseline = NUMBER_BASELINE[type] ?? 1;
+    if (docs.length === 0) return baseline;
 
     const max = Math.max(...docs.map(d => d.number || 0));
-    return max + 1;
+    return Math.max(max + 1, baseline);
 }
