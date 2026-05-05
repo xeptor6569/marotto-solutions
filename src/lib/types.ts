@@ -20,6 +20,8 @@ export interface Customer {
     leadId?: string;
     /** Job grouping key for future client portal + document timelines. */
     jobId?: string;
+    /** Prospect classification used by the client intake flow. */
+    clientStage?: 'lead' | 'potential_client';
 }
 
 export type PaymentKind = 'partial' | 'down_payment' | 'final';

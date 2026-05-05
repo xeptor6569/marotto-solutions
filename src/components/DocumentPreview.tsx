@@ -106,7 +106,12 @@ export default async function DocumentPreview({
                         {doc.customer.email ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.email}</Text> : null}
                         {doc.customer.phone ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.phone}</Text> : null}
                         {doc.customer.leadId && doc.type !== "lead" ? (
-                            <Text as="div" size="1" color="gray" mt="2">Linked lead: {doc.customer.leadId}</Text>
+                            <Text as="div" size="1" color="gray" mt="2">Linked client record: {doc.customer.leadId}</Text>
+                        ) : null}
+                        {doc.type === "lead" ? (
+                            <Text as="div" size="1" color="gray" mt="1">
+                                Client stage: {doc.customer.clientStage === "potential_client" ? "Potential Client" : "Lead"}
+                            </Text>
                         ) : null}
                         {doc.jobId ? (
                             <Text as="div" size="1" color="gray" mt="1">Linked job: {doc.jobId}</Text>

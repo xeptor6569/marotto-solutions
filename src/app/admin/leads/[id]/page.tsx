@@ -19,7 +19,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
                     <Link
                         href={`/admin/jobs/create?leadId=${encodeURIComponent(doc.id)}&name=${encodeURIComponent(`${doc.customer.name} job`)}`}
                     >
-                        Create job from lead
+                        Create job from client
                     </Link>
                 </Button>
             </Flex>

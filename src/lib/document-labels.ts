@@ -5,5 +5,5 @@ export const DOC_LABEL: Record<DocumentData['type'], string> = {
     estimate: 'Estimate',
     quote: 'Quote',
     receipt: 'Receipt',
-    lead: 'Lead',
+    lead: 'Client',
 };

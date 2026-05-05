@@ -253,7 +253,7 @@ export default function NewDocumentForm({
                             </Box>
                             {leads.length > 0 ? (
                                 <Box>
-                                    <Text as="label" size="2">Select existing lead</Text>
+                                    <Text as="label" size="2">Select existing client record</Text>
                                     <select
                                         value={selectedLeadId}
                                         onChange={(e) => handleLeadChange(e.target.value)}
@@ -285,7 +285,7 @@ export default function NewDocumentForm({
                             ) : null}
                             {(leads.length > 0 || clients.length > 0) ? (
                                 <Text size="1" color="gray">
-                                    Link a lead or saved client so documents can be matched to the same person when they sign in later.
+                                    Link a client record or saved client so documents can be matched to the same person when they sign in later.
                                 </Text>
                             ) : null}
                             <Box>

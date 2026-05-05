@@ -12,11 +12,11 @@ export default async function AdminLeadsPage() {
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
             <AdminListPageHeader
-                title="Leads"
+                title="Clients"
                 actions={
                     <>
                         <Button asChild size="2" variant="solid">
-                            <Link href="/admin/leads/create"><Plus size={14} /> New lead</Link>
+                            <Link href="/admin/leads/create"><Plus size={14} /> New client</Link>
                         </Button>
                         <BackButton href="/admin" />
                     </>

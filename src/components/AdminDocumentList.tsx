@@ -35,11 +35,11 @@ function docNumberLabel(type: AdminDocumentListType) {
     if (type === "quote") return "Quote #";
     if (type === "estimate") return "Estimate #";
     if (type === "receipt") return "Receipt #";
-    return "Lead #";
+    return "Client #";
 }
 
 function searchPlaceholder(type: AdminDocumentListType) {
-    if (type === "lead") return "Search leads by id, number, name, email, notes…";
+    if (type === "lead") return "Search clients by id, number, name, email, notes…";
     return `Search ${type}s by number, id, customer…`;
 }
 
@@ -146,10 +146,15 @@ export default function AdminDocumentList({
                                         <Badge color={badgeColor(doc.status)}>{doc.status}</Badge>
                                     </Flex>
                                     <Box>
-                                        <Text size="1" color="gray" weight="bold">Customer</Text>
+                                        <Text size="1" color="gray" weight="bold">{type === "lead" ? "Client" : "Customer"}</Text>
                                         <Text as="div" weight="medium">{doc.customer.name}</Text>
                                         {doc.customer.email ? (
                                             <Text as="div" size="2" color="gray" style={{ wordBreak: "break-word" }}>{doc.customer.email}</Text>
+                                        ) : null}
+                                        {type === "lead" ? (
+                                            <Text as="div" size="1" color="gray">
+                                                Stage: {doc.customer.clientStage === "potential_client" ? "Potential Client" : "Lead"}
+                                            </Text>
                                         ) : null}
                                     </Box>
                                     <Flex justify="between" align="center" gap="2" wrap="wrap">
@@ -186,7 +191,7 @@ export default function AdminDocumentList({
                                         <Table.ColumnHeaderCell>
                                             {numberLabel}
                                         </Table.ColumnHeaderCell>
-                                        <Table.ColumnHeaderCell>Customer</Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell>{type === "lead" ? "Client" : "Customer"}</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell align="right">Total</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
@@ -204,6 +209,11 @@ export default function AdminDocumentList({
                                             <Table.Cell>
                                                 <Text weight="bold">{doc.customer.name}</Text>
                                                 {doc.customer.email ? <Text as="div" size="1" color="gray">{doc.customer.email}</Text> : null}
+                                                {type === "lead" ? (
+                                                    <Text as="div" size="1" color="gray">
+                                                        {doc.customer.clientStage === "potential_client" ? "Potential Client" : "Lead"}
+                                                    </Text>
+                                                ) : null}
                                             </Table.Cell>
                                             <Table.Cell>{new Date(doc.date).toLocaleDateString()}</Table.Cell>
                                             <Table.Cell align="right">${doc.total.toFixed(2)}</Table.Cell>

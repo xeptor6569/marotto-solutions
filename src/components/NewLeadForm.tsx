@@ -8,8 +8,19 @@ export default function NewLeadForm() {
         <form action={createLeadAction}>
             <Flex direction="column" gap="4">
                 <Card>
-                    <Heading size="4" mb="3">Lead details</Heading>
+                    <Heading size="4" mb="3">Client details</Heading>
                     <Flex direction="column" gap="3">
+                        <Box>
+                            <Text as="label" size="2" weight="medium">Client Stage</Text>
+                            <select
+                                name="clientStage"
+                                defaultValue="lead"
+                                style={{ width: "100%", marginTop: 6, borderRadius: 8, minHeight: 36, padding: "0 10px" }}
+                            >
+                                <option value="lead">Lead</option>
+                                <option value="potential_client">Potential Client</option>
+                            </select>
+                        </Box>
                         <Box>
                             <Text as="label" size="2" weight="medium">Name</Text>
                             <TextField.Root name="name" placeholder="Contact name" required mt="1" />
@@ -39,7 +50,7 @@ export default function NewLeadForm() {
                 </Card>
                 <Flex gap="2" wrap="wrap">
                     <Button type="submit" size="2" variant="solid">
-                        Save lead
+                        Save client
                     </Button>
                 </Flex>
             </Flex>

@@ -36,7 +36,7 @@ export default async function AdminDashboard() {
                     <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                         <Heading size="8">Marotto Solutions</Heading>
                     </Link>
-                    <Text size="3" color="gray">Admin dashboard for invoices, estimates, quotes, receipts, and leads.</Text>
+                    <Text size="3" color="gray">Admin dashboard for invoices, estimates, quotes, receipts, and clients.</Text>
                 </Box>
                 <AdminDashboardToolbar email={session.user?.email ?? ""} />
             </Flex>
@@ -91,7 +91,7 @@ export default async function AdminDashboard() {
                         <Flex align="center" gap="3">
                             <Box style={{ color: "var(--violet-9)" }}><Users size={18} /></Box>
                             <Box>
-                                <Text size="2" color="gray">Leads</Text>
+                                <Text size="2" color="gray">Clients</Text>
                                 <Heading size="6">{leads.length}</Heading>
                             </Box>
                         </Flex>
@@ -278,16 +278,16 @@ export default async function AdminDashboard() {
                     )}
                 </Card>
 
-                {/* Recent Leads */}
+                {/* Recent Clients */}
                 <Card>
                     <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Recent Leads</Heading>
+                        <Heading size="4">Recent Clients</Heading>
                         <Button asChild size="1" variant="soft">
                             <Link href="/admin/leads">View all</Link>
                         </Button>
                     </Flex>
                     {recentLeads.length === 0 ? (
-                        <Text size="2" color="gray">No leads yet.</Text>
+                        <Text size="2" color="gray">No clients yet.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
                             {recentLeads.map((lead) => (

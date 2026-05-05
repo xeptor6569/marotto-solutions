@@ -1,8 +1,8 @@
 'use server';
 
 import { signOut } from '@/lib/auth';
-import { saveAppConfig } from '@/lib/config';
-import { AppConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind } from '@/lib/types';
+import { getAppConfig, saveAppConfig } from '@/lib/config';
+import { AppConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById } from '@/lib/data';
 import { createJob, getJobOptions } from '@/lib/jobs';
@@ -23,23 +23,63 @@ function getPaymentKind(intent: string | null): PaymentKind {
 }
 
 export async function saveSettingsAction(formData: FormData) {
-    const url = formData.get('webdavUrl') as string;
-    const username = formData.get('webdavUsername') as string;
-    const password = formData.get('webdavPassword') as string;
+    const url = ((formData.get('webdavUrl') as string) || '').trim();
+    const username = ((formData.get('webdavUsername') as string) || '').trim();
+    const password = ((formData.get('webdavPassword') as string) || '').trim();
+    const checkPayableTo = ((formData.get('checkPayableTo') as string) || '').trim();
+    const paymentInstructions = ((formData.get('paymentInstructions') as string) || '').trim();
+    const paymentMethodKeys: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
+    const currentConfig = await getAppConfig();
 
     const configUpdate: Partial<AppConfig> = {
         webdavUrl: url,
         webdavUsername: username,
         webdavPassword: password, // Note: Storing plain text password locally. Ideal? No. Functional for self-hosted? Yes.
+        billing: {
+            checkPayableTo,
+            paymentInstructions,
+            paymentMethods: paymentMethodKeys.reduce((acc, key) => {
+                const existing = currentConfig.billing?.paymentMethods?.[key];
+                const currentLabel = existing?.label
+                    || (key === 'cash' ? 'Cash'
+                        : key === 'check' ? 'Check'
+                        : key === 'zelle' ? 'Zelle'
+                        : key === 'cashApp' ? 'Cash App'
+                        : key === 'paypal' ? 'PayPal'
+                        : key === 'venmo' ? 'Venmo'
+                        : key === 'applePay' ? 'Apple Pay'
+                        : 'Stripe');
+
+                acc[key] = {
+                    enabled: formData.has(`billing.${key}.enabled`),
+                    label: currentLabel,
+                    value: ((formData.get(`billing.${key}.value`) as string) || '').trim(),
+                    note: ((formData.get(`billing.${key}.note`) as string) || '').trim(),
+                    comingSoon: formData.has(`billing.${key}.comingSoon`),
+                };
+                return acc;
+            }, {} as AppConfig['billing']['paymentMethods']),
+        },
     };
 
-    // Verify connection
-    const isValid = await checkConnection(configUpdate as AppConfig, password);
-    if (!isValid) {
-        return { success: false, error: "Failed to connect to WebDAV with these credentials." };
+    const webdavConfigChanged =
+        url !== (currentConfig.webdavUrl || '')
+        || username !== (currentConfig.webdavUsername || '')
+        || password !== (currentConfig.webdavPassword || '');
+
+    if (webdavConfigChanged && url && username) {
+        const isValid = await Promise.race([
+            checkConnection(configUpdate as AppConfig, password),
+            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000)),
+        ]);
+        if (!isValid) {
+            return { success: false, error: "Failed to connect to WebDAV with these credentials." };
+        }
     }
 
     await saveAppConfig(configUpdate);
+    revalidatePath('/admin/settings');
+    revalidatePath('/settings');
     revalidatePath('/');
     revalidatePath('/dashboard');
     return { success: true };
@@ -223,6 +263,8 @@ export async function createLeadAction(formData: FormData) {
     const address = ((formData.get('address') as string) || '').trim();
     const notes = ((formData.get('notes') as string) || '').trim();
     const selectedJobId = ((formData.get('jobId') as string) || '').trim();
+    const rawClientStage = ((formData.get('clientStage') as string) || 'lead').trim();
+    const clientStage: 'lead' | 'potential_client' = rawClientStage === 'potential_client' ? 'potential_client' : 'lead';
 
     const number = await getNextNumber('lead');
     const customerId = email || crypto.randomUUID();
@@ -239,6 +281,7 @@ export async function createLeadAction(formData: FormData) {
             phone: phone || undefined,
             address: address || undefined,
             jobId: selectedJobId || undefined,
+            clientStage,
         },
         jobId: selectedJobId || undefined,
         lineItems: [],
@@ -246,7 +289,7 @@ export async function createLeadAction(formData: FormData) {
         total: 0,
         status: 'draft',
         notes: notes || undefined,
-        tags: ['lead', 'manual'],
+        tags: ['client', clientStage, 'manual'],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
