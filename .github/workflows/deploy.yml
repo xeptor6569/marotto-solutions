@@ -60,7 +60,7 @@ jobs:
           docker compose up -d --build --remove-orphans
 
       - name: Run Prisma migrations
-        run: docker compose exec -T web npx prisma migrate deploy
+        run: docker compose exec -T web npx prisma@6.2.0 migrate deploy --schema=/app/prisma/schema.prisma
 
       - name: Prune unused images
         run: docker image prune -f
