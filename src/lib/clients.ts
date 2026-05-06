@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 
 export interface ClientOption {
     id: string;
@@ -9,6 +9,9 @@ export interface ClientOption {
 }
 
 export async function getClientOptions(): Promise<ClientOption[]> {
+    if (!isDatabaseConfigured()) {
+        return [];
+    }
     try {
         return await prisma.client.findMany({
             orderBy: { name: 'asc' },

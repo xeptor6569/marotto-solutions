@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/prisma';
+import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import type { JobOption } from '@/lib/types';
 import { getDocuments } from '@/lib/data';
 
@@ -22,36 +22,60 @@ export interface JobDocumentCounts {
 }
 
 export async function getJobs(): Promise<JobRecord[]> {
-    return prisma.job.findMany({
-        orderBy: { createdAt: 'desc' },
-    });
+    if (!isDatabaseConfigured()) {
+        return [];
+    }
+    try {
+        return await prisma.job.findMany({
+            orderBy: { createdAt: 'desc' },
+        });
+    } catch (error) {
+        console.error('Failed to load jobs', error);
+        return [];
+    }
 }
 
 export async function getJobById(id: string): Promise<JobRecord | null> {
-    return prisma.job.findUnique({
-        where: { id },
-    });
+    if (!isDatabaseConfigured()) {
+        return null;
+    }
+    try {
+        return await prisma.job.findUnique({
+            where: { id },
+        });
+    } catch (error) {
+        console.error(`Failed to load job ${id}`, error);
+        return null;
+    }
 }
 
 export async function getJobOptions(params?: {
     clientId?: string;
     leadId?: string;
 }): Promise<JobOption[]> {
+    if (!isDatabaseConfigured()) {
+        return [];
+    }
     const where = {
         ...(params?.clientId ? { clientId: params.clientId } : {}),
         ...(params?.leadId ? { leadId: params.leadId } : {}),
     };
-    return prisma.job.findMany({
-        where,
-        orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
-        select: {
-            id: true,
-            name: true,
-            status: true,
-            clientId: true,
-            leadId: true,
-        },
-    });
+    try {
+        return await prisma.job.findMany({
+            where,
+            orderBy: [{ status: 'asc' }, { updatedAt: 'desc' }],
+            select: {
+                id: true,
+                name: true,
+                status: true,
+                clientId: true,
+                leadId: true,
+            },
+        });
+    } catch (error) {
+        console.error('Failed to load job options', error);
+        return [];
+    }
 }
 
 export async function createJob(data: {
