@@ -2,7 +2,7 @@
 
 import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
-import { AppConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey } from '@/lib/types';
+import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById } from '@/lib/data';
 import { createJob, getJobOptions } from '@/lib/jobs';
@@ -58,7 +58,7 @@ export async function saveSettingsAction(formData: FormData) {
                     comingSoon: formData.has(`billing.${key}.comingSoon`),
                 };
                 return acc;
-            }, {} as AppConfig['billing']['paymentMethods']),
+            }, {} as BillingConfig['paymentMethods']),
         },
     };
 
