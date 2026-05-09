@@ -61,6 +61,48 @@ export interface DocumentData {
     payments?: PaymentEntry[];
     paidAmount?: number;
     balanceDue?: number;
+    /** Set on invoices generated from a recurring service Contract. */
+    contractId?: string;
+    /** 1-based cycle number within the contract (1 = first invoice issued). */
+    contractCycle?: number;
+}
+
+export type ContractIntervalUnit = 'day' | 'month' | 'year';
+
+export type ContractStatus = 'active' | 'paused' | 'ended' | 'cancelled';
+
+export type ContractLineKind = 'recurring' | 'usage';
+
+export interface ContractLineInput {
+    id?: string;
+    kind: ContractLineKind;
+    description: string;
+    details?: string;
+    quantity: number;
+    unitPrice: number;
+    position?: number;
+}
+
+export interface ContractInput {
+    title: string;
+    status?: ContractStatus;
+    jobId?: string;
+    clientId?: string;
+    leadId?: string;
+    customerName: string;
+    customerEmail?: string;
+    customerPhone?: string;
+    customerAddress?: string;
+    intervalUnit: ContractIntervalUnit;
+    intervalCount: number;
+    startDate: string;
+    endDate?: string;
+    termCycles?: number;
+    autoRenew?: boolean;
+    autoSend?: boolean;
+    paymentTerms?: string;
+    notes?: string;
+    lines: ContractLineInput[];
 }
 
 export interface JobOption {

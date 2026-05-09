@@ -1,9 +1,10 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
-import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList, BadgeCheck } from "lucide-react";
+import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList, BadgeCheck, Repeat } from "lucide-react";
 import Link from 'next/link';
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getDocuments } from "@/lib/data";
+import { getContracts } from "@/lib/contracts";
 
 export default async function Home() {
   const session = await auth();
@@ -16,6 +17,8 @@ export default async function Home() {
   const estimates = await getDocuments('estimate');
   const quotes = await getDocuments('quote');
   const receipts = await getDocuments('receipt');
+  const contracts = await getContracts();
+  const activeContracts = contracts.filter((c) => c.status === 'active');
 
   const recentInvoices = invoices.slice(0, 5);
   const activeEstimates = estimates.filter(e => e.status !== 'void').slice(0, 5);
@@ -63,7 +66,7 @@ export default async function Home() {
         </Flex>
       </Flex>
 
-      <Grid columns={{ initial: '1', sm: '2', lg: '4' }} gap="4" mb="5">
+      <Grid columns={{ initial: '1', sm: '2', lg: '5' }} gap="4" mb="5">
         <Card>
           <Flex align="center" gap="3">
             <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
@@ -97,6 +100,15 @@ export default async function Home() {
             <Box>
               <Text size="2" color="gray">Receipts</Text>
               <Heading size="6">{receipts.length}</Heading>
+            </Box>
+          </Flex>
+        </Card>
+        <Card>
+          <Flex align="center" gap="3">
+            <Box style={{ color: "var(--cyan-9)" }}><Repeat size={18} /></Box>
+            <Box>
+              <Text size="2" color="gray">Active Contracts</Text>
+              <Heading size="6">{activeContracts.length}</Heading>
             </Box>
           </Flex>
         </Card>

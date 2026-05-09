@@ -61,15 +61,16 @@ model VerificationToken {
 
 // Client management
 model Client {
-  id        String   @id @default(uuid())
+  id        String     @id @default(uuid())
   name      String
   email     String?
   phone     String?
   address   String?
   notes     String?
   jobs      Job[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  contracts Contract[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Job {
@@ -81,6 +82,7 @@ model Job {
   leadId      String?
   client      Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
   attachments JobAttachment[]
+  contracts   Contract[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
@@ -90,16 +92,79 @@ model Job {
 }
 
 model JobAttachment {
-  id         String   @id @default(uuid())
-  jobId      String
-  filename   String
-  mimeType   String
-  sizeBytes  Int
+  id          String   @id @default(uuid())
+  jobId       String
+  filename    String
+  mimeType    String
+  sizeBytes   Int
   storagePath String
-  note       String?
-  uploadedAt DateTime @default(now())
-  job        Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  note        String?
+  uploadedAt  DateTime @default(now())
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@index([jobId])
   @@index([uploadedAt])
+}
+
+// Recurring service contract (e.g. on-call IT, monthly retainer).
+// Generated invoices are stored as JSON DocumentData files like every other
+// invoice; the link is the `contractId` field on DocumentData.
+model Contract {
+  id              String    @id @default(uuid())
+  number          Int       @unique
+  title           String
+  status          String    @default("active") // active | paused | ended | cancelled
+  jobId           String?
+  clientId        String?
+  leadId          String? // legacy lead document id (LEAD-XXXX)
+  customerName    String
+  customerEmail   String?
+  customerPhone   String?
+  customerAddress String?
+  intervalUnit    String // 'day' | 'month' | 'year'
+  intervalCount   Int       @default(1)
+  startDate       DateTime
+  endDate         DateTime?
+  termCycles      Int? // optional fixed number of cycles
+  autoRenew       Boolean   @default(false)
+  autoSend        Boolean   @default(false)
+  paymentTerms    String?
+  notes           String?
+  lastIssuedDate  DateTime?
+  nextDueDate     DateTime
+  cyclesIssued    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  lines  ContractLine[]
+  job    Job?           @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  client Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([nextDueDate])
+  @@index([clientId])
+  @@index([jobId])
+}
+
+model ContractLine {
+  id          String   @id @default(uuid())
+  contractId  String
+  kind        String // 'recurring' | 'usage'
+  description String
+  details     String?
+  quantity    Float    @default(1)
+  unitPrice   Float    @default(0)
+  position    Int      @default(0)
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+}
+
+// Atomic per-type counter for document number sequencing. Avoids race
+// conditions between manual issue, scheduler issue, and concurrent admin
+// saves now that contracts can mint invoice numbers programmatically.
+model DocumentCounter {
+  type      String   @id // 'invoice' | 'estimate' | 'quote' | 'receipt' | 'lead' | 'contract'
+  lastValue Int      @default(0)
+  updatedAt DateTime @updatedAt
 }

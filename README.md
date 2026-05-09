@@ -24,6 +24,12 @@ Marotto Solutions is a Next.js app that combines a public-facing services site w
 - Supports richer estimate content with multi-line project details and line-item detail text.
 - Supports explicit invoice and estimate save states such as draft, sent/finalized, and paid.
 
+### Recurring service contracts
+- Capture monthly/quarterly/annual retainers (e.g. on-call IT) with their schedule, term, scope, and recurring + usage line items.
+- Manually issue the next cycle's invoice from the contract detail page.
+- Optionally auto-issue and auto-email each cycle via a scheduler endpoint at `POST /api/cron/contracts` (driven by the bundled cron sidecar in `docker-compose.yml`).
+- Public preview at `/contracts/{CTR-XXXX}` lets you share a printable agreement with clients.
+
 ### Operations
 - Manage WebDAV settings from the UI.
 - Import receipt data from dedicated import screens.
@@ -51,6 +57,9 @@ Marotto Solutions is a Next.js app that combines a public-facing services site w
 - `/admin/invoices/*` - invoice list, create, preview, edit
 - `/admin/estimates/*` - estimate list, create, preview, edit
 - `/admin/receipts/*` - receipt list, create, preview, edit
+- `/admin/contracts/*` - recurring service contracts (list, create, preview, edit)
+- `/contracts/{CTR-XXXX}` - public preview of a service contract for client sign-off
+- `POST /api/cron/contracts` - protected scheduler endpoint (requires `X-Cron-Secret`)
 
 ## Authentication
 
@@ -162,6 +171,10 @@ See `.env.example` for the current template.
 ### Email auth values
 - `EMAIL_SERVER`
 - `EMAIL_FROM`
+
+### Service contract scheduler
+- `CRON_SECRET` — shared secret between the cron sidecar (or any external scheduler) and `POST /api/cron/contracts`.
+- `CONTRACTS_CRON_SCHEDULE` — optional cron expression for the bundled sidecar (default `15 8 * * *`).
 
 ### Port note
 If you change `APP_PORT`, update `NEXTAUTH_URL` to the same host/port so sign-in redirects stay correct.

@@ -1,5 +1,6 @@
 import { getAppConfig } from './config';
 import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote } from './webdav';
+import { isDatabaseConfigured, prisma } from './prisma';
 import { AppConfig, DocumentData, DocumentType } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -136,14 +137,36 @@ export async function deleteDocument(type: DocumentType, id: string) {
     delete cache[type];
 }
 
-export async function getNextNumber(type: DocumentType): Promise<number> {
-    // For now, scan all files to find max. 
-    // Optimization: Store last number in config (less reliable if files added externally) or dedicated counter file.
-    // Simpler/Robust: Scan all.
+async function getMaxNumberFromStore(type: DocumentType): Promise<number> {
     const docs = await getDocuments(type);
-    const baseline = NUMBER_BASELINE[type] ?? 1;
-    if (docs.length === 0) return baseline;
+    if (docs.length === 0) return 0;
+    return Math.max(...docs.map((d) => d.number || 0));
+}
 
-    const max = Math.max(...docs.map(d => d.number || 0));
+async function getNextNumberAtomic(type: DocumentType, baseline: number): Promise<number> {
+    const fileMax = await getMaxNumberFromStore(type);
+    return prisma.$transaction(async (tx) => {
+        const existing = await tx.documentCounter.findUnique({ where: { type } });
+        const currentValue = Math.max(existing?.lastValue ?? 0, fileMax, baseline - 1);
+        const next = currentValue + 1;
+        await tx.documentCounter.upsert({
+            where: { type },
+            update: { lastValue: next },
+            create: { type, lastValue: next },
+        });
+        return next;
+    });
+}
+
+export async function getNextNumber(type: DocumentType): Promise<number> {
+    const baseline = NUMBER_BASELINE[type] ?? 1;
+    if (isDatabaseConfigured()) {
+        try {
+            return await getNextNumberAtomic(type, baseline);
+        } catch (error) {
+            console.error(`Falling back to filesystem numbering for ${type}`, error);
+        }
+    }
+    const max = await getMaxNumberFromStore(type);
     return Math.max(max + 1, baseline);
 }

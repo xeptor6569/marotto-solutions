@@ -1,11 +1,12 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "@radix-ui/themes";
-import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase } from "lucide-react";
+import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase, Repeat } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import AdminDashboardToolbar from "@/components/AdminDashboardToolbar";
 import { getJobs } from "@/lib/jobs";
+import { getContracts, getContractsNeedingReview } from "@/lib/contracts";
 
 export default async function AdminDashboard() {
     const session = await auth();
@@ -20,6 +21,9 @@ export default async function AdminDashboard() {
     const receipts = await getDocuments('receipt');
     const leads = await getDocuments('lead');
     const jobs = await getJobs();
+    const contracts = await getContracts();
+    const activeContracts = contracts.filter((c) => c.status === 'active');
+    const reviewQueue = await getContractsNeedingReview();
 
     const recentInvoices = invoices.slice(0, 5);
     const activeEstimatesList = estimates.filter((e) => e.status !== "void");
@@ -41,7 +45,7 @@ export default async function AdminDashboard() {
                 <AdminDashboardToolbar email={session.user?.email ?? ""} />
             </Flex>
 
-            <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '6' }} gap="4" mb="5">
+            <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '7' }} gap="4" mb="5">
                 <Link href="/admin/invoices" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                     <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
                         <Flex align="center" gap="3">
@@ -104,6 +108,20 @@ export default async function AdminDashboard() {
                             <Box>
                                 <Text size="2" color="gray">Jobs</Text>
                                 <Heading size="6">{jobs.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/contracts" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--cyan-9)" }}><Repeat size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Active Contracts</Text>
+                                <Heading size="6">{activeContracts.length}</Heading>
+                                {reviewQueue.length > 0 ? (
+                                    <Text size="1" color="amber">{reviewQueue.length} need review</Text>
+                                ) : null}
                             </Box>
                         </Flex>
                     </Card>
@@ -305,6 +323,76 @@ export default async function AdminDashboard() {
                         </Flex>
                     )}
                 </Card>
+
+                {/* Active Contracts */}
+                <Card>
+                    <Flex justify="between" align="center" mb="3">
+                        <Heading size="4">Active Contracts</Heading>
+                        <Button asChild size="1" variant="soft">
+                            <Link href="/admin/contracts">View all</Link>
+                        </Button>
+                    </Flex>
+                    {activeContracts.length === 0 ? (
+                        <Text size="2" color="gray">No active contracts.</Text>
+                    ) : (
+                        <Flex direction="column" gap="2">
+                            {activeContracts.slice(0, 5).map((contract) => (
+                                <Link
+                                    key={contract.id}
+                                    href={`/admin/contracts/${contract.id}`}
+                                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                                >
+                                    <Flex direction={{ initial: 'column', sm: 'row' }} justify="between" align={{ initial: 'start', sm: 'center' }} gap="2" py="1">
+                                        <Box style={{ minWidth: 0, flex: 1 }}>
+                                            <Text size="2" weight="bold" style={{ wordBreak: 'break-word' }}>{contract.displayId} — {contract.title}</Text>
+                                            <Text as="div" size="1" color="gray">{contract.customerName}</Text>
+                                            <Text as="div" size="1" color="gray">Next due {new Date(contract.nextDueDate).toLocaleDateString()}</Text>
+                                        </Box>
+                                        <Badge color="cyan" style={{ flexShrink: 0 }}>{contract.cyclesIssued}{contract.termCycles ? `/${contract.termCycles}` : ''}</Badge>
+                                    </Flex>
+                                </Link>
+                            ))}
+                        </Flex>
+                    )}
+                </Card>
+
+                {/* Contracts needing review (usage lines) */}
+                {reviewQueue.length > 0 ? (
+                    <Card>
+                        <Flex justify="between" align="center" mb="3">
+                            <Heading size="4">Cycles awaiting review</Heading>
+                            <Button asChild size="1" variant="soft">
+                                <Link href="/admin/contracts">All contracts</Link>
+                            </Button>
+                        </Flex>
+                        <Text size="2" color="gray" as="p" mb="2">
+                            These contracts have a draft cycle invoice with usage lines that need quantities filled in before sending.
+                        </Text>
+                        <Flex direction="column" gap="2">
+                            {reviewQueue.slice(0, 5).map(({ contract, latestDraftInvoice }) => (
+                                <Link
+                                    key={contract.id}
+                                    href={latestDraftInvoice ? `/admin/invoices/${latestDraftInvoice.id}/edit` : `/admin/contracts/${contract.id}`}
+                                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                                >
+                                    <Flex justify="between" align="center" gap="2" py="1">
+                                        <Box style={{ minWidth: 0, flex: 1 }}>
+                                            <Text size="2" weight="bold">{contract.displayId} — {contract.title}</Text>
+                                            <Text as="div" size="1" color="gray">{contract.customerName}</Text>
+                                            {latestDraftInvoice ? (
+                                                <Text as="div" size="1" color="gray">
+                                                    Draft {latestDraftInvoice.id}
+                                                    {latestDraftInvoice.contractCycle ? ` · cycle ${latestDraftInvoice.contractCycle}` : ''}
+                                                </Text>
+                                            ) : null}
+                                        </Box>
+                                        <Badge color="amber">review</Badge>
+                                    </Flex>
+                                </Link>
+                            ))}
+                        </Flex>
+                    </Card>
+                ) : null}
             </Grid>
         </Container>
     );
