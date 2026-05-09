@@ -5,6 +5,7 @@ import { XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateLeadAction } from '@/app/actions';
+import { formatPhoneInput } from '@/lib/phone-format';
 import type { DocumentData } from '@/lib/types';
 
 interface LeadEditDialogProps {
@@ -20,7 +21,7 @@ export default function LeadEditDialog({ lead, trigger, onSuccess }: LeadEditDia
     const [error, setError] = useState<string | null>(null);
     const [name, setName] = useState(lead.customer.name || '');
     const [email, setEmail] = useState(lead.customer.email || '');
-    const [phone, setPhone] = useState(lead.customer.phone || '');
+    const [phone, setPhone] = useState(formatPhoneInput(lead.customer.phone || ''));
     const [address, setAddress] = useState(lead.customer.address || '');
     const [notes, setNotes] = useState(lead.notes || '');
     const [clientStage, setClientStage] = useState<'lead' | 'potential_client'>(
@@ -112,7 +113,9 @@ export default function LeadEditDialog({ lead, trigger, onSuccess }: LeadEditDia
                                 type="tel"
                                 placeholder="(555) 123-4567"
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                                inputMode="tel"
+                                autoComplete="tel"
                             />
                         </label>
 

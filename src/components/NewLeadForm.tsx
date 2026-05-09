@@ -1,9 +1,12 @@
 'use client';
 
 import { Card, Flex, Heading, Text, TextField, TextArea, Button, Box } from "@radix-ui/themes";
+import { useState } from 'react';
 import { createLeadAction } from "@/app/actions";
+import { formatPhoneInput } from '@/lib/phone-format';
 
 export default function NewLeadForm() {
+    const [phone, setPhone] = useState('');
     return (
         <form action={createLeadAction}>
             <Flex direction="column" gap="4">
@@ -31,7 +34,16 @@ export default function NewLeadForm() {
                         </Box>
                         <Box>
                             <Text as="label" size="2" weight="medium">Phone</Text>
-                            <TextField.Root name="phone" type="tel" placeholder="(555) 123-4567" mt="1" />
+                            <TextField.Root
+                                name="phone"
+                                type="tel"
+                                placeholder="(555) 123-4567"
+                                mt="1"
+                                value={phone}
+                                onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
+                                inputMode="tel"
+                                autoComplete="tel"
+                            />
                         </Box>
                         <Box>
                             <Text as="label" size="2" weight="medium">Address</Text>

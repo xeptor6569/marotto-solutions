@@ -3,6 +3,7 @@
 import { Dialog, Flex, TextField, TextArea, Button, Text } from '@radix-ui/themes';
 import { useState } from 'react';
 import { createClient, updateClient, type ClientFormData } from './actions';
+import { formatPhoneInput } from '@/lib/phone-format';
 
 interface ClientFormProps {
     client?: {
@@ -23,7 +24,7 @@ export default function ClientForm({ client, onSuccess, trigger }: ClientFormPro
     const [formData, setFormData] = useState<ClientFormData>({
         name: client?.name || '',
         email: client?.email || '',
-        phone: client?.phone || '',
+        phone: formatPhoneInput(client?.phone || ''),
         address: client?.address || '',
         notes: client?.notes || '',
     });
@@ -95,7 +96,11 @@ export default function ClientForm({ client, onSuccess, trigger }: ClientFormPro
                                 type="tel"
                                 placeholder="(555) 123-4567"
                                 value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, phone: formatPhoneInput(e.target.value) })
+                                }
+                                inputMode="tel"
+                                autoComplete="tel"
                             />
                         </label>
 

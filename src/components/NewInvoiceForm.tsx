@@ -7,6 +7,7 @@ import { createInvoiceAction, createJobAction } from '@/app/actions';
 import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption } from "@/lib/types";
 import { ClientOption } from "@/lib/clients";
 import type { LeadOption } from "@/lib/leads";
+import { formatPhoneInput } from '@/lib/phone-format';
 
 const nativeSelectStyle = { width: "100%", marginTop: 6, borderRadius: 8, minHeight: 36, padding: "0 10px" } as const;
 
@@ -48,6 +49,9 @@ export default function NewDocumentForm({
     const [paymentKind, setPaymentKind] = useState<PaymentKind>('partial');
     const [paymentNotes, setPaymentNotes] = useState('');
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customerPhone, setCustomerPhone] = useState(() =>
+        formatPhoneInput(initialData?.customer?.phone || ''),
+    );
     const docLabel = type.charAt(0).toUpperCase() + type.slice(1);
     const notesLabel =
         type === 'estimate' ? 'Project Description' :
@@ -114,7 +118,7 @@ export default function NewDocumentForm({
         if (!selected) return;
         setCustomerInputValue('customerName', selected.name || '');
         setCustomerInputValue('customerEmail', selected.email || '');
-        setCustomerInputValue('customerPhone', selected.phone || '');
+        setCustomerPhone(formatPhoneInput(selected.phone || ''));
         setCustomerInputValue('customerAddress', selected.address || '');
     };
 
@@ -126,7 +130,7 @@ export default function NewDocumentForm({
         if (!selected) return;
         setCustomerInputValue('customerName', selected.name || '');
         setCustomerInputValue('customerEmail', selected.email || '');
-        setCustomerInputValue('customerPhone', '');
+        setCustomerPhone(formatPhoneInput(selected.phone || ''));
         setCustomerInputValue('customerAddress', selected.address || '');
     };
 
@@ -298,7 +302,15 @@ export default function NewDocumentForm({
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Phone</Text>
-                                <TextField.Root name="customerPhone" type="tel" placeholder="Optional" defaultValue={initialData?.customer?.phone} />
+                                <TextField.Root
+                                    name="customerPhone"
+                                    type="tel"
+                                    placeholder="(555) 123-4567"
+                                    value={customerPhone}
+                                    onChange={(e) => setCustomerPhone(formatPhoneInput(e.target.value))}
+                                    inputMode="tel"
+                                    autoComplete="tel"
+                                />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Address</Text>
@@ -387,7 +399,15 @@ export default function NewDocumentForm({
                                             type="number"
                                             min="0"
                                             value={item.quantity}
-                                            onChange={e => updateLineItem(item.id, 'quantity', Number(e.target.value))}
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                const n = parseFloat(v);
+                                                updateLineItem(
+                                                    item.id,
+                                                    'quantity',
+                                                    v === '' ? 0 : Number.isFinite(n) ? Math.max(0, n) : 0,
+                                                );
+                                            }}
                                         />
                                         <input type="hidden" name={`items[${index}][quantity]`} value={item.quantity} />
                                     </Table.Cell>
@@ -397,7 +417,15 @@ export default function NewDocumentForm({
                                             min="0"
                                             step="0.01"
                                             value={item.unitPrice}
-                                            onChange={e => updateLineItem(item.id, 'unitPrice', Number(e.target.value))}
+                                            onChange={(e) => {
+                                                const v = e.target.value;
+                                                const n = parseFloat(v);
+                                                updateLineItem(
+                                                    item.id,
+                                                    'unitPrice',
+                                                    v === '' ? 0 : Number.isFinite(n) ? Math.max(0, n) : 0,
+                                                );
+                                            }}
                                         />
                                         <input type="hidden" name={`items[${index}][unitPrice]`} value={item.unitPrice} />
                                     </Table.Cell>
