@@ -7,6 +7,8 @@ export interface LineItem {
     quantity: number;
     unitPrice: number;
     total: number;
+    /** When true, line is additional scope not yet approved by the client (quotes/estimates). */
+    pendingClientApproval?: boolean;
 }
 
 export interface Customer {

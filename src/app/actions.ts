@@ -135,13 +135,19 @@ export async function createInvoiceAction(formData: FormData) {
     const items: LineItem[] = [];
     let i = 0;
     while (formData.has(`items[${i}][description]`)) {
+        const idRaw = ((formData.get(`items[${i}][id]`) as string) || '').trim();
+        const pendingRaw = formData.get(`items[${i}][pendingClientApproval]`);
+        const pendingClientApproval = pendingRaw === '1' || pendingRaw === 'on';
+        const qty = Number(formData.get(`items[${i}][quantity]`));
+        const unitPrice = Number(formData.get(`items[${i}][unitPrice]`));
         items.push({
-            id: crypto.randomUUID(),
+            id: idRaw || crypto.randomUUID(),
             description: formData.get(`items[${i}][description]`) as string,
             details: (formData.get(`items[${i}][details]`) as string) || '',
-            quantity: Number(formData.get(`items[${i}][quantity]`)),
-            unitPrice: Number(formData.get(`items[${i}][unitPrice]`)),
-            total: Number(formData.get(`items[${i}][quantity]`)) * Number(formData.get(`items[${i}][unitPrice]`))
+            quantity: qty,
+            unitPrice,
+            total: qty * unitPrice,
+            ...(pendingClientApproval ? { pendingClientApproval: true as const } : {}),
         });
         i++;
     }

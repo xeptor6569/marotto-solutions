@@ -1,8 +1,14 @@
-import { Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
 import type { DocumentData } from "@/lib/types";
 import { getAppConfig } from "@/lib/config";
 import { DOC_LABEL } from "@/lib/document-labels";
+import {
+    agreedScopeLineTotal,
+    hasPendingApprovalLines,
+    pendingApprovalLineTotal,
+    pendingApprovalSummarySentence,
+} from "@/lib/pending-client-approval";
 import { auth } from "@/lib/auth";
 import PrintButton from "@/components/PrintButton";
 import ShareButton from "@/components/ShareButton";
@@ -43,6 +49,15 @@ export default async function DocumentPreview({
     const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
     const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
 
+    const pendingLines = hasPendingApprovalLines(doc.lineItems);
+    const showSplitTotals =
+        (doc.type === "quote" || doc.type === "estimate") && pendingLines;
+    const agreedSubtotal = agreedScopeLineTotal(doc.lineItems);
+    const pendingSubtotal = pendingApprovalLineTotal(doc.lineItems);
+    const pendingApprovalSummary = pendingLines
+        ? pendingApprovalSummarySentence(docTitle, pendingSubtotal)
+        : undefined;
+
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
             <Flex justify="between" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
@@ -62,6 +77,7 @@ export default async function DocumentPreview({
                             defaultTo={doc.customer.email}
                             canSendViaServer={!!session}
                             serverEmailConfigured={!!process.env.EMAIL_SERVER}
+                            pendingApprovalSummary={pendingApprovalSummary}
                         />
                     ) : null}
                     <PrintButton label={docTitle} />
@@ -132,7 +148,12 @@ export default async function DocumentPreview({
                                 {doc.lineItems.map((item) => (
                                     <Table.Row key={item.id}>
                                         <Table.Cell>
-                                            <Text weight="bold" style={{ color: "#111827" }}>{item.description}</Text>
+                                            <Flex align="center" gap="2" wrap="wrap">
+                                                <Text weight="bold" style={{ color: "#111827" }}>{item.description}</Text>
+                                                {item.pendingClientApproval ? (
+                                                    <Badge color="amber" size="1">Pending your approval</Badge>
+                                                ) : null}
+                                            </Flex>
                                             {item.details ? (
                                                 <Text as="div" size="2" mt="2" style={{ color: "#374151", whiteSpace: "pre-line", lineHeight: 1.5 }}>
                                                     {item.details}
@@ -250,6 +271,12 @@ export default async function DocumentPreview({
                                 {doc.type === "estimate"
                                     ? "Flexible estimate: figures are indicative and may change with final scope, materials, or site conditions."
                                     : "Firm quote: the total below is the agreed price for the work described in this document unless you attach a written change order."}
+                                {showSplitTotals ? (
+                                    <>
+                                        {" "}
+                                        Lines marked pending approval are not part of the agreed firm price until you approve them in writing.
+                                    </>
+                                ) : null}
                             </Text>
                         </Box>
                     ) : null}
@@ -273,7 +300,7 @@ export default async function DocumentPreview({
                             </Text>
                         </Box>
 
-                        <Box className="doc-totals" style={{ width: "240px" }}>
+                        <Box className="doc-totals" style={{ width: showSplitTotals ? "min(100%, 320px)" : "240px" }}>
                             {doc.type === "invoice" ? (
                                 <>
                                     <Flex justify="between" py="2">
@@ -286,12 +313,27 @@ export default async function DocumentPreview({
                                     </Flex>
                                 </>
                             ) : null}
-                            <Flex justify="between" py="2">
-                                <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
-                                <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
-                            </Flex>
+                            {showSplitTotals ? (
+                                <>
+                                    <Flex justify="between" py="2">
+                                        <Text size="2" style={{ color: "#4b5563" }}>Agreed scope subtotal</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${agreedSubtotal.toFixed(2)}</Text>
+                                    </Flex>
+                                    <Flex justify="between" py="2">
+                                        <Text size="2" style={{ color: "#4b5563" }}>Additional scope (pending approval)</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${pendingSubtotal.toFixed(2)}</Text>
+                                    </Flex>
+                                </>
+                            ) : (
+                                <Flex justify="between" py="2">
+                                    <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
+                                    <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
+                                </Flex>
+                            )}
                             <Flex justify="between" py="2" style={{ borderTop: "2px solid #111827" }}>
-                                <Text size="4" weight="bold" style={{ color: "#111827" }}>Total</Text>
+                                <Text size="4" weight="bold" style={{ color: "#111827" }}>
+                                    {showSplitTotals ? "Total if all approved" : "Total"}
+                                </Text>
                                 <Text size="6" weight="bold" style={{ color: getStatusColor(doc.status) }}>${doc.total.toFixed(2)}</Text>
                             </Flex>
                         </Box>

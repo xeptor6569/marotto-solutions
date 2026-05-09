@@ -15,6 +15,7 @@ function EmailSendFields({
     docTitle,
     defaultTo,
     showServerSend,
+    pendingApprovalSummary,
     onClose,
 }: {
     documentId: string;
@@ -22,6 +23,8 @@ function EmailSendFields({
     docTitle: string;
     defaultTo?: string;
     showServerSend: boolean;
+    /** Mirrors server email: extra line when document has line items pending approval. */
+    pendingApprovalSummary?: string;
     onClose: () => void;
 }) {
     const [state, formAction] = useFormState(sendDocumentEmailAction, initialState);
@@ -50,6 +53,7 @@ function EmailSendFields({
         const body = [
             'Hi,',
             '',
+            ...(pendingApprovalSummary ? [`${pendingApprovalSummary}`, ''] : []),
             `View your ${docTitle}: ${viewUrl || '(copy the link from the browser address bar)'}`,
             '',
             'Thank you,',
@@ -57,7 +61,7 @@ function EmailSendFields({
         const params = new URLSearchParams({ subject, body });
         const addr = to.trim();
         return addr ? `mailto:${addr}?${params}` : `mailto:?${params}`;
-    }, [docTitle, documentId, to, viewUrl]);
+    }, [docTitle, documentId, pendingApprovalSummary, to, viewUrl]);
 
     return (
         <>
@@ -116,6 +120,7 @@ export default function EmailDocumentButton({
     defaultTo,
     canSendViaServer,
     serverEmailConfigured,
+    pendingApprovalSummary,
 }: {
     documentId: string;
     sharePath: string;
@@ -123,6 +128,7 @@ export default function EmailDocumentButton({
     defaultTo?: string;
     canSendViaServer: boolean;
     serverEmailConfigured: boolean;
+    pendingApprovalSummary?: string;
 }) {
     const [open, setOpen] = useState(false);
     const [panelKey, setPanelKey] = useState(0);
@@ -153,6 +159,7 @@ export default function EmailDocumentButton({
                     docTitle={docTitle}
                     defaultTo={defaultTo}
                     showServerSend={showServerSend}
+                    pendingApprovalSummary={pendingApprovalSummary}
                     onClose={() => setOpen(false)}
                 />
 

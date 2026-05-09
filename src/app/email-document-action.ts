@@ -5,6 +5,11 @@ import { getDocumentById } from '@/lib/data';
 import type { DocumentData } from '@/lib/types';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
 import { DOC_LABEL } from '@/lib/document-labels';
+import {
+    hasPendingApprovalLines,
+    pendingApprovalLineTotal,
+    pendingApprovalSummarySentence,
+} from '@/lib/pending-client-approval';
 
 export type EmailDocumentState = { success: boolean; error?: string };
 
@@ -63,10 +68,15 @@ export async function sendDocumentEmailAction(
     const subject = `Marotto Solutions — ${docTitle} ${doc.id}`;
     const greeting = doc.customer.name ? `Hi ${doc.customer.name},` : 'Hello,';
 
+    const pendingParagraph = hasPendingApprovalLines(doc.lineItems)
+        ? pendingApprovalSummarySentence(docTitle, pendingApprovalLineTotal(doc.lineItems))
+        : '';
+
     const textLines = [
         greeting,
         '',
         message ? `${message}\n` : '',
+        pendingParagraph ? `${pendingParagraph}\n` : '',
         `View your ${docTitle}: ${url}`,
         '',
         'Thank you,',
@@ -83,6 +93,7 @@ export async function sendDocumentEmailAction(
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #111827;">
   <p style="margin: 0 0 16px;">${escapeHtml(greeting)}</p>
   ${message ? `<p style="margin: 0 0 16px; white-space: pre-line;">${escapeHtml(message)}</p>` : ''}
+  ${pendingParagraph ? `<p style="margin: 0 0 16px; color: #92400e;">${escapeHtml(pendingParagraph)}</p>` : ''}
   <p style="margin: 0 0 16px;">
     <a href="${safeUrl}" style="color: #4f46e5;">View your ${escapeHtml(docTitle)}</a>
   </p>

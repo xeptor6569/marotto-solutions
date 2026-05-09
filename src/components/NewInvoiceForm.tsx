@@ -1,6 +1,6 @@
 'use client';
 
-import { Heading, Card, Button, Flex, Box, Text, TextField, Grid, Table, TextArea, Badge } from "@radix-ui/themes";
+import { Heading, Card, Button, Flex, Box, Text, TextField, Grid, Table, TextArea, Badge, Checkbox } from "@radix-ui/themes";
 import { PlusIcon, TrashIcon, SaveIcon } from "lucide-react";
 import { useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
@@ -31,7 +31,7 @@ export default function NewDocumentForm({
     const [lineItems, setLineItems] = useState<LineItem[]>([
         ...(initialData?.lineItems?.length
             ? initialData.lineItems
-            : [{ id: '1', description: 'Service', details: '', quantity: 1, unitPrice: 0, total: 0 }])
+            : [{ id: '1', description: 'Service', details: '', quantity: 1, unitPrice: 0, total: 0, pendingClientApproval: false }])
     ]);
 
     const currentStatus = initialData?.status || 'draft';
@@ -78,8 +78,18 @@ export default function NewDocumentForm({
                 { intent: currentStatus, label: `Save ${docLabel}`, variant: 'solid' as const },
             ];
 
+    const showPendingApprovalColumn = type === 'quote' || type === 'estimate';
+
     const addLineItem = () => {
-        setLineItems([...lineItems, { id: crypto.randomUUID(), description: '', details: '', quantity: 1, unitPrice: 0, total: 0 }]);
+        setLineItems([...lineItems, {
+            id: crypto.randomUUID(),
+            description: '',
+            details: '',
+            quantity: 1,
+            unitPrice: 0,
+            total: 0,
+            pendingClientApproval: false,
+        }]);
     };
 
     const removeLineItem = (id: string) => {
@@ -88,7 +98,7 @@ export default function NewDocumentForm({
         }
     };
 
-    const updateLineItem = (id: string, field: keyof LineItem, value: string | number) => {
+    const updateLineItem = (id: string, field: keyof LineItem, value: string | number | boolean) => {
         setLineItems(lineItems.map(item => {
             if (item.id === id) {
                 const updated = { ...item, [field]: value };
@@ -358,10 +368,13 @@ export default function NewDocumentForm({
                     <Table.Root>
                         <Table.Header>
                             <Table.Row>
-                                <Table.ColumnHeaderCell width="50%">Description</Table.ColumnHeaderCell>
+                                <Table.ColumnHeaderCell width={showPendingApprovalColumn ? "42%" : "50%"}>Description</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>{type === 'quote' ? 'Unit price' : 'Price'}</Table.ColumnHeaderCell>
                                 <Table.ColumnHeaderCell>Total</Table.ColumnHeaderCell>
+                                {showPendingApprovalColumn ? (
+                                    <Table.ColumnHeaderCell align="center">Needs approval</Table.ColumnHeaderCell>
+                                ) : null}
                                 <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
                             </Table.Row>
                         </Table.Header>
@@ -391,8 +404,14 @@ export default function NewDocumentForm({
                                             />
                                         </Box>
                                         {/* Hidden inputs to pass array data to Server Action */}
+                                        <input type="hidden" name={`items[${index}][id]`} value={item.id} />
                                         <input type="hidden" name={`items[${index}][description]`} value={item.description} />
                                         <input type="hidden" name={`items[${index}][details]`} value={item.details || ''} />
+                                        <input
+                                            type="hidden"
+                                            name={`items[${index}][pendingClientApproval]`}
+                                            value={showPendingApprovalColumn && item.pendingClientApproval ? '1' : '0'}
+                                        />
                                     </Table.Cell>
                                     <Table.Cell>
                                         <TextField.Root
@@ -432,6 +451,19 @@ export default function NewDocumentForm({
                                     <Table.Cell>
                                         <Text>${item.total.toFixed(2)}</Text>
                                     </Table.Cell>
+                                    {showPendingApprovalColumn ? (
+                                        <Table.Cell align="center">
+                                            <Flex justify="center" align="center">
+                                                <Checkbox
+                                                    checked={item.pendingClientApproval === true}
+                                                    onCheckedChange={(v) =>
+                                                        updateLineItem(item.id, 'pendingClientApproval', v === true)
+                                                    }
+                                                    aria-label="Additional scope pending client approval"
+                                                />
+                                            </Flex>
+                                        </Table.Cell>
+                                    ) : null}
                                     <Table.Cell>
                                         <Button type="button" variant="ghost" color="red" onClick={() => removeLineItem(item.id)}>
                                             <TrashIcon size={16} />
