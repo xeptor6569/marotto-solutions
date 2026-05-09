@@ -2,7 +2,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import { AppConfig, BillingConfig } from './types';
 
-const CONFIG_PATH = path.join(process.cwd(), 'config', 'settings.json');
+// Settings live under the persistent `data/` volume so the runtime user
+// (e.g. the unprivileged `nextjs` user inside Docker) can always write to it
+// even though `/app` itself is owned by root. The legacy path is checked as a
+// migration source so existing self-hosted installs keep their billing config.
+const CONFIG_PATH = path.join(process.cwd(), 'data', 'config', 'settings.json');
+const LEGACY_CONFIG_PATH = path.join(process.cwd(), 'config', 'settings.json');
 
 export function getDefaultBillingConfig(): BillingConfig {
     return {
@@ -21,7 +26,6 @@ export function getDefaultBillingConfig(): BillingConfig {
     };
 }
 
-// Ensure config dir exists
 async function ensureConfigDir() {
     const dir = path.dirname(CONFIG_PATH);
     try {
@@ -31,27 +35,37 @@ async function ensureConfigDir() {
     }
 }
 
-export async function getAppConfig(): Promise<Partial<AppConfig>> {
+async function readConfigFromDisk(): Promise<Partial<AppConfig> | null> {
     try {
-        await ensureConfigDir();
         const data = await fs.readFile(CONFIG_PATH, 'utf-8');
-        const parsed = JSON.parse(data) as Partial<AppConfig>;
-        return {
-            ...parsed,
-            billing: {
-                ...getDefaultBillingConfig(),
-                ...parsed.billing,
-                paymentMethods: {
-                    ...getDefaultBillingConfig().paymentMethods,
-                    ...parsed.billing?.paymentMethods,
-                },
-            },
-        };
+        return JSON.parse(data) as Partial<AppConfig>;
     } catch {
-        return {
-            billing: getDefaultBillingConfig(),
-        };
+        // Try the legacy location for users upgrading from a previous build.
+        try {
+            const legacy = await fs.readFile(LEGACY_CONFIG_PATH, 'utf-8');
+            return JSON.parse(legacy) as Partial<AppConfig>;
+        } catch {
+            return null;
+        }
     }
+}
+
+export async function getAppConfig(): Promise<Partial<AppConfig>> {
+    const parsed = await readConfigFromDisk();
+    if (!parsed) {
+        return { billing: getDefaultBillingConfig() };
+    }
+    return {
+        ...parsed,
+        billing: {
+            ...getDefaultBillingConfig(),
+            ...parsed.billing,
+            paymentMethods: {
+                ...getDefaultBillingConfig().paymentMethods,
+                ...parsed.billing?.paymentMethods,
+            },
+        },
+    };
 }
 
 export async function saveAppConfig(config: Partial<AppConfig>) {

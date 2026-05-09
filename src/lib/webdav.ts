@@ -34,9 +34,7 @@ export async function checkConnection(config: AppConfig, password?: string) {
     }
 }
 
-// STORAGE PATHS
 const DATA_DIR = "/MarottoSolutions";
-const CONFIG_FILE = `${DATA_DIR}/config.json`;
 
 export async function ensureDataDir(c: WebDAVClient) {
     if ((await c.exists(DATA_DIR)) === false) {
@@ -54,12 +52,20 @@ export async function saveDocument(c: WebDAVClient, doc: DocumentData) {
     await c.putFileContents(filename, JSON.stringify(doc, null, 2));
 }
 
+export async function deleteDocumentRemote(c: WebDAVClient, type: DocumentType, id: string) {
+    const filename = `${DATA_DIR}/${type}s/${id}.json`;
+    if (await c.exists(filename)) {
+        await c.deleteFile(filename);
+    }
+}
+
 export async function fetchDocuments(c: WebDAVClient, type: DocumentType): Promise<DocumentData[]> {
     await ensureDataDir(c);
     const folder = `${DATA_DIR}/${type}s`;
     if ((await c.exists(folder)) === false) return [];
 
-    const files = await c.getDirectoryContents(folder) as any[]; // Type cast needed often with webdav lib
+    const rawFiles = await c.getDirectoryContents(folder);
+    const files = (Array.isArray(rawFiles) ? rawFiles : []) as Array<{ type?: string; filename: string }>;
     const docs: DocumentData[] = [];
 
     for (const file of files) {

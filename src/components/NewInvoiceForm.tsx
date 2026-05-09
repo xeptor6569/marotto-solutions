@@ -362,16 +362,22 @@ export default function NewDocumentForm({
                                             onChange={e => updateLineItem(item.id, 'description', e.target.value)}
                                             placeholder="Description"
                                         />
-                                        {type === 'estimate' ? (
-                                            <Box mt="2">
-                                                <TextArea
-                                                    value={item.details || ''}
-                                                    onChange={e => updateLineItem(item.id, 'details', e.target.value)}
-                                                    placeholder="Add scope, install approach, material option notes, or client-facing details."
-                                                    rows={4}
-                                                />
-                                            </Box>
-                                        ) : null}
+                                        <Box mt="2">
+                                            <TextArea
+                                                value={item.details || ''}
+                                                onChange={e => updateLineItem(item.id, 'details', e.target.value)}
+                                                placeholder={
+                                                    type === 'estimate'
+                                                        ? 'Add scope, install approach, material option notes, or client-facing details.'
+                                                        : type === 'quote'
+                                                            ? 'Optional details: scope, included materials, exclusions, or assumptions.'
+                                                            : type === 'invoice'
+                                                                ? 'Optional details about this line (work performed, materials, hours, etc.).'
+                                                                : 'Optional details to include with this line item.'
+                                                }
+                                                rows={type === 'estimate' ? 4 : 3}
+                                            />
+                                        </Box>
                                         {/* Hidden inputs to pass array data to Server Action */}
                                         <input type="hidden" name={`items[${index}][description]`} value={item.description} />
                                         <input type="hidden" name={`items[${index}][details]`} value={item.details || ''} />

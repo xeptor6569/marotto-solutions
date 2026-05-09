@@ -47,8 +47,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Create data directory with correct permissions
-RUN mkdir -p data && chown nextjs:nodejs data
+# Create data directory (and persistent config subdir) with correct permissions
+RUN mkdir -p data/config && chown -R nextjs:nodejs data
 
 USER nextjs
 

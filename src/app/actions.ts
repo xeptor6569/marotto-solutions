@@ -4,7 +4,7 @@ import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
 import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
-import { saveNewDocument, getNextNumber, getDocumentById } from '@/lib/data';
+import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -77,7 +77,13 @@ export async function saveSettingsAction(formData: FormData) {
         }
     }
 
-    await saveAppConfig(configUpdate);
+    try {
+        await saveAppConfig(configUpdate);
+    } catch (error) {
+        console.error('Failed to save settings', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to save settings: ${message}` };
+    }
     revalidatePath('/admin/settings');
     revalidatePath('/settings');
     revalidatePath('/');
@@ -318,18 +324,24 @@ export async function createJobAction(input: {
 }) {
     const name = input.name?.trim();
     if (!name) {
-        return { success: false as const, error: 'Job name is required' as const };
+        return { success: false as const, error: 'Job name is required' };
     }
-    const job = await createJob({
-        name,
-        description: input.description?.trim() || '',
-        status: input.status || 'active',
-        clientId: input.clientId || '',
-        leadId: input.leadId || '',
-    });
-    revalidatePath('/admin');
-    revalidatePath('/admin/jobs');
-    return { success: true as const, job };
+    try {
+        const job = await createJob({
+            name,
+            description: input.description?.trim() || '',
+            status: input.status || 'active',
+            clientId: input.clientId || '',
+            leadId: input.leadId || '',
+        });
+        revalidatePath('/admin');
+        revalidatePath('/admin/jobs');
+        return { success: true as const, job };
+    } catch (error) {
+        console.error('Failed to create job', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false as const, error: `Failed to create job: ${message}` };
+    }
 }
 
 export async function getJobOptionsForForm(params?: { clientId?: string; leadId?: string }) {
@@ -345,6 +357,81 @@ function initialDataPayments(formData: FormData): PaymentEntry[] {
         return parsed.filter((payment) => payment && typeof payment === 'object');
     } catch {
         return [];
+    }
+}
+
+export async function updateLeadAction(input: {
+    id: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+    clientStage?: 'lead' | 'potential_client';
+}): Promise<{ success: boolean; error?: string }> {
+    const id = input.id?.trim();
+    if (!id) {
+        return { success: false, error: 'Lead id is required' };
+    }
+    const name = input.name?.trim();
+    if (!name) {
+        return { success: false, error: 'Name is required' };
+    }
+    try {
+        const existing = await getDocumentById(id);
+        if (!existing || existing.type !== 'lead') {
+            return { success: false, error: 'Lead not found' };
+        }
+        const stage: 'lead' | 'potential_client' = input.clientStage === 'potential_client' ? 'potential_client' : 'lead';
+        const tags = Array.from(new Set([
+            ...existing.tags.filter((tag) => tag !== 'lead' && tag !== 'potential_client'),
+            'client',
+            stage,
+        ]));
+        const updated: DocumentData = {
+            ...existing,
+            customer: {
+                ...existing.customer,
+                name,
+                email: input.email?.trim() || undefined,
+                phone: input.phone?.trim() || undefined,
+                address: input.address?.trim() || undefined,
+                clientStage: stage,
+            },
+            notes: input.notes?.trim() || undefined,
+            tags,
+            updatedAt: new Date().toISOString(),
+        };
+        await saveNewDocument(updated);
+        revalidatePath('/admin');
+        revalidatePath('/admin/leads');
+        revalidatePath(`/admin/leads/${id}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to update lead', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to update client: ${message}` };
+    }
+}
+
+export async function deleteLeadAction(input: { id: string }): Promise<{ success: boolean; error?: string }> {
+    const id = input.id?.trim();
+    if (!id) {
+        return { success: false, error: 'Lead id is required' };
+    }
+    try {
+        const existing = await getDocumentById(id);
+        if (!existing || existing.type !== 'lead') {
+            return { success: false, error: 'Lead not found' };
+        }
+        await deleteDocument('lead', id);
+        revalidatePath('/admin');
+        revalidatePath('/admin/leads');
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to delete lead', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to delete client: ${message}` };
     }
 }
 

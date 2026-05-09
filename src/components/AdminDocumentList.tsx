@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Badge, Box, Button, Card, Flex, Table, Text, TextField } from "@radix-ui/themes";
-import { Search } from "lucide-react";
+import { Edit, Search } from "lucide-react";
 import type { DocumentData } from "@/lib/types";
+import LeadEditDialog from "@/components/LeadEditDialog";
+import DeleteLeadButton from "@/components/DeleteLeadButton";
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
 
@@ -58,7 +60,8 @@ export default function AdminDocumentList({
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState<"all" | DocumentData["status"]>("all");
     const base = adminBase(type);
-    const showEdit = type !== "lead";
+    const isLead = type === "lead";
+    const showEdit = !isLead;
 
     const filteredDocs = useMemo(() => {
         return docs.filter((doc) => {
@@ -167,14 +170,36 @@ export default function AdminDocumentList({
                                             <Text weight="bold" size="3">${doc.total.toFixed(2)}</Text>
                                         </Box>
                                     </Flex>
-                                    <Flex gap="2" style={{ width: "100%" }}>
-                                        <Button asChild size="2" variant="soft" style={{ flex: 1 }}>
+                                    <Flex gap="2" wrap="wrap" style={{ width: "100%" }}>
+                                        <Button asChild size="2" variant="soft" style={{ flex: 1, minWidth: 110 }}>
                                             <Link href={`${base}/${doc.id}`}>Preview</Link>
                                         </Button>
                                         {showEdit ? (
-                                            <Button asChild size="2" style={{ flex: 1 }}>
+                                            <Button asChild size="2" style={{ flex: 1, minWidth: 110 }}>
                                                 <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
                                             </Button>
+                                        ) : null}
+                                        {isLead ? (
+                                            <>
+                                                <Box style={{ flex: 1, minWidth: 110 }}>
+                                                    <LeadEditDialog
+                                                        lead={doc}
+                                                        trigger={
+                                                            <Button size="2" variant="soft" style={{ width: "100%" }}>
+                                                                <Edit size={14} /> Edit
+                                                            </Button>
+                                                        }
+                                                    />
+                                                </Box>
+                                                <Box style={{ flex: 1, minWidth: 110 }}>
+                                                    <DeleteLeadButton
+                                                        leadId={doc.id}
+                                                        leadName={doc.customer.name}
+                                                        size="2"
+                                                        fullWidth
+                                                    />
+                                                </Box>
+                                            </>
                                         ) : null}
                                     </Flex>
                                 </Flex>
@@ -229,6 +254,22 @@ export default function AdminDocumentList({
                                                         <Button asChild size="2">
                                                             <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
                                                         </Button>
+                                                    ) : null}
+                                                    {isLead ? (
+                                                        <>
+                                                            <LeadEditDialog
+                                                                lead={doc}
+                                                                trigger={
+                                                                    <Button size="2" variant="soft">
+                                                                        <Edit size={14} /> Edit
+                                                                    </Button>
+                                                                }
+                                                            />
+                                                            <DeleteLeadButton
+                                                                leadId={doc.id}
+                                                                leadName={doc.customer.name}
+                                                            />
+                                                        </>
                                                     ) : null}
                                                 </Flex>
                                             </Table.Cell>

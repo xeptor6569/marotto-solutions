@@ -6,15 +6,22 @@ import { createJobAction } from '@/app/actions';
 import { createJobAttachment, deleteJobAttachment } from '@/lib/job-attachments';
 
 export async function createJobFromFormAction(formData: FormData) {
-    const result = await createJobAction({
-        name: (formData.get('name') as string) || '',
-        description: (formData.get('description') as string) || '',
-        status: (formData.get('status') as string) || 'active',
-        clientId: (formData.get('clientId') as string) || undefined,
-        leadId: (formData.get('leadId') as string) || undefined,
-    });
+    const name = (formData.get('name') as string) || '';
+    const description = (formData.get('description') as string) || '';
+    const status = (formData.get('status') as string) || 'active';
+    const clientId = (formData.get('clientId') as string) || undefined;
+    const leadId = (formData.get('leadId') as string) || undefined;
+    const result = await createJobAction({ name, description, status, clientId, leadId });
     if (!result.success) {
-        redirect(`/admin/jobs/create?error=${encodeURIComponent(result.error)}`);
+        const params = new URLSearchParams({
+            error: result.error || 'Failed to create job',
+            name,
+            description,
+            status,
+            ...(clientId ? { clientId } : {}),
+            ...(leadId ? { leadId } : {}),
+        });
+        redirect(`/admin/jobs/create?${params.toString()}`);
     }
     redirect(`/admin/jobs/${result.job.id}`);
 }

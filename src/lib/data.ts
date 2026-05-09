@@ -1,5 +1,5 @@
 import { getAppConfig } from './config';
-import { getWebDAVClient, fetchDocuments, saveDocument } from './webdav';
+import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote } from './webdav';
 import { AppConfig, DocumentData, DocumentType } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -9,9 +9,9 @@ const LOCAL_DATA_DIR = path.join(process.cwd(), 'data');
 async function ensureLocalDir(dir: string) {
     try {
         await fs.mkdir(dir, { recursive: true, mode: 0o777 });
-    } catch (error: any) {
-        // If directory already exists, that's fine
-        if (error.code !== 'EEXIST') {
+    } catch (error: unknown) {
+        const err = error as NodeJS.ErrnoException;
+        if (err?.code !== 'EEXIST') {
             throw error;
         }
     }
@@ -42,6 +42,16 @@ async function saveDocumentLocal(doc: DocumentData) {
     const dir = path.join(LOCAL_DATA_DIR, `${doc.type}s`);
     await ensureLocalDir(dir);
     await fs.writeFile(path.join(dir, `${doc.id}.json`), JSON.stringify(doc, null, 2));
+}
+
+async function deleteDocumentLocal(type: DocumentType, id: string) {
+    const file = path.join(LOCAL_DATA_DIR, `${type}s`, `${id}.json`);
+    try {
+        await fs.unlink(file);
+    } catch (error: unknown) {
+        const err = error as NodeJS.ErrnoException;
+        if (err?.code !== 'ENOENT') throw error;
+    }
 }
 
 // Simple in-memory cache for now (server lifetime). 
@@ -111,6 +121,19 @@ export async function saveNewDocument(doc: DocumentData) {
 
     // Invalidate cache
     delete cache[doc.type];
+}
+
+export async function deleteDocument(type: DocumentType, id: string) {
+    const config = await getAppConfig() as AppConfig;
+
+    if (!config.webdavUrl) {
+        await deleteDocumentLocal(type, id);
+    } else {
+        const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
+        await deleteDocumentRemote(client, type, id);
+    }
+
+    delete cache[type];
 }
 
 export async function getNextNumber(type: DocumentType): Promise<number> {

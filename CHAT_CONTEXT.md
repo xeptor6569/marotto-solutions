@@ -8,6 +8,31 @@ This file is a running summary of recent assistant work so future chats can pick
 - Add new entries at the top.
 - Keep summaries focused on behavior changes, important files, and follow-up risks.
 
+## 2026-05-09
+
+### Settings save and config persistence in Docker
+- Moved `CONFIG_PATH` in `src/lib/config.ts` to `data/config/settings.json` so the unprivileged `nextjs` user can write to it inside Docker (the previous `config/` dir lived under root-owned `/app`). Legacy `config/settings.json` is still read as a one-time fallback.
+- Wrapped `saveSettingsAction` in `src/app/actions.ts` in try/catch so unexpected save failures surface as inline errors instead of a 500.
+- Updated `Dockerfile` to pre-create `data/config` with `nextjs:nodejs` ownership.
+
+### Robust job creation
+- `createJobAction` in `src/app/actions.ts` now catches Prisma/database failures and returns `{ success: false, error }` instead of throwing.
+- `createJobFromFormAction` in `src/app/admin/jobs/actions.ts` redirects back to `/admin/jobs/create` with the error and form values preserved.
+- `src/app/admin/jobs/create/page.tsx` shows a red `Callout` for the redirect error and rehydrates name/description/status.
+
+### Lead edit and delete
+- Added `updateLeadAction` and `deleteLeadAction` in `src/app/actions.ts`, using new `deleteDocument` in `src/lib/data.ts` and `deleteDocumentRemote` in `src/lib/webdav.ts`.
+- New components: `src/components/LeadEditDialog.tsx` (Radix dialog form) and `src/components/DeleteLeadButton.tsx` (Radix `AlertDialog` with optional redirect).
+- `src/components/AdminDocumentList.tsx` now renders Edit/Delete actions on the lead rows in both the mobile cards and desktop table.
+- `src/app/admin/leads/[id]/page.tsx` exposes the same Edit/Delete actions in the detail header alongside "Create job from client".
+
+### Optional details on every line item
+- `src/components/NewInvoiceForm.tsx` now shows the `details` textarea for invoices, quotes, and receipts (previously estimates only) with type-specific placeholders. `DocumentPreview` already rendered `item.details` for every type, so saved details now appear on invoices/receipts as well.
+
+### Lint/type cleanup
+- Replaced `catch (error: any)` in `src/lib/data.ts` with a typed narrow.
+- Removed unused `CONFIG_FILE` constant and the `as any[]` cast in `src/lib/webdav.ts` (typed file list explicitly).
+
 ## 2026-04-02
 
 ### Billing config and document titles
