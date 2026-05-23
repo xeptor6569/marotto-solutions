@@ -208,12 +208,17 @@ export async function getContractByDisplayId(displayId: string): Promise<Contrac
 
 export async function getContractsDue(now: Date = new Date()): Promise<ContractRecord[]> {
     if (!isDatabaseConfigured()) return [];
-    const rows = await prisma.contract.findMany({
-        where: { status: 'active', nextDueDate: { lte: now } },
-        include: { lines: true },
-        orderBy: { nextDueDate: 'asc' },
-    });
-    return rows.map(toContractRecord);
+    try {
+        const rows = await prisma.contract.findMany({
+            where: { status: 'active', nextDueDate: { lte: now } },
+            include: { lines: true },
+            orderBy: { nextDueDate: 'asc' },
+        });
+        return rows.map(toContractRecord);
+    } catch (error) {
+        console.error('Failed to load contracts due', error);
+        return [];
+    }
 }
 
 function normalizeLines(lines: ContractLineInput[]): ContractLineInput[] {

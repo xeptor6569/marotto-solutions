@@ -2,19 +2,10 @@ import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "
 import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase, Repeat } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import AdminDashboardToolbar from "@/components/AdminDashboardToolbar";
 import { getJobs } from "@/lib/jobs";
 import { getContracts, getContractsNeedingReview } from "@/lib/contracts";
 
 export default async function AdminDashboard() {
-    const session = await auth();
-
-    if (!session) {
-        redirect('/auth/signin');
-    }
-
     const invoices = await getDocuments('invoice');
     const estimates = await getDocuments('estimate');
     const quotes = await getDocuments('quote');
@@ -37,12 +28,12 @@ export default async function AdminDashboard() {
         <Container size="4" p={{ initial: "3", sm: "5" }}>
             <Flex direction={{ initial: "column", md: "row" }} justify="between" align={{ initial: "start", md: "center" }} gap="4" mb="5">
                 <Box>
-                    <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <Heading size="8">Marotto Solutions</Heading>
-                    </Link>
-                    <Text size="3" color="gray">Admin dashboard for invoices, estimates, quotes, receipts, and clients.</Text>
+                    <Heading size="8">Dashboard</Heading>
+                    <Text size="3" color="gray">Quick view of invoices, estimates, quotes, receipts, clients, jobs, and recurring contracts.</Text>
                 </Box>
-                <AdminDashboardToolbar email={session.user?.email ?? ""} />
+                <Button asChild size="3">
+                    <Link href="/admin/invoices/new">New invoice</Link>
+                </Button>
             </Flex>
 
             <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '7' }} gap="4" mb="5">

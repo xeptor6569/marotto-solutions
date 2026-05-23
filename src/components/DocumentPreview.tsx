@@ -49,11 +49,12 @@ export default async function DocumentPreview({
     const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
     const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
 
-    const pendingLines = hasPendingApprovalLines(doc.lineItems);
+    const lineItems = doc.lineItems ?? [];
+    const pendingLines = hasPendingApprovalLines(lineItems);
     const showSplitTotals =
         (doc.type === "quote" || doc.type === "estimate") && pendingLines;
-    const agreedSubtotal = agreedScopeLineTotal(doc.lineItems);
-    const pendingSubtotal = pendingApprovalLineTotal(doc.lineItems);
+    const agreedSubtotal = agreedScopeLineTotal(lineItems);
+    const pendingSubtotal = pendingApprovalLineTotal(lineItems);
     const pendingApprovalSummary = pendingLines
         ? pendingApprovalSummarySentence(docTitle, pendingSubtotal)
         : undefined;
@@ -145,7 +146,7 @@ export default async function DocumentPreview({
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
-                                {doc.lineItems.map((item) => (
+                                {lineItems.map((item) => (
                                     <Table.Row key={item.id}>
                                         <Table.Cell>
                                             <Flex align="center" gap="2" wrap="wrap">
@@ -160,9 +161,9 @@ export default async function DocumentPreview({
                                                 </Text>
                                             ) : null}
                                         </Table.Cell>
-                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity}</Text></Table.Cell>
-                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${item.unitPrice.toFixed(2)}</Text></Table.Cell>
-                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${item.total.toFixed(2)}</Text></Table.Cell>
+                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity ?? 0}</Text></Table.Cell>
+                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${(Number(item.unitPrice) || 0).toFixed(2)}</Text></Table.Cell>
+                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${(Number(item.total) || 0).toFixed(2)}</Text></Table.Cell>
                                     </Table.Row>
                                 ))}
                             </Table.Body>

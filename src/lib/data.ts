@@ -77,12 +77,16 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
     const config = await getAppConfig() as AppConfig;
     let docs: DocumentData[] = [];
 
-    if (!config.webdavUrl || !config.webdavUsername) {
+    if (!useWebDAVStorage(config)) {
         // Fallback to local storage
         docs = await fetchDocumentsLocal(type);
     } else {
         try {
-            const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
+            const client = getWebDAVClient(
+                config.webdavUrl!,
+                config.webdavUsername!,
+                config.webdavPassword,
+            );
             docs = await fetchDocuments(client, type);
         } catch (error) {
             console.error(`Error fetching ${type}s from WebDAV:`, error);
@@ -110,13 +114,21 @@ export async function getDocumentById(id: string): Promise<DocumentData | undefi
     return undefined;
 }
 
+function useWebDAVStorage(config: AppConfig): boolean {
+    return Boolean(config.webdavUrl?.trim() && config.webdavUsername?.trim());
+}
+
 export async function saveNewDocument(doc: DocumentData) {
     const config = await getAppConfig() as AppConfig;
 
-    if (!config.webdavUrl) {
+    if (!useWebDAVStorage(config)) {
         await saveDocumentLocal(doc);
     } else {
-        const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
+        const client = getWebDAVClient(
+            config.webdavUrl!,
+            config.webdavUsername!,
+            config.webdavPassword,
+        );
         await saveDocument(client, doc);
     }
 
@@ -127,10 +139,14 @@ export async function saveNewDocument(doc: DocumentData) {
 export async function deleteDocument(type: DocumentType, id: string) {
     const config = await getAppConfig() as AppConfig;
 
-    if (!config.webdavUrl) {
+    if (!useWebDAVStorage(config)) {
         await deleteDocumentLocal(type, id);
     } else {
-        const client = getWebDAVClient(config.webdavUrl, config.webdavUsername, config.webdavPassword);
+        const client = getWebDAVClient(
+            config.webdavUrl!,
+            config.webdavUsername!,
+            config.webdavPassword,
+        );
         await deleteDocumentRemote(client, type, id);
     }
 

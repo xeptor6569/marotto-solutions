@@ -1,15 +1,23 @@
 import type { LineItem } from '@/lib/types';
 
-export function pendingApprovalLineTotal(lineItems: LineItem[]): number {
-    return lineItems.filter((i) => i.pendingClientApproval).reduce((sum, i) => sum + i.total, 0);
+function normalizeLineItems(lineItems: LineItem[] | null | undefined): LineItem[] {
+    return Array.isArray(lineItems) ? lineItems : [];
 }
 
-export function hasPendingApprovalLines(lineItems: LineItem[]): boolean {
-    return lineItems.some((i) => i.pendingClientApproval);
+export function pendingApprovalLineTotal(lineItems: LineItem[] | null | undefined): number {
+    return normalizeLineItems(lineItems)
+        .filter((i) => i.pendingClientApproval)
+        .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
 }
 
-export function agreedScopeLineTotal(lineItems: LineItem[]): number {
-    return lineItems.filter((i) => !i.pendingClientApproval).reduce((sum, i) => sum + i.total, 0);
+export function hasPendingApprovalLines(lineItems: LineItem[] | null | undefined): boolean {
+    return normalizeLineItems(lineItems).some((i) => i.pendingClientApproval);
+}
+
+export function agreedScopeLineTotal(lineItems: LineItem[] | null | undefined): number {
+    return normalizeLineItems(lineItems)
+        .filter((i) => !i.pendingClientApproval)
+        .reduce((sum, i) => sum + (Number(i.total) || 0), 0);
 }
 
 /** Single paragraph for email/mailto when any line awaits approval. */

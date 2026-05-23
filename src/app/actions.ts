@@ -5,6 +5,7 @@ import { getAppConfig, saveAppConfig } from '@/lib/config';
 import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
+import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
 import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -94,7 +95,7 @@ export async function saveSettingsAction(formData: FormData) {
 export async function createInvoiceAction(formData: FormData) {
     const documentId = formData.get('documentId') as string | null;
     const createdAt = (formData.get('createdAt') as string) || new Date().toISOString();
-    const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
+    const redirectToInput = ((formData.get('redirectTo') as string) || '').trim();
     const number = Number(formData.get('number'));
     const date = formData.get('date') as string;
     const dueDate = formData.get('dueDate') as string;
@@ -130,26 +131,9 @@ export async function createInvoiceAction(formData: FormData) {
         }
     }
 
-    // Parse items from flat form data
-    // items[0][description], items[0][quantity]...
-    const items: LineItem[] = [];
-    let i = 0;
-    while (formData.has(`items[${i}][description]`)) {
-        const idRaw = ((formData.get(`items[${i}][id]`) as string) || '').trim();
-        const pendingRaw = formData.get(`items[${i}][pendingClientApproval]`);
-        const pendingClientApproval = pendingRaw === '1' || pendingRaw === 'on';
-        const qty = Number(formData.get(`items[${i}][quantity]`));
-        const unitPrice = Number(formData.get(`items[${i}][unitPrice]`));
-        items.push({
-            id: idRaw || crypto.randomUUID(),
-            description: formData.get(`items[${i}][description]`) as string,
-            details: (formData.get(`items[${i}][details]`) as string) || '',
-            quantity: qty,
-            unitPrice,
-            total: qty * unitPrice,
-            ...(pendingClientApproval ? { pendingClientApproval: true as const } : {}),
-        });
-        i++;
+    const items = parseLineItemsFromFormData(formData);
+    if (items.length === 0) {
+        throw new Error('Add at least one line item before saving.');
     }
 
     const subtotal = items.reduce((acc, item) => acc + item.total, 0);
@@ -262,6 +246,14 @@ export async function createInvoiceAction(formData: FormData) {
     revalidatePath(`/${type}s`);
     revalidatePath(`/admin/${type}s/${doc.id}`);
     revalidatePath(`/${type}s/${doc.id}`);
+
+    const redirectTo =
+        redirectToInput && !['/admin', '/dashboard'].includes(redirectToInput)
+            ? redirectToInput
+            : type === 'lead'
+                ? `/admin/leads/${doc.id}`
+                : `/admin/${type}s/${doc.id}`;
+
     redirect(redirectTo);
 }
 

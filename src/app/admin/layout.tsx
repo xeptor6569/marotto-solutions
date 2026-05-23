@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import AdminShell from "@/components/AdminShell";
 
 export default async function AdminLayout({
     children,
@@ -12,5 +13,5 @@ export default async function AdminLayout({
         redirect("/auth/signin?callbackUrl=/admin");
     }
 
-    return <>{children}</>;
+    return <AdminShell userEmail={session.user?.email ?? ""}>{children}</AdminShell>;
 }
