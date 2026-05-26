@@ -253,6 +253,15 @@ Use this section as a practical "what do I click next?" guide.
 5. Create invoice when ready to bill.
 6. Record payment from invoice flow (receipt generation is supported in payment flow).
 
+### Deposit invoice (percent or fixed)
+
+On any **quote** or **estimate** preview, use **Deposit invoice**:
+
+1. Choose **Percent** (e.g. `50` for 50%) or **Fixed amount** (e.g. `120` for $120).
+2. The billing base is the document total, or **agreed scope only** when some lines are marked pending client approval.
+3. Click **Create draft invoice** — opens the new invoice in edit mode with one deposit line, notes, and tags (`deposit`, `source:QTE-…`).
+4. **Save as Sent**, then **Email** the client from the invoice preview.
+
 ### Workflow C: Run job-centric operations
 
 1. Create job in `/admin/jobs/create`.

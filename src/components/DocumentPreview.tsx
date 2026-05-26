@@ -13,7 +13,9 @@ import { auth } from "@/lib/auth";
 import PrintButton from "@/components/PrintButton";
 import ShareButton from "@/components/ShareButton";
 import EmailDocumentButton from "@/components/EmailDocumentButton";
+import CreateDepositInvoiceButton from "@/components/CreateDepositInvoiceButton";
 import BackButton from "@/components/BackButton";
+import { depositBillingBase } from "@/lib/deposit-invoice";
 
 function getStatusColor(status: DocumentData["status"]) {
     if (status === "paid") return "#166534";
@@ -58,6 +60,8 @@ export default async function DocumentPreview({
     const pendingApprovalSummary = pendingLines
         ? pendingApprovalSummarySentence(docTitle, pendingSubtotal)
         : undefined;
+    const showDepositInvoice = doc.type === "quote" || doc.type === "estimate";
+    const depositBase = showDepositInvoice ? depositBillingBase(doc) : 0;
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
@@ -68,6 +72,13 @@ export default async function DocumentPreview({
                         <Button asChild variant="soft">
                             <Link href={editHref}>Edit {docTitle}</Link>
                         </Button>
+                    ) : null}
+                    {showDepositInvoice ? (
+                        <CreateDepositInvoiceButton
+                            sourceDocumentId={doc.id}
+                            billingBase={depositBase}
+                            sourceLabel={docTitle}
+                        />
                     ) : null}
                     <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
                     {doc.type !== "lead" ? (

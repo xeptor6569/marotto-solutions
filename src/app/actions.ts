@@ -6,6 +6,10 @@ import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentTyp
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
+import {
+    buildDepositInvoiceDraft,
+    type DepositMode,
+} from '@/lib/deposit-invoice';
 import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -90,6 +94,47 @@ export async function saveSettingsAction(formData: FormData) {
     revalidatePath('/');
     revalidatePath('/dashboard');
     return { success: true };
+}
+
+export async function createDepositInvoiceAction(input: {
+    sourceDocumentId: string;
+    mode: DepositMode;
+    value: number;
+}): Promise<{ success: false; error: string } | never> {
+    const sourceId = input.sourceDocumentId?.trim();
+    if (!sourceId) {
+        return { success: false, error: 'Source document is required.' };
+    }
+
+    try {
+        const source = await getDocumentById(sourceId);
+        if (!source || (source.type !== 'quote' && source.type !== 'estimate')) {
+            return { success: false, error: 'Source quote or estimate not found.' };
+        }
+
+        const number = await getNextNumber('invoice');
+        const doc = buildDepositInvoiceDraft(source, number, input.mode, input.value);
+        await saveNewDocument(doc);
+
+        revalidatePath('/admin');
+        revalidatePath('/admin/invoices');
+        revalidatePath(`/admin/${source.type}s`);
+        revalidatePath(`/admin/${source.type}s/${source.id}`);
+        revalidatePath(`/admin/invoices/${doc.id}`);
+        revalidatePath(`/admin/invoices/${doc.id}/edit`);
+
+        redirect(`/admin/invoices/${doc.id}/edit`);
+    } catch (error) {
+        if (error && typeof error === 'object' && 'digest' in error) {
+            const digest = String((error as { digest?: string }).digest ?? '');
+            if (digest.startsWith('NEXT_REDIRECT')) {
+                throw error;
+            }
+        }
+        console.error('Failed to create deposit invoice', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: message };
+    }
 }
 
 export async function createInvoiceAction(formData: FormData) {
