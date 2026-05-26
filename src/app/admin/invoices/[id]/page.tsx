@@ -10,5 +10,5 @@ export default async function AdminInvoicePage({ params }: { params: Promise<{ i
         notFound();
     }
 
-    return <DocumentPreview doc={doc} showBackButton backHref="/admin" editHref={`/admin/invoices/${doc.id}/edit`} />;
+    return <DocumentPreview doc={doc} showBackButton backHref="/admin/invoices" editHref={`/admin/invoices/${doc.id}/edit`} />;
 }

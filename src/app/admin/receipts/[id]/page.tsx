@@ -10,5 +10,5 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         notFound();
     }
 
-    return <DocumentPreview doc={doc} showBackButton backHref="/admin" editHref={`/admin/receipts/${doc.id}/edit`} />;
+    return <DocumentPreview doc={doc} showBackButton backHref="/admin/receipts" editHref={`/admin/receipts/${doc.id}/edit`} />;
 }

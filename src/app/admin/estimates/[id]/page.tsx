@@ -10,5 +10,5 @@ export default async function AdminEstimatePage({ params }: { params: Promise<{ 
         notFound();
     }
 
-    return <DocumentPreview doc={doc} showBackButton backHref="/admin" editHref={`/admin/estimates/${doc.id}/edit`} />;
+    return <DocumentPreview doc={doc} showBackButton backHref="/admin/estimates" editHref={`/admin/estimates/${doc.id}/edit`} />;
 }

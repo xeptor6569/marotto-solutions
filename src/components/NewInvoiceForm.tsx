@@ -144,6 +144,21 @@ export default function NewDocumentForm({
         setCustomerInputValue('customerAddress', selected.address || '');
     };
 
+    const applyJobDefaults = (jobId: string) => {
+        setSelectedJobId(jobId);
+        if (!jobId) return;
+        const selectedJob = jobOptions.find((job) => job.id === jobId);
+        if (!selectedJob) return;
+
+        if (selectedJob.clientId) {
+            handleClientChange(selectedJob.clientId);
+            return;
+        }
+        if (selectedJob.leadId) {
+            handleLeadChange(selectedJob.leadId);
+        }
+    };
+
     const handleCreateJob = () => {
         const name = newJobName.trim();
         if (!name) {
@@ -171,7 +186,7 @@ export default function NewDocumentForm({
                 leadId: created.leadId,
             };
             setJobOptions((prev) => [option, ...prev.filter((item) => item.id !== option.id)]);
-            setSelectedJobId(option.id);
+            applyJobDefaults(option.id);
             setNewJobName('');
             setNewJobDescription('');
         });
@@ -232,7 +247,7 @@ export default function NewDocumentForm({
                                     <Text as="label" size="2">Select existing job</Text>
                                     <select
                                         value={selectedJobId}
-                                        onChange={(e) => setSelectedJobId(e.target.value)}
+                                        onChange={(e) => applyJobDefaults(e.target.value)}
                                         style={nativeSelectStyle}
                                     >
                                         <option value="">None</option>

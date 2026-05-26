@@ -18,7 +18,7 @@ export default async function AdminLeadsPage() {
                         <Button asChild size="2" variant="solid">
                             <Link href="/admin/leads/create"><Plus size={14} /> New client</Link>
                         </Button>
-                        <BackButton href="/admin" />
+                        <BackButton href="/admin" label="Admin home" />
                     </>
                 }
             />

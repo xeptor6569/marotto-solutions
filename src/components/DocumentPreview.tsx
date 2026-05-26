@@ -50,6 +50,8 @@ export default async function DocumentPreview({
         : [];
     const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
     const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
+    const showInvoiceAmountDue = doc.type === "invoice";
+    const invoiceAmountDue = showInvoiceAmountDue ? balanceDue : doc.total;
 
     const lineItems = doc.lineItems ?? [];
     const pendingLines = hasPendingApprovalLines(lineItems);
@@ -316,12 +318,12 @@ export default async function DocumentPreview({
                             {doc.type === "invoice" ? (
                                 <>
                                     <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Paid</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${paidAmount.toFixed(2)}</Text>
+                                        <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
                                     </Flex>
                                     <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Balance Due</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${balanceDue.toFixed(2)}</Text>
+                                        <Text size="2" style={{ color: "#4b5563" }}>Paid</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${paidAmount.toFixed(2)}</Text>
                                     </Flex>
                                 </>
                             ) : null}
@@ -336,18 +338,30 @@ export default async function DocumentPreview({
                                         <Text size="2" style={{ color: "#111827" }}>${pendingSubtotal.toFixed(2)}</Text>
                                     </Flex>
                                 </>
-                            ) : (
+                            ) : doc.type !== "invoice" ? (
                                 <Flex justify="between" py="2">
                                     <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
                                     <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
                                 </Flex>
-                            )}
+                            ) : null}
                             <Flex justify="between" py="2" style={{ borderTop: "2px solid #111827" }}>
                                 <Text size="4" weight="bold" style={{ color: "#111827" }}>
-                                    {showSplitTotals ? "Total if all approved" : "Total"}
+                                    {showInvoiceAmountDue ? "Amount Due" : showSplitTotals ? "Total if all approved" : "Total"}
                                 </Text>
-                                <Text size="6" weight="bold" style={{ color: getStatusColor(doc.status) }}>${doc.total.toFixed(2)}</Text>
+                                <Text
+                                    size="6"
+                                    weight="bold"
+                                    style={{ color: showInvoiceAmountDue && invoiceAmountDue > 0 ? "#b91c1c" : getStatusColor(doc.status) }}
+                                >
+                                    ${invoiceAmountDue.toFixed(2)}
+                                </Text>
                             </Flex>
+                            {showInvoiceAmountDue && paidAmount > 0 ? (
+                                <Flex justify="between" pt="2">
+                                    <Text size="1" style={{ color: "#6b7280" }}>Original Invoice Total</Text>
+                                    <Text size="1" style={{ color: "#6b7280" }}>${doc.total.toFixed(2)}</Text>
+                                </Flex>
+                            ) : null}
                         </Box>
                     </Flex>
                 </div>

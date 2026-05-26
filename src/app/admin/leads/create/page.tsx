@@ -14,7 +14,7 @@ export default function CreateLeadPage() {
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/leads">All clients</Link>
                         </Button>
-                        <BackButton href="/admin" />
+                        <BackButton href="/admin" label="Admin home" />
                     </>
                 }
             />

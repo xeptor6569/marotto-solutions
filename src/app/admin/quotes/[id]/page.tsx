@@ -10,5 +10,5 @@ export default async function AdminQuotePage({ params }: { params: Promise<{ id:
         notFound();
     }
 
-    return <DocumentPreview doc={doc} showBackButton backHref="/admin" editHref={`/admin/quotes/${doc.id}/edit`} />;
+    return <DocumentPreview doc={doc} showBackButton backHref="/admin/quotes" editHref={`/admin/quotes/${doc.id}/edit`} />;
 }
