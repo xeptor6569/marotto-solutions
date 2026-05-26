@@ -1,6 +1,16 @@
 import { Badge, Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
-import type { DocumentData } from "@/lib/types";
+import type { DocumentData, PaymentMethodKey, PaymentMethodEntry } from "@/lib/types";
+import {
+    Banknote,
+    Building2,
+    CircleDollarSign,
+    CreditCard,
+    HandCoins,
+    Landmark,
+    Smartphone,
+    Wallet,
+} from "lucide-react";
 import { getAppConfig } from "@/lib/config";
 import { DOC_LABEL } from "@/lib/document-labels";
 import {
@@ -28,6 +38,87 @@ function getDisplayName(doc: DocumentData) {
     return doc.title ? `${doc.id} - ${doc.title}` : doc.id;
 }
 
+function normalizePhoneDigits(value?: string) {
+    return (value || "").replace(/\D/g, "");
+}
+
+function normalizeHandle(value?: string) {
+    return (value || "").trim().replace(/^@+/, "");
+}
+
+function toMoneyAmount(amount: number) {
+    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
+    return safeAmount.toFixed(2);
+}
+
+function paymentLinkForMethod(
+    key: PaymentMethodKey,
+    method: PaymentMethodEntry,
+    amount: number,
+    invoiceId: string,
+) {
+    if (method.comingSoon) return null;
+    const raw = (method.value || "").trim();
+    const encodedAmount = encodeURIComponent(toMoneyAmount(amount));
+    const encodedNote = encodeURIComponent(`Invoice ${invoiceId}`);
+
+    switch (key) {
+        case "paypal": {
+            if (!raw) return null;
+            if (/^https?:\/\//i.test(raw)) return raw;
+            const paypalUser = normalizeHandle(raw);
+            return paypalUser
+                ? `https://www.paypal.com/paypalme/${encodeURIComponent(paypalUser)}/${encodedAmount}`
+                : null;
+        }
+        case "venmo": {
+            const venmoUser = normalizeHandle(raw);
+            return venmoUser
+                ? `https://venmo.com/${encodeURIComponent(venmoUser)}?txn=pay&amount=${encodedAmount}&note=${encodedNote}`
+                : null;
+        }
+        case "cashApp": {
+            const cashTag = normalizeHandle(raw);
+            return cashTag
+                ? `https://cash.app/$${encodeURIComponent(cashTag)}`
+                : null;
+        }
+        case "zelle": {
+            if (!raw) return null;
+            if (raw.includes("@")) return `mailto:${raw}?subject=${encodedNote}`;
+            const digits = normalizePhoneDigits(raw);
+            return digits ? `tel:${digits}` : null;
+        }
+        case "stripe":
+            return /^https?:\/\//i.test(raw) ? raw : null;
+        default:
+            return null;
+    }
+}
+
+function paymentMethodIcon(key: PaymentMethodKey) {
+    switch (key) {
+        case "cash":
+            return <Banknote size={16} />;
+        case "check":
+            return <Landmark size={16} />;
+        case "zelle":
+            return <Building2 size={16} />;
+        case "cashApp":
+            return <HandCoins size={16} />;
+        case "paypal":
+            return <Wallet size={16} />;
+        case "venmo":
+            return <CircleDollarSign size={16} />;
+        case "applePay":
+            return <Smartphone size={16} />;
+        case "stripe":
+            return <CreditCard size={16} />;
+        default:
+            return <CircleDollarSign size={16} />;
+    }
+}
+
 export default async function DocumentPreview({
     doc,
     showBackButton = false,
@@ -46,7 +137,8 @@ export default async function DocumentPreview({
     const sharePath = doc.type === "lead" ? "/" : `/${doc.type}s/${doc.id}`;
     const shareTitle = `${docTitle} ${doc.id}`;
     const activePaymentMethods = doc.type === "invoice"
-        ? Object.values(config.billing?.paymentMethods || {}).filter((method) => method.enabled)
+        ? (Object.entries(config.billing?.paymentMethods || {}) as Array<[PaymentMethodKey, PaymentMethodEntry]>)
+            .filter(([, method]) => method.enabled)
         : [];
     const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
     const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
@@ -225,35 +317,70 @@ export default async function DocumentPreview({
                                         rowGap: "0.35rem",
                                     }}
                                 >
-                                    {activePaymentMethods.map((method) => {
-                                        const isCheck = method.label === "Check";
+                                    {activePaymentMethods.map(([key, method]) => {
+                                        const isCheck = key === "check";
                                         const detailParts: string[] = [];
                                         if (method.value) detailParts.push(method.value);
                                         if (isCheck && config.billing?.checkPayableTo) {
                                             detailParts.push(`Payable to: ${config.billing.checkPayableTo}`);
                                         }
                                         const primary = detailParts.join(" · ");
+                                        const payLink = paymentLinkForMethod(key, method, invoiceAmountDue, doc.id);
                                         return (
-                                            <Box key={`${method.label}-${method.value || method.note || "method"}`}>
-                                                <Text as="div" size="2" style={{ color: "#111827", lineHeight: 1.35 }}>
-                                                    <Text weight="bold" as="span">{method.label}</Text>
-                                                    {method.comingSoon ? (
-                                                        <Text as="span" size="1" style={{ color: "#6b7280" }}> (coming soon)</Text>
-                                                    ) : null}
+                                            <Card key={key} variant="surface" style={{ padding: 12 }}>
+                                                <Flex direction="column" gap="2">
+                                                    <Flex justify="between" align="center" gap="2" wrap="wrap">
+                                                        <Flex align="center" gap="2">
+                                                            <Box
+                                                                style={{
+                                                                    width: 24,
+                                                                    height: 24,
+                                                                    borderRadius: 999,
+                                                                    display: "inline-flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    background: "#eef2ff",
+                                                                    color: "#3730a3",
+                                                                    flexShrink: 0,
+                                                                }}
+                                                            >
+                                                                {paymentMethodIcon(key)}
+                                                            </Box>
+                                                            <Text as="div" size="2" weight="bold" style={{ color: "#111827" }}>
+                                                                {method.label}
+                                                            </Text>
+                                                        </Flex>
+                                                        {method.comingSoon ? <Badge color="gray" size="1">Coming soon</Badge> : null}
+                                                    </Flex>
                                                     {primary ? (
-                                                        <Text as="span" style={{ color: "#1f2937" }}>: {primary}</Text>
+                                                        <Text as="div" size="1" style={{ color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>
+                                                            {primary}
+                                                        </Text>
                                                     ) : null}
-                                                </Text>
+                                                    {payLink ? (
+                                                        <Button asChild size="2">
+                                                            <a href={payLink} target="_blank" rel="noreferrer">
+                                                                Pay ${invoiceAmountDue.toFixed(2)}
+                                                            </a>
+                                                        </Button>
+                                                    ) : (
+                                                        <Text as="div" size="1" color="gray">
+                                                            {isCheck || key === "cash" || key === "applePay"
+                                                                ? "Use details above to pay with this method."
+                                                                : "Add a valid link/handle in settings to enable tap-to-pay."}
+                                                        </Text>
+                                                    )}
+                                                </Flex>
                                                 {method.note ? (
                                                     <Text
                                                         as="div"
                                                         size="1"
-                                                        style={{ color: "#6b7280", lineHeight: 1.35, marginTop: 1, whiteSpace: "pre-line" }}
+                                                        style={{ color: "#6b7280", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
                                                     >
                                                         {method.note}
                                                     </Text>
                                                 ) : null}
-                                            </Box>
+                                            </Card>
                                         );
                                     })}
                                 </Box>
