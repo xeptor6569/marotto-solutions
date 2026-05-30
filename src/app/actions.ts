@@ -13,17 +13,15 @@ import {
 import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import {
+    parseFormStatus,
+    resolveDocumentStatus,
+    validateRecordPayment,
+} from '@/lib/document-save';
 
-function resolveDocumentStatus(type: DocumentType, intent: string | null, fallback: DocumentData['status'] = 'draft'): DocumentData['status'] {
-    if (intent === 'draft') return 'draft';
-    if (intent === 'sent') return 'sent';
-    if (intent === 'paid' && type === 'invoice') return 'paid';
-    return fallback;
-}
-
-function getPaymentKind(intent: string | null): PaymentKind {
-    if (intent === 'down_payment') return 'down_payment';
-    if (intent === 'final') return 'final';
+function getPaymentKind(raw: string | null): PaymentKind {
+    if (raw === 'down_payment') return 'down_payment';
+    if (raw === 'final') return 'final';
     return 'partial';
 }
 
@@ -146,9 +144,9 @@ export async function createInvoiceAction(formData: FormData) {
     const dueDate = formData.get('dueDate') as string;
     const notes = (formData.get('notes') as string) || '';
     const type = (formData.get('type') as string) as DocumentType || 'invoice';
-    const currentStatus = ((formData.get('currentStatus') as DocumentData['status']) || 'draft');
+    const currentStatus = parseFormStatus(formData.get('currentStatus') as string | null, 'draft');
+    const formStatus = parseFormStatus(formData.get('status') as string | null, currentStatus);
     const intent = formData.get('intent') as string | null;
-    const status = resolveDocumentStatus(type, intent, currentStatus);
     const paymentAmount = Number(formData.get('paymentAmount') || 0);
     const paymentDate = (formData.get('paymentDate') as string) || new Date().toISOString().split('T')[0];
     const paymentMethod = (formData.get('paymentMethod') as string) || '';
@@ -190,6 +188,26 @@ export async function createInvoiceAction(formData: FormData) {
         type === 'quote' ? 'QTE' :
         'RCT';
 
+    const existingPayments = initialDataPayments(formData);
+    const existingPaidAmount = Number(formData.get('paidAmount') || 0)
+        || existingPayments.reduce((acc, payment) => acc + payment.amount, 0);
+    const existingBalanceDue = Math.max(0, total - existingPaidAmount);
+
+    if (type === 'invoice' && intent === 'record_payment') {
+        const paymentError = validateRecordPayment(paymentAmount, existingBalanceDue);
+        if (paymentError) {
+            throw new Error(paymentError);
+        }
+    }
+
+    let status = resolveDocumentStatus({
+        type,
+        intent,
+        formStatus,
+        balanceDue: existingBalanceDue,
+        paidAmount: existingPaidAmount,
+    });
+
     const doc: DocumentData = {
         id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,
         number,
@@ -206,10 +224,12 @@ export async function createInvoiceAction(formData: FormData) {
         tags: [],
         createdAt,
         updatedAt: new Date().toISOString(),
-        payments: initialDataPayments(formData),
-        paidAmount: Number(formData.get('paidAmount') || 0),
-        balanceDue: Number(formData.get('balanceDue') || total),
+        payments: existingPayments,
+        paidAmount: existingPaidAmount,
+        balanceDue: existingBalanceDue,
     };
+
+    let createdReceiptId: string | null = null;
 
     if (type === 'invoice' && intent === 'record_payment' && paymentAmount > 0) {
         const paymentEntry: PaymentEntry = {
@@ -220,8 +240,7 @@ export async function createInvoiceAction(formData: FormData) {
             notes: paymentNotes || undefined,
             kind: getPaymentKind(formData.get('paymentKind') as string | null),
         };
-        const existingPayments = doc.payments || [];
-        const payments = [...existingPayments, paymentEntry];
+        const payments = [...(doc.payments || []), paymentEntry];
         const paidAmount = payments.reduce((acc, payment) => acc + payment.amount, 0);
         const balanceDue = Math.max(0, doc.total - paidAmount);
         doc.payments = payments;
@@ -229,8 +248,14 @@ export async function createInvoiceAction(formData: FormData) {
         doc.balanceDue = balanceDue;
         doc.status = balanceDue <= 0 ? 'paid' : (doc.status === 'draft' ? 'sent' : doc.status);
     } else {
-        const paidAmount = doc.paidAmount || 0;
-        doc.balanceDue = Math.max(0, doc.total - paidAmount);
+        doc.balanceDue = Math.max(0, doc.total - (doc.paidAmount || 0));
+        doc.status = resolveDocumentStatus({
+            type,
+            intent,
+            formStatus,
+            balanceDue: doc.balanceDue,
+            paidAmount: doc.paidAmount || 0,
+        });
     }
 
     try {
@@ -267,6 +292,7 @@ export async function createInvoiceAction(formData: FormData) {
                 };
                 await saveNewDocument(receipt);
                 latestPayment.receiptId = receiptId;
+                createdReceiptId = receiptId;
                 await saveNewDocument(doc);
             }
         }
@@ -292,12 +318,17 @@ export async function createInvoiceAction(formData: FormData) {
     revalidatePath(`/admin/${type}s/${doc.id}`);
     revalidatePath(`/${type}s/${doc.id}`);
 
-    const redirectTo =
+    let redirectTo =
         redirectToInput && !['/admin', '/dashboard'].includes(redirectToInput)
             ? redirectToInput
             : type === 'lead'
                 ? `/admin/leads/${doc.id}`
                 : `/admin/${type}s/${doc.id}`;
+
+    if (createdReceiptId) {
+        const separator = redirectTo.includes('?') ? '&' : '?';
+        redirectTo = `${redirectTo}${separator}recorded=1&receipt=${encodeURIComponent(createdReceiptId)}`;
+    }
 
     redirect(redirectTo);
 }

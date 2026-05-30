@@ -5,11 +5,11 @@ import { getDocumentFormPickers } from "@/lib/document-form-pickers";
 
 export default async function NewEstimatePage() {
     const nextNumber = await getNextNumber('estimate');
-    const { clients, leads, jobs } = await getDocumentFormPickers();
+    const { clients, leads, jobs, paymentMethods } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p="5">
-            <NewDocumentForm nextNumber={nextNumber} type="estimate" clients={clients} leads={leads} jobs={jobs} />
+            <NewDocumentForm nextNumber={nextNumber} type="estimate" clients={clients} leads={leads} jobs={jobs} paymentMethods={paymentMethods} />
         </Container>
     );
 }
