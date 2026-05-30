@@ -31,6 +31,48 @@ This README is intended to be an operational handbook you can come back to when 
   - receipts
 - track jobs and link documents to a job
 - manage recurring service contracts and issue cycle invoices
+- per-line discounts, customizable warranty text, and per-invoice payment customization (see [Document & Invoice Features](#document--invoice-features))
+
+## Document & Invoice Features
+
+These apply to the shared document editor (`src/components/NewInvoiceForm.tsx`) and preview (`src/components/DocumentPreview.tsx`).
+
+### Save workflow
+
+The editor uses a sticky action footer (mobile + desktop):
+
+- **Status** dropdown — Draft, Sent, Paid, Void
+- **Save** — saves content with the selected status
+- **Issue to client** (shown while a draft) — type-specific label: "Issue to client" (invoice), "Finalize estimate", "Issue quote"
+- Invoice status follows money: once recorded payments cover the balance, status becomes `paid` automatically
+- A **More (⋯)** menu exposes "Mark paid (no payment recorded)" for edge cases (write-offs, untracked cash)
+
+### Payments (invoices)
+
+- Payments live in their own card with a large **Balance due** and history
+- 25% / 50% / Full balance quick chips, amount defaults to balance due
+- Method dropdown is populated from enabled billing methods
+- **Record payment & save** appends the payment, updates paid/balance, auto-creates a receipt, and returns to the preview with a confirmation linking the new receipt
+- Validation prevents amounts ≤ 0 or greater than the balance due
+
+### Per-line discounts
+
+- Each line item has a **% Off** field
+- The line total is stored net of the discount; the preview shows the original price struck through plus a "X% off" badge
+- Totals display **Subtotal (before discounts)** and **Discount savings** whenever any discount is present
+
+### Customizable warranty (invoices)
+
+- Optional warranty card with an enable toggle, title (e.g. "1 Year Workmanship Warranty"), and details text
+- A live preview in the editor mirrors how it renders on the invoice
+- Renders as a highlighted section on the invoice preview/print
+
+### Per-invoice payment customization (invoices)
+
+- "Payment Options For This Invoice" card overrides global billing settings for a single invoice:
+  - choose which enabled methods appear on this invoice
+  - set a **Stripe payment link** specific to this invoice that overrides the global Stripe value (and forces Stripe to show even if globally disabled)
+- Stored on the document as `warranty` and `paymentOverrides` (`src/lib/types.ts`)
 
 ## Admin UX and Navigation (Important)
 
@@ -247,11 +289,12 @@ Use this section as a practical "what do I click next?" guide.
 ### Workflow B: Estimate -> Quote -> Invoice
 
 1. Create estimate from `Create -> Estimate`.
-2. Add detailed scope and line items.
-3. Save draft while revising.
+2. Add detailed scope and line items (apply per-line discounts if needed).
+3. **Save** while revising (status stays Draft).
 4. Create quote when commercial terms are ready.
-5. Create invoice when ready to bill.
-6. Record payment from invoice flow (receipt generation is supported in payment flow).
+5. Create invoice when ready to bill; optionally add a warranty section and customize payment options for the invoice.
+6. Use **Issue to client** to mark it Sent, then **Email** from the preview.
+7. In the invoice **Payments** card, use **Record payment & save** — this updates the balance, auto-creates a receipt, and marks the invoice Paid when the balance reaches zero.
 
 ### Deposit invoice (percent or fixed)
 
@@ -260,7 +303,7 @@ On any **quote** or **estimate** preview, use **Deposit invoice**:
 1. Choose **Percent** (e.g. `50` for 50%) or **Fixed amount** (e.g. `120` for $120).
 2. The billing base is the document total, or **agreed scope only** when some lines are marked pending client approval.
 3. Click **Create draft invoice** — opens the new invoice in edit mode with one deposit line, notes, and tags (`deposit`, `source:QTE-…`).
-4. **Save as Sent**, then **Email** the client from the invoice preview.
+4. **Issue to client** to mark it Sent, then **Email** the client from the invoice preview.
 
 ### Workflow C: Run job-centric operations
 
@@ -310,6 +353,7 @@ Expected behavior:
   - value/handle/link field
   - optional note
   - coming-soon toggle
+- **method ordering**: use the up/down arrows on each method card to control the order methods appear on invoices (persisted as a `position` on each method)
 
 Payment methods supported:
 
@@ -321,6 +365,8 @@ Payment methods supported:
 - venmo
 - apple pay
 - stripe
+
+Per-method links become tappable "Pay $X" buttons on invoice previews where the provider supports it (PayPal, Venmo, Cash App, Zelle, Stripe). Cash/Check/Apple Pay show instructions instead of a forced link.
 
 ## Operational Quick Reference
 

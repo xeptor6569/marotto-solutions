@@ -14,14 +14,14 @@ export function getDefaultBillingConfig(): BillingConfig {
         checkPayableTo: '',
         paymentInstructions: '',
         paymentMethods: {
-            cash: { enabled: true, label: 'Cash', note: '' },
-            check: { enabled: true, label: 'Check', note: '' },
-            zelle: { enabled: true, label: 'Zelle', value: '', note: '' },
-            cashApp: { enabled: true, label: 'Cash App', value: '', note: '' },
-            paypal: { enabled: true, label: 'PayPal', value: '', note: '' },
-            venmo: { enabled: true, label: 'Venmo', value: '', note: '' },
-            applePay: { enabled: true, label: 'Apple Pay', value: '', note: '' },
-            stripe: { enabled: true, label: 'Stripe', value: '', note: '', comingSoon: true },
+            cash: { enabled: true, label: 'Cash', note: '', position: 0 },
+            check: { enabled: true, label: 'Check', note: '', position: 1 },
+            zelle: { enabled: true, label: 'Zelle', value: '', note: '', position: 2 },
+            cashApp: { enabled: true, label: 'Cash App', value: '', note: '', position: 3 },
+            paypal: { enabled: true, label: 'PayPal', value: '', note: '', position: 4 },
+            venmo: { enabled: true, label: 'Venmo', value: '', note: '', position: 5 },
+            applePay: { enabled: true, label: 'Apple Pay', value: '', note: '', position: 6 },
+            stripe: { enabled: true, label: 'Stripe', value: '', note: '', comingSoon: true, position: 7 },
         },
     };
 }

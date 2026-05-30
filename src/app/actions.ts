@@ -34,6 +34,21 @@ export async function saveSettingsAction(formData: FormData) {
     const paymentMethodKeys: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
     const currentConfig = await getAppConfig();
 
+    const orderRaw = ((formData.get('paymentMethodOrder') as string) || '').trim();
+    const orderedKeys = orderRaw
+        .split(',')
+        .map((k) => k.trim())
+        .filter((k): k is PaymentMethodKey => (paymentMethodKeys as string[]).includes(k));
+    const positionByKey = new Map<PaymentMethodKey, number>();
+    orderedKeys.forEach((key, index) => positionByKey.set(key, index));
+    // Any keys missing from the submitted order keep a stable position after the ordered ones.
+    let fallbackPosition = orderedKeys.length;
+    for (const key of paymentMethodKeys) {
+        if (!positionByKey.has(key)) {
+            positionByKey.set(key, fallbackPosition++);
+        }
+    }
+
     const configUpdate: Partial<AppConfig> = {
         webdavUrl: url,
         webdavUsername: username,
@@ -59,6 +74,7 @@ export async function saveSettingsAction(formData: FormData) {
                     value: ((formData.get(`billing.${key}.value`) as string) || '').trim(),
                     note: ((formData.get(`billing.${key}.note`) as string) || '').trim(),
                     comingSoon: formData.has(`billing.${key}.comingSoon`),
+                    position: positionByKey.get(key) ?? existing?.position ?? 0,
                 };
                 return acc;
             }, {} as BillingConfig['paymentMethods']),
@@ -155,6 +171,25 @@ export async function createInvoiceAction(formData: FormData) {
     const selectedLeadId = (formData.get('leadId') as string) || '';
     const selectedJobId = (formData.get('jobId') as string) || '';
 
+    const warrantyEnabled = formData.has('warrantyEnabled');
+    const warrantyText = ((formData.get('warrantyText') as string) || '').trim();
+    const warrantyTitle = ((formData.get('warrantyTitle') as string) || '').trim();
+    const warranty = (warrantyEnabled && warrantyText)
+        ? { enabled: true, title: warrantyTitle || undefined, text: warrantyText }
+        : undefined;
+
+    const customizeMethods = formData.has('customizePaymentMethods');
+    const allPaymentMethodKeys: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
+    const enabledMethods = allPaymentMethodKeys.filter((key) => formData.has(`invoiceMethod.${key}`));
+    const stripeLink = ((formData.get('invoiceStripeLink') as string) || '').trim();
+    const stripeNote = ((formData.get('invoiceStripeNote') as string) || '').trim();
+    const paymentOverrides = (type === 'invoice' && (customizeMethods || stripeLink))
+        ? {
+            ...(customizeMethods ? { customizeMethods: true, enabledMethods } : {}),
+            ...(stripeLink ? { stripeLink, ...(stripeNote ? { stripeNote } : {}) } : {}),
+        }
+        : undefined;
+
     const customer: Customer = {
         id: crypto.randomUUID(),
         name: formData.get('customerName') as string,
@@ -227,6 +262,8 @@ export async function createInvoiceAction(formData: FormData) {
         payments: existingPayments,
         paidAmount: existingPaidAmount,
         balanceDue: existingBalanceDue,
+        ...(warranty ? { warranty } : {}),
+        ...(paymentOverrides ? { paymentOverrides } : {}),
     };
 
     let createdReceiptId: string | null = null;

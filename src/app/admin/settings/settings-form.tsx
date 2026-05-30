@@ -1,34 +1,49 @@
 'use client';
 
 import { Flex, Button, Heading, Box, Text, TextField, Callout, TextArea, Grid, Card } from "@radix-ui/themes";
-import { useActionState } from 'react'; // React 19 / Next 16
+import { useActionState, useState } from 'react'; // React 19 / Next 16
 import { saveSettingsAction } from "@/app/actions";
 import { AppConfig, PaymentMethodKey } from "@/lib/types";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, ChevronUp, ChevronDown } from "lucide-react";
 
 type SaveSettingsState = { success: boolean; error?: string };
 
 const initialState: SaveSettingsState = { success: false };
 
-const paymentMethodFields: Array<{ key: PaymentMethodKey; valueLabel: string; noteLabel: string }> = [
-    { key: 'cash', valueLabel: 'Label Override', noteLabel: 'Cash Note' },
-    { key: 'check', valueLabel: 'Payable To', noteLabel: 'Check Note' },
-    { key: 'zelle', valueLabel: 'Zelle Handle', noteLabel: 'Zelle Note' },
-    { key: 'cashApp', valueLabel: 'Cash App Handle', noteLabel: 'Cash App Note' },
-    { key: 'paypal', valueLabel: 'PayPal Link / Handle', noteLabel: 'PayPal Note' },
-    { key: 'venmo', valueLabel: 'Venmo Handle', noteLabel: 'Venmo Note' },
-    { key: 'applePay', valueLabel: 'Apple Pay Number / Email', noteLabel: 'Apple Pay Note' },
-    { key: 'stripe', valueLabel: 'Stripe Link', noteLabel: 'Stripe Note' },
-];
+const ALL_METHOD_KEYS: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
+
+const paymentMethodFields: Record<PaymentMethodKey, { valueLabel: string; noteLabel: string }> = {
+    cash: { valueLabel: 'Label Override', noteLabel: 'Cash Note' },
+    check: { valueLabel: 'Payable To', noteLabel: 'Check Note' },
+    zelle: { valueLabel: 'Zelle Handle', noteLabel: 'Zelle Note' },
+    cashApp: { valueLabel: 'Cash App Handle', noteLabel: 'Cash App Note' },
+    paypal: { valueLabel: 'PayPal Link / Handle', noteLabel: 'PayPal Note' },
+    venmo: { valueLabel: 'Venmo Handle', noteLabel: 'Venmo Note' },
+    applePay: { valueLabel: 'Apple Pay Number / Email', noteLabel: 'Apple Pay Note' },
+    stripe: { valueLabel: 'Stripe Link', noteLabel: 'Stripe Note' },
+};
+
+function initialMethodOrder(config: Partial<AppConfig>): PaymentMethodKey[] {
+    const methods = config.billing?.paymentMethods;
+    return [...ALL_METHOD_KEYS].sort((a, b) => {
+        const pa = methods?.[a]?.position ?? ALL_METHOD_KEYS.indexOf(a);
+        const pb = methods?.[b]?.position ?? ALL_METHOD_KEYS.indexOf(b);
+        return pa - pb;
+    });
+}
 
 export default function SettingsForm({ config }: { config: Partial<AppConfig> }) {
-    // Wrapper for action to match state signature if needed, or modify action.
-    // Action returns { success, error? }.
-    // useActionState signature: (state, payload) => newState.
+    const [order, setOrder] = useState<PaymentMethodKey[]>(() => initialMethodOrder(config));
 
-    // We need to adapt saveSettingsAction to accept state as first arg if we use useActionState
-    // But saveSettingsAction currently signature is (FormData) => ...
-    // Let's wrapping it.
+    const moveMethod = (index: number, direction: -1 | 1) => {
+        setOrder((prev) => {
+            const target = index + direction;
+            if (target < 0 || target >= prev.length) return prev;
+            const next = [...prev];
+            [next[index], next[target]] = [next[target], next[index]];
+            return next;
+        });
+    };
 
     const [state, formAction, isPending] = useActionState(
         async (_prevState: SaveSettingsState, formData: FormData): Promise<SaveSettingsState> => {
@@ -97,14 +112,47 @@ export default function SettingsForm({ config }: { config: Partial<AppConfig> })
                     />
                 </Box>
 
+                <Box>
+                    <Heading size="4">Payment Methods</Heading>
+                    <Text as="p" size="2" color="gray" mt="1">
+                        Use the arrows to set the order methods appear on invoices. Disabled methods are hidden from clients.
+                    </Text>
+                </Box>
+                <input type="hidden" name="paymentMethodOrder" value={order.join(',')} />
                 <Grid columns={{ initial: '1', md: '2' }} gap="3">
-                    {paymentMethodFields.map(({ key, valueLabel, noteLabel }) => {
+                    {order.map((key, index) => {
+                        const { valueLabel, noteLabel } = paymentMethodFields[key];
                         const method = config.billing?.paymentMethods?.[key];
                         return (
                             <Card key={key} variant="surface">
                                 <Flex direction="column" gap="3">
-                                    <Flex justify="between" align="center">
-                                        <Text size="3" weight="bold">{method?.label || key}</Text>
+                                    <Flex justify="between" align="center" gap="2">
+                                        <Flex align="center" gap="2">
+                                            <Flex direction="column">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="1"
+                                                    disabled={index === 0}
+                                                    onClick={() => moveMethod(index, -1)}
+                                                    aria-label={`Move ${method?.label || key} up`}
+                                                >
+                                                    <ChevronUp size={16} />
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="1"
+                                                    disabled={index === order.length - 1}
+                                                    onClick={() => moveMethod(index, 1)}
+                                                    aria-label={`Move ${method?.label || key} down`}
+                                                >
+                                                    <ChevronDown size={16} />
+                                                </Button>
+                                            </Flex>
+                                            <Text size="3" weight="bold">{method?.label || key}</Text>
+                                            <Text size="1" color="gray">#{index + 1}</Text>
+                                        </Flex>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
                                             <input type="checkbox" name={`billing.${key}.enabled`} defaultChecked={method?.enabled ?? true} />
                                             Enabled

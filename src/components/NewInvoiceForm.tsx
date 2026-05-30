@@ -17,7 +17,7 @@ import {
 import { PlusIcon, TrashIcon, SaveIcon, SendIcon, MoreHorizontal } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
-import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption } from '@/lib/types';
+import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption, PaymentMethodKey } from '@/lib/types';
 import { ClientOption } from '@/lib/clients';
 import type { LeadOption } from '@/lib/leads';
 import type { PaymentMethodOption } from '@/lib/document-form-pickers';
@@ -77,6 +77,24 @@ export default function NewDocumentForm({
         formatPhoneInput(initialData?.customer?.phone || ''),
     );
 
+    const [warrantyEnabled, setWarrantyEnabled] = useState<boolean>(initialData?.warranty?.enabled ?? false);
+    const [warrantyTitle, setWarrantyTitle] = useState(initialData?.warranty?.title || '');
+    const [warrantyText, setWarrantyText] = useState(initialData?.warranty?.text || '');
+
+    const [customizeMethods, setCustomizeMethods] = useState<boolean>(initialData?.paymentOverrides?.customizeMethods ?? false);
+    const [enabledMethodKeys, setEnabledMethodKeys] = useState<PaymentMethodKey[]>(
+        initialData?.paymentOverrides?.enabledMethods ?? paymentMethods.map((m) => m.key),
+    );
+    const [stripeLink, setStripeLink] = useState(initialData?.paymentOverrides?.stripeLink || '');
+    const [stripeNote, setStripeNote] = useState(initialData?.paymentOverrides?.stripeNote || '');
+
+    const toggleMethodKey = (key: PaymentMethodKey, on: boolean) => {
+        setEnabledMethodKeys((prev) => {
+            if (on) return prev.includes(key) ? prev : [...prev, key];
+            return prev.filter((k) => k !== key);
+        });
+    };
+
     const docLabel = type.charAt(0).toUpperCase() + type.slice(1);
     const notesLabel =
         type === 'estimate' ? 'Project Description' :
@@ -88,6 +106,8 @@ export default function NewDocumentForm({
     const issueLabel = issueActionLabel(type);
 
     const subtotal = lineItems.reduce((acc, item) => acc + item.total, 0);
+    const grossSubtotal = lineItems.reduce((acc, item) => acc + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0);
+    const discountSavings = Math.max(0, grossSubtotal - subtotal);
     const paidAmount = initialData?.paidAmount ?? payments.reduce((acc, payment) => acc + payment.amount, 0);
     const balanceDue = Math.max(0, subtotal - paidAmount);
 
@@ -195,8 +215,10 @@ export default function NewDocumentForm({
         setLineItems(lineItems.map((item) => {
             if (item.id === id) {
                 const updated = { ...item, [field]: value };
-                if (field === 'quantity' || field === 'unitPrice') {
-                    updated.total = Number(updated.quantity) * Number(updated.unitPrice);
+                if (field === 'quantity' || field === 'unitPrice' || field === 'discountPercent') {
+                    const gross = Number(updated.quantity) * Number(updated.unitPrice);
+                    const disc = Math.min(100, Math.max(0, Number(updated.discountPercent) || 0));
+                    updated.total = gross * (1 - disc / 100);
                 }
                 return updated;
             }
@@ -412,9 +434,10 @@ export default function NewDocumentForm({
                         <Table.Root style={{ minWidth: 560 }}>
                             <Table.Header>
                                 <Table.Row>
-                                    <Table.ColumnHeaderCell width={showPendingApprovalColumn ? '42%' : '50%'}>Description</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell width={showPendingApprovalColumn ? '38%' : '44%'}>Description</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell>{type === 'quote' ? 'Unit price' : 'Price'}</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell>% Off</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell>Total</Table.ColumnHeaderCell>
                                     {showPendingApprovalColumn ? (
                                         <Table.ColumnHeaderCell align="center">Needs approval</Table.ColumnHeaderCell>
@@ -475,7 +498,31 @@ export default function NewDocumentForm({
                                             <input type="hidden" name={`items[${index}][unitPrice]`} value={item.unitPrice} />
                                         </Table.Cell>
                                         <Table.Cell>
-                                            <Text>${item.total.toFixed(2)}</Text>
+                                            <TextField.Root
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="1"
+                                                value={item.discountPercent ?? 0}
+                                                onChange={(e) => {
+                                                    const v = e.target.value;
+                                                    const n = parseFloat(v);
+                                                    updateLineItem(item.id, 'discountPercent', v === '' ? 0 : Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0);
+                                                }}
+                                            />
+                                            <input type="hidden" name={`items[${index}][discountPercent]`} value={item.discountPercent ?? 0} />
+                                        </Table.Cell>
+                                        <Table.Cell>
+                                            {item.discountPercent ? (
+                                                <Box>
+                                                    <Text as="div" size="1" style={{ textDecoration: 'line-through', color: 'var(--gray-9)' }}>
+                                                        ${((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toFixed(2)}
+                                                    </Text>
+                                                    <Text as="div" weight="bold">${item.total.toFixed(2)}</Text>
+                                                </Box>
+                                            ) : (
+                                                <Text>${item.total.toFixed(2)}</Text>
+                                            )}
                                         </Table.Cell>
                                         {showPendingApprovalColumn ? (
                                             <Table.Cell align="center">
@@ -497,9 +544,145 @@ export default function NewDocumentForm({
                     </Box>
                     <Flex justify="between" align="center" mt="4" wrap="wrap" gap="2">
                         <Button type="button" variant="soft" onClick={addLineItem}><PlusIcon size={16} /> Add Item</Button>
-                        <Text size="4" weight="bold">Total: ${subtotal.toFixed(2)}</Text>
+                        <Box style={{ textAlign: 'right' }}>
+                            {discountSavings > 0 ? (
+                                <>
+                                    <Text as="div" size="2" color="gray">Subtotal: ${grossSubtotal.toFixed(2)}</Text>
+                                    <Text as="div" size="2" color="green">Discount savings: −${discountSavings.toFixed(2)}</Text>
+                                </>
+                            ) : null}
+                            <Text size="4" weight="bold">Total: ${subtotal.toFixed(2)}</Text>
+                        </Box>
                     </Flex>
                 </Card>
+
+                {type === 'invoice' ? (
+                    <Card>
+                        <Flex justify="between" align="center" gap="3" wrap="wrap" mb="2">
+                            <Heading size="3">Warranty</Heading>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                                <input
+                                    type="checkbox"
+                                    name="warrantyEnabled"
+                                    checked={warrantyEnabled}
+                                    onChange={(e) => setWarrantyEnabled(e.target.checked)}
+                                />
+                                Show warranty section on this invoice
+                            </label>
+                        </Flex>
+                        {warrantyEnabled ? (
+                            <Flex direction="column" gap="3">
+                                <Box>
+                                    <Text as="label" size="2">Warranty title</Text>
+                                    <TextField.Root
+                                        name="warrantyTitle"
+                                        placeholder="1 Year Workmanship Warranty"
+                                        value={warrantyTitle}
+                                        onChange={(e) => setWarrantyTitle(e.target.value)}
+                                    />
+                                </Box>
+                                <Box>
+                                    <Text as="label" size="2">Warranty details</Text>
+                                    <TextArea
+                                        name="warrantyText"
+                                        placeholder="1 Year Workmanship Warranty applies to XYZ. Does not include ABC."
+                                        rows={4}
+                                        value={warrantyText}
+                                        onChange={(e) => setWarrantyText(e.target.value)}
+                                    />
+                                </Box>
+                                {warrantyText.trim() ? (
+                                    <Box
+                                        style={{
+                                            padding: '12px 16px',
+                                            border: '1px solid var(--blue-a6)',
+                                            borderRadius: 8,
+                                            background: 'var(--blue-a2)',
+                                        }}
+                                    >
+                                        <Text size="1" color="gray" mb="1" as="div">Preview as shown on the invoice</Text>
+                                        <Text size="2" weight="bold" style={{ textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+                                            {warrantyTitle.trim() || 'Warranty'}
+                                        </Text>
+                                        <Text as="div" size="2" mt="1" style={{ whiteSpace: 'pre-line', lineHeight: 1.5 }}>
+                                            {warrantyText}
+                                        </Text>
+                                    </Box>
+                                ) : null}
+                            </Flex>
+                        ) : (
+                            <>
+                                <Text size="2" color="gray">Enable to add a customizable warranty statement to this invoice.</Text>
+                                <input type="hidden" name="warrantyTitle" value={warrantyTitle} />
+                                <input type="hidden" name="warrantyText" value={warrantyText} />
+                            </>
+                        )}
+                    </Card>
+                ) : null}
+
+                {type === 'invoice' ? (
+                    <Card>
+                        <Heading size="3" mb="2">Payment Options For This Invoice</Heading>
+                        <Text size="2" color="gray" mb="3" as="p">
+                            By default this invoice shows all enabled payment methods from Settings. Customize below to override for this invoice only.
+                        </Text>
+                        <Flex direction="column" gap="3">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                                <input
+                                    type="checkbox"
+                                    name="customizePaymentMethods"
+                                    checked={customizeMethods}
+                                    onChange={(e) => setCustomizeMethods(e.target.checked)}
+                                />
+                                Choose which payment methods appear on this invoice
+                            </label>
+                            {customizeMethods ? (
+                                <Box>
+                                    {paymentMethods.length > 0 ? (
+                                        <Flex direction="column" gap="2">
+                                            {paymentMethods.map((method) => (
+                                                <label key={method.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        name={`invoiceMethod.${method.key}`}
+                                                        checked={enabledMethodKeys.includes(method.key)}
+                                                        onChange={(e) => toggleMethodKey(method.key, e.target.checked)}
+                                                    />
+                                                    {method.label}
+                                                </label>
+                                            ))}
+                                        </Flex>
+                                    ) : (
+                                        <Text size="2" color="gray">No enabled payment methods in Settings yet.</Text>
+                                    )}
+                                </Box>
+                            ) : null}
+
+                            <Box style={{ borderTop: '1px solid var(--gray-a5)', paddingTop: 12 }}>
+                                <Text as="label" size="2" weight="bold">Stripe payment link (this invoice)</Text>
+                                <Text size="1" color="gray" as="p" mt="1" mb="2">
+                                    Overrides the general Stripe link from Settings. Paste a Stripe Checkout/Payment Link.
+                                </Text>
+                                <TextField.Root
+                                    name="invoiceStripeLink"
+                                    type="url"
+                                    placeholder="https://buy.stripe.com/..."
+                                    value={stripeLink}
+                                    onChange={(e) => setStripeLink(e.target.value)}
+                                />
+                                <Box mt="2">
+                                    <Text as="label" size="2">Stripe note (optional)</Text>
+                                    <TextField.Root
+                                        name="invoiceStripeNote"
+                                        placeholder="e.g. 3% processing fee applies"
+                                        value={stripeNote}
+                                        onChange={(e) => setStripeNote(e.target.value)}
+                                    />
+                                </Box>
+                            </Box>
+                        </Flex>
+                    </Card>
+                ) : null}
 
                 {showPayments ? (
                     <Card>

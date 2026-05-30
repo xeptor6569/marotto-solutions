@@ -1,6 +1,6 @@
 import { Badge, Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
-import type { DocumentData, PaymentMethodKey, PaymentMethodEntry } from "@/lib/types";
+import type { AppConfig, DocumentData, PaymentMethodKey, PaymentMethodEntry } from "@/lib/types";
 import {
     Banknote,
     Building2,
@@ -96,6 +96,43 @@ function paymentLinkForMethod(
     }
 }
 
+function buildInvoicePaymentMethods(
+    config: Partial<AppConfig>,
+    doc: DocumentData,
+): Array<[PaymentMethodKey, PaymentMethodEntry]> {
+    const methods = config.billing?.paymentMethods || {};
+    const overrides = doc.paymentOverrides;
+
+    let entries = (Object.entries(methods) as Array<[PaymentMethodKey, PaymentMethodEntry]>)
+        .map(([key, method]) => [key, { ...method }] as [PaymentMethodKey, PaymentMethodEntry]);
+
+    // Per-invoice Stripe link overrides the global Stripe configuration.
+    if (overrides?.stripeLink) {
+        const stripeIdx = entries.findIndex(([key]) => key === "stripe");
+        const baseStripe: Partial<PaymentMethodEntry> = stripeIdx >= 0 ? entries[stripeIdx][1] : { label: "Stripe", position: 99 };
+        const overridden: PaymentMethodEntry = {
+            ...baseStripe,
+            enabled: true,
+            comingSoon: false,
+            label: baseStripe.label || "Stripe",
+            value: overrides.stripeLink,
+            note: overrides.stripeNote || baseStripe.note,
+        };
+        if (stripeIdx >= 0) entries[stripeIdx] = ["stripe", overridden];
+        else entries.push(["stripe", overridden]);
+    }
+
+    entries.sort((a, b) => (a[1].position ?? 0) - (b[1].position ?? 0));
+    entries = entries.filter(([, method]) => method.enabled);
+
+    if (overrides?.customizeMethods && Array.isArray(overrides.enabledMethods)) {
+        const allow = new Set(overrides.enabledMethods);
+        entries = entries.filter(([key]) => allow.has(key) || (key === "stripe" && !!overrides.stripeLink));
+    }
+
+    return entries;
+}
+
 function paymentMethodIcon(key: PaymentMethodKey) {
     switch (key) {
         case "cash":
@@ -137,8 +174,7 @@ export default async function DocumentPreview({
     const sharePath = doc.type === "lead" ? "/" : `/${doc.type}s/${doc.id}`;
     const shareTitle = `${docTitle} ${doc.id}`;
     const activePaymentMethods = doc.type === "invoice"
-        ? (Object.entries(config.billing?.paymentMethods || {}) as Array<[PaymentMethodKey, PaymentMethodEntry]>)
-            .filter(([, method]) => method.enabled)
+        ? buildInvoicePaymentMethods(config, doc)
         : [];
     const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
     const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
@@ -146,6 +182,12 @@ export default async function DocumentPreview({
     const invoiceAmountDue = showInvoiceAmountDue ? balanceDue : doc.total;
 
     const lineItems = doc.lineItems ?? [];
+    const grossSubtotal = lineItems.reduce(
+        (acc, item) => acc + (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0),
+        0,
+    );
+    const discountSavings = Math.max(0, grossSubtotal - doc.subtotal);
+    const hasDiscounts = discountSavings > 0.0001;
     const pendingLines = hasPendingApprovalLines(lineItems);
     const showSplitTotals =
         (doc.type === "quote" || doc.type === "estimate") && pendingLines;
@@ -256,6 +298,9 @@ export default async function DocumentPreview({
                                         <Table.Cell>
                                             <Flex align="center" gap="2" wrap="wrap">
                                                 <Text weight="bold" style={{ color: "#111827" }}>{item.description}</Text>
+                                                {item.discountPercent ? (
+                                                    <Badge color="green" size="1">{item.discountPercent}% off</Badge>
+                                                ) : null}
                                                 {item.pendingClientApproval ? (
                                                     <Badge color="amber" size="1">Pending your approval</Badge>
                                                 ) : null}
@@ -268,7 +313,18 @@ export default async function DocumentPreview({
                                         </Table.Cell>
                                         <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity ?? 0}</Text></Table.Cell>
                                         <Table.Cell align="right"><Text style={{ color: "#111827" }}>${(Number(item.unitPrice) || 0).toFixed(2)}</Text></Table.Cell>
-                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${(Number(item.total) || 0).toFixed(2)}</Text></Table.Cell>
+                                        <Table.Cell align="right">
+                                            {item.discountPercent ? (
+                                                <Box>
+                                                    <Text as="div" size="1" style={{ color: "#9ca3af", textDecoration: "line-through" }}>
+                                                        ${((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}
+                                                    </Text>
+                                                    <Text as="div" weight="bold" style={{ color: "#111827" }}>${(Number(item.total) || 0).toFixed(2)}</Text>
+                                                </Box>
+                                            ) : (
+                                                <Text style={{ color: "#111827" }}>${(Number(item.total) || 0).toFixed(2)}</Text>
+                                            )}
+                                        </Table.Cell>
                                     </Table.Row>
                                 ))}
                             </Table.Body>
@@ -422,6 +478,25 @@ export default async function DocumentPreview({
                         </Box>
                     ) : null}
 
+                    {doc.warranty?.enabled && doc.warranty.text ? (
+                        <Box
+                            mb="4"
+                            style={{
+                                padding: "12px 16px",
+                                border: "1px solid #bfdbfe",
+                                borderRadius: 8,
+                                background: "#eff6ff",
+                            }}
+                        >
+                            <Text size="2" weight="bold" style={{ color: "#1e3a8a", textTransform: "uppercase", letterSpacing: "0.03em" }}>
+                                {doc.warranty.title || "Warranty"}
+                            </Text>
+                            <Text as="div" size="2" mt="1" style={{ color: "#1f2937", whiteSpace: "pre-line", lineHeight: 1.5 }}>
+                                {doc.warranty.text}
+                            </Text>
+                        </Box>
+                    ) : null}
+
                     <Flex justify="between" align="end" className="doc-summary">
                         <Box className="doc-status">
                             <Text
@@ -442,6 +517,18 @@ export default async function DocumentPreview({
                         </Box>
 
                         <Box className="doc-totals" style={{ width: showSplitTotals ? "min(100%, 320px)" : "240px" }}>
+                            {hasDiscounts ? (
+                                <>
+                                    <Flex justify="between" py="2">
+                                        <Text size="2" style={{ color: "#4b5563" }}>Subtotal (before discounts)</Text>
+                                        <Text size="2" style={{ color: "#111827" }}>${grossSubtotal.toFixed(2)}</Text>
+                                    </Flex>
+                                    <Flex justify="between" py="2">
+                                        <Text size="2" weight="bold" style={{ color: "#15803d" }}>Discount savings</Text>
+                                        <Text size="2" weight="bold" style={{ color: "#15803d" }}>−${discountSavings.toFixed(2)}</Text>
+                                    </Flex>
+                                </>
+                            ) : null}
                             {doc.type === "invoice" ? (
                                 <>
                                     <Flex justify="between" py="2">

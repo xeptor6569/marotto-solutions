@@ -22,6 +22,7 @@ export async function getDocumentFormPickers(): Promise<{
     ]);
     const paymentMethods = Object.entries(config.billing?.paymentMethods || {})
         .filter(([, method]) => method.enabled)
+        .sort((a, b) => (a[1].position ?? 0) - (b[1].position ?? 0))
         .map(([key, method]) => ({
             key: key as PaymentMethodKey,
             label: method.label,

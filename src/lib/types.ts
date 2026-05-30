@@ -7,6 +7,8 @@ export interface LineItem {
     quantity: number;
     unitPrice: number;
     total: number;
+    /** Optional percentage discount applied to this line (0-100). `total` is already net of this. */
+    discountPercent?: number;
     /** When true, line is additional scope not yet approved by the client (quotes/estimates). */
     pendingClientApproval?: boolean;
 }
@@ -65,6 +67,29 @@ export interface DocumentData {
     contractId?: string;
     /** 1-based cycle number within the contract (1 = first invoice issued). */
     contractCycle?: number;
+    /** Optional customizable warranty section (invoices). */
+    warranty?: DocumentWarranty;
+    /** Per-invoice payment method customization (overrides global billing settings). */
+    paymentOverrides?: InvoicePaymentOverrides;
+}
+
+export interface DocumentWarranty {
+    enabled: boolean;
+    /** Heading shown above the warranty text. Defaults to "Warranty". */
+    title?: string;
+    /** Body text, e.g. "1 Year Workmanship Warranty applies to XYZ. Does not include ABC." */
+    text: string;
+}
+
+export interface InvoicePaymentOverrides {
+    /** When true, only `enabledMethods` are shown on this invoice (instead of all globally enabled). */
+    customizeMethods?: boolean;
+    /** Allowlist of method keys to display when `customizeMethods` is true. */
+    enabledMethods?: PaymentMethodKey[];
+    /** Stripe payment link specific to this invoice; overrides the global Stripe value. */
+    stripeLink?: string;
+    /** Optional note shown with the per-invoice Stripe link. */
+    stripeNote?: string;
 }
 
 export type ContractIntervalUnit = 'day' | 'month' | 'year';
@@ -129,6 +154,8 @@ export interface PaymentMethodEntry {
     value?: string;
     note?: string;
     comingSoon?: boolean;
+    /** Display order across the app (lower shows first). */
+    position?: number;
 }
 
 export interface BillingConfig {
