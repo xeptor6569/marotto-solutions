@@ -8,11 +8,11 @@ export default function CreateLeadPage() {
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }}>
             <AdminListPageHeader
-                title="New client"
+                title="New lead"
                 actions={
                     <>
                         <Button asChild size="2" variant="soft">
-                            <Link href="/admin/leads">All clients</Link>
+                            <Link href="/admin/leads">All leads</Link>
                         </Button>
                         <BackButton href="/admin" label="Admin home" />
                     </>

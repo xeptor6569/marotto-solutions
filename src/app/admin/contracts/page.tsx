@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { Badge, Box, Button, Callout, Card, Container, Flex, Table, Text } from '@radix-ui/themes';
+import { Badge, Box, Button, Callout, Card, Container, Table, Text } from '@radix-ui/themes';
 import { Plus, XCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
+import EmptyState from '@/components/EmptyState';
 import RunSchedulerButton from '@/components/RunSchedulerButton';
 import {
     getContracts,
@@ -41,7 +42,7 @@ export default async function AdminContractsPage({
                 title="Service contracts"
                 actions={(
                     <>
-                        <Button asChild size="2">
+                        <Button asChild size="2" variant="solid">
                             <Link href="/admin/contracts/create"><Plus size={14} /> New contract</Link>
                         </Button>
                         <RunSchedulerButton />
@@ -67,17 +68,15 @@ export default async function AdminContractsPage({
             ) : null}
 
             {contracts.length === 0 ? (
-                <Card>
-                    <Flex direction="column" align="center" gap="3" py="8">
-                        <Text size="4" color="gray">No service contracts yet</Text>
-                        <Text size="2" color="gray">Capture recurring agreements (e.g. on-call IT) and let the scheduler issue invoices each cycle.</Text>
-                        {dbReady ? (
-                            <Button asChild size="2">
-                                <Link href="/admin/contracts/create"><Plus size={14} /> Create first contract</Link>
-                            </Button>
-                        ) : null}
-                    </Flex>
-                </Card>
+                <EmptyState
+                    title="No service contracts yet"
+                    description="Capture recurring agreements (e.g. on-call IT) and let the scheduler issue invoices each cycle."
+                    action={dbReady ? (
+                        <Button asChild size="2" variant="solid">
+                            <Link href="/admin/contracts/create"><Plus size={14} /> Create first contract</Link>
+                        </Button>
+                    ) : null}
+                />
             ) : (
                 <Card style={{ padding: 0, overflow: 'hidden' }}>
                     <Box style={{ overflowX: 'auto' }}>

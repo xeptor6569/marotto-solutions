@@ -7,6 +7,7 @@ import { Edit, Search } from "lucide-react";
 import type { DocumentData } from "@/lib/types";
 import LeadEditDialog from "@/components/LeadEditDialog";
 import DeleteLeadButton from "@/components/DeleteLeadButton";
+import EmptyState from "@/components/EmptyState";
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
 
@@ -37,17 +38,24 @@ function docNumberLabel(type: AdminDocumentListType) {
     if (type === "quote") return "Quote #";
     if (type === "estimate") return "Estimate #";
     if (type === "receipt") return "Receipt #";
-    return "Client #";
+    return "Lead #";
 }
 
 function searchPlaceholder(type: AdminDocumentListType) {
-    if (type === "lead") return "Search clients by id, number, name, email, notes…";
+    if (type === "lead") return "Search leads by id, number, name, email, notes…";
     return `Search ${type}s by number, id, customer…`;
 }
 
 function typePluralLabel(type: AdminDocumentListType): string {
     if (type === "receipt") return "receipts";
     return `${type}s`;
+}
+
+const STATUS_ORDER: DocumentData["status"][] = ["draft", "sent", "paid", "void"];
+
+function statusFilterLabel(status: "all" | DocumentData["status"]): string {
+    if (status === "all") return "All";
+    return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 export default function AdminDocumentList({
@@ -80,6 +88,11 @@ export default function AdminDocumentList({
     const numberLabel = docNumberLabel(type);
     const plural = typePluralLabel(type);
 
+    const statusOptions = useMemo<("all" | DocumentData["status"])[]>(() => {
+        const present = new Set(docs.map((doc) => doc.status));
+        return ["all", ...STATUS_ORDER.filter((s) => present.has(s))];
+    }, [docs]);
+
     return (
         <Flex direction="column" gap="4" className="admin-document-list">
             <Card>
@@ -109,7 +122,7 @@ export default function AdminDocumentList({
                             }}
                         >
                             <Flex gap="2" wrap="nowrap" pb="1" style={{ width: "max-content", maxWidth: "100%" }}>
-                                {(["all", "draft", "sent", "paid", "void"] as const).map((s) => (
+                                {statusOptions.map((s) => (
                                     <Button
                                         key={s}
                                         size="1"
@@ -117,7 +130,7 @@ export default function AdminDocumentList({
                                         onClick={() => setStatus(s)}
                                         style={{ flexShrink: 0 }}
                                     >
-                                        {s}
+                                        {statusFilterLabel(s)}
                                     </Button>
                                 ))}
                             </Flex>
@@ -127,11 +140,7 @@ export default function AdminDocumentList({
             </Card>
 
             {filteredDocs.length === 0 ? (
-                <Card>
-                    <Flex direction="column" align="center" gap="2" py="7">
-                        <Text size="4" color="gray">No {plural} match your filters.</Text>
-                    </Flex>
-                </Card>
+                <EmptyState title={`No ${plural} match your filters.`} />
             ) : (
                 <>
                     {/* Mobile: stacked cards */}
@@ -149,7 +158,7 @@ export default function AdminDocumentList({
                                         <Badge color={badgeColor(doc.status)}>{doc.status}</Badge>
                                     </Flex>
                                     <Box>
-                                        <Text size="1" color="gray" weight="bold">{type === "lead" ? "Client" : "Customer"}</Text>
+                                        <Text size="1" color="gray" weight="bold">{type === "lead" ? "Contact" : "Customer"}</Text>
                                         <Text as="div" weight="medium">{doc.customer.name}</Text>
                                         {doc.customer.email ? (
                                             <Text as="div" size="2" color="gray" style={{ wordBreak: "break-word" }}>{doc.customer.email}</Text>
@@ -216,7 +225,7 @@ export default function AdminDocumentList({
                                         <Table.ColumnHeaderCell>
                                             {numberLabel}
                                         </Table.ColumnHeaderCell>
-                                        <Table.ColumnHeaderCell>{type === "lead" ? "Client" : "Customer"}</Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell>{type === "lead" ? "Contact" : "Customer"}</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell align="right">Total</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>

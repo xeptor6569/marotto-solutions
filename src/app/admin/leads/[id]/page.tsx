@@ -29,7 +29,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
                     lead={doc}
                     trigger={
                         <Button size="2" variant="soft">
-                            <Edit size={14} /> Edit client
+                            <Edit size={14} /> Edit lead
                         </Button>
                     }
                 />
@@ -43,7 +43,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
                     <Link
                         href={`/admin/jobs/create?leadId=${encodeURIComponent(doc.id)}&name=${encodeURIComponent(`${doc.customer.name} job`)}`}
                     >
-                        Create job from client
+                        Create job from lead
                     </Link>
                 </Button>
             </Flex>

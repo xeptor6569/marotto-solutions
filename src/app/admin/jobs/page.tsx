@@ -3,6 +3,7 @@ import { Box, Button, Card, Container, Flex, Table, Text } from '@radix-ui/theme
 import { Plus } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
+import EmptyState from '@/components/EmptyState';
 import { getJobDocumentCounts, getJobs } from '@/lib/jobs';
 import { listJobAttachments } from '@/lib/job-attachments';
 
@@ -24,7 +25,7 @@ export default async function AdminJobsPage() {
                 title="Jobs"
                 actions={(
                     <>
-                        <Button asChild size="2">
+                        <Button asChild size="2" variant="solid">
                             <Link href="/admin/jobs/create"><Plus size={14} /> New job</Link>
                         </Button>
                         <BackButton href="/admin" />
@@ -33,14 +34,15 @@ export default async function AdminJobsPage() {
             />
 
             {enriched.length === 0 ? (
-                <Card>
-                    <Flex direction="column" align="center" gap="2" py="7">
-                        <Text size="4" color="gray">No jobs yet</Text>
-                        <Button asChild size="2">
+                <EmptyState
+                    title="No jobs yet"
+                    description="Group related estimates, quotes, invoices, and receipts under a job to keep work organized."
+                    action={(
+                        <Button asChild size="2" variant="solid">
                             <Link href="/admin/jobs/create"><Plus size={14} /> Create first job</Link>
                         </Button>
-                    </Flex>
-                </Card>
+                    )}
+                />
             ) : (
                 <>
                     <Flex direction="column" gap="3" className="jobs-list-mobile">

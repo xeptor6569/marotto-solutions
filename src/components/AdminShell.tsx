@@ -5,8 +5,6 @@ import { usePathname } from 'next/navigation';
 import { Badge, Box, Button, DropdownMenu, Flex, IconButton, Separator, Text } from '@radix-ui/themes';
 import {
     Briefcase,
-    ChevronDown,
-    CirclePlus,
     FileText,
     Gauge,
     Handshake,
@@ -17,10 +15,12 @@ import {
     Repeat,
     Settings,
     Upload,
+    UserPlus,
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
+import CreateMenu from '@/components/CreateMenu';
 
 type NavItem = {
     href: string;
@@ -33,7 +33,8 @@ type NavItem = {
 const desktopNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
-    { href: '/admin/leads', label: 'Clients', shortLabel: 'Clients', icon: Users, matchPrefixes: ['/admin/clients'] },
+    { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
+    { href: '/admin/leads', label: 'Leads', shortLabel: 'Leads', icon: UserPlus },
     { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
     { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
     { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
@@ -44,51 +45,13 @@ const desktopNavItems: NavItem[] = [
 const mobileNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
-    { href: '/admin/leads', label: 'Clients', shortLabel: 'Clients', icon: Users, matchPrefixes: ['/admin/clients'] },
+    { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
     { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
 ];
 
 function isActivePath(pathname: string, item: NavItem): boolean {
     const prefixes = [item.href, ...(item.matchPrefixes || [])];
     return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
-
-function CreateMenu() {
-    return (
-        <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-                <Button variant="solid" size="2">
-                    <CirclePlus size={14} aria-hidden />
-                    Create
-                    <ChevronDown size={14} aria-hidden />
-                </Button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/leads/create">Client</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/jobs/create">Job</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/estimates/new">Estimate</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/quotes/new">Quote</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/invoices/new">Invoice</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/receipts/new">Receipt</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/contracts/create">Contract</Link>
-                </DropdownMenu.Item>
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>
-    );
 }
 
 function MoreMenu() {
@@ -100,6 +63,9 @@ function MoreMenu() {
                 </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
+                <DropdownMenu.Item asChild>
+                    <Link href="/admin/leads">Leads</Link>
+                </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/estimates">Estimates</Link>
                 </DropdownMenu.Item>

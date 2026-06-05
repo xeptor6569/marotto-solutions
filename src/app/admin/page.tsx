@@ -1,9 +1,11 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "@radix-ui/themes";
-import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase, Repeat } from "lucide-react";
+import { FileText, ReceiptText, ClipboardList, Users, UserPlus, BadgeCheck, Briefcase, Repeat } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { getJobs } from "@/lib/jobs";
 import { getContracts, getContractsNeedingReview } from "@/lib/contracts";
+import { getClients } from "@/app/admin/clients/actions";
+import CreateMenu from "@/components/CreateMenu";
 
 export default async function AdminDashboard() {
     const invoices = await getDocuments('invoice');
@@ -13,6 +15,8 @@ export default async function AdminDashboard() {
     const leads = await getDocuments('lead');
     const jobs = await getJobs();
     const contracts = await getContracts();
+    const clientsResult = await getClients();
+    const clients = (clientsResult.success && clientsResult.clients) ? clientsResult.clients : [];
     const activeContracts = contracts.filter((c) => c.status === 'active');
     const reviewQueue = await getContractsNeedingReview();
 
@@ -29,14 +33,12 @@ export default async function AdminDashboard() {
             <Flex direction={{ initial: "column", md: "row" }} justify="between" align={{ initial: "start", md: "center" }} gap="4" mb="5">
                 <Box>
                     <Heading size="8">Dashboard</Heading>
-                    <Text size="3" color="gray">Quick view of invoices, estimates, quotes, receipts, clients, jobs, and recurring contracts.</Text>
+                    <Text size="3" color="gray">Quick view of invoices, estimates, quotes, receipts, clients, leads, jobs, and recurring contracts.</Text>
                 </Box>
-                <Button asChild size="3">
-                    <Link href="/admin/invoices/new">New invoice</Link>
-                </Button>
+                <CreateMenu size="3" />
             </Flex>
 
-            <Grid columns={{ initial: '1', sm: '2', md: '3', xl: '7' }} gap="4" mb="5">
+            <Grid columns={{ initial: '1', sm: '2', md: '3', lg: '4' }} gap="4" mb="5">
                 <Link href="/admin/invoices" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                     <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
                         <Flex align="center" gap="3">
@@ -81,12 +83,23 @@ export default async function AdminDashboard() {
                         </Flex>
                     </Card>
                 </Link>
-                <Link href="/admin/leads" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                <Link href="/admin/clients" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
                     <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
                         <Flex align="center" gap="3">
                             <Box style={{ color: "var(--violet-9)" }}><Users size={18} /></Box>
                             <Box>
                                 <Text size="2" color="gray">Clients</Text>
+                                <Heading size="6">{clients.length}</Heading>
+                            </Box>
+                        </Flex>
+                    </Card>
+                </Link>
+                <Link href="/admin/leads" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                        <Flex align="center" gap="3">
+                            <Box style={{ color: "var(--purple-9)" }}><UserPlus size={18} /></Box>
+                            <Box>
+                                <Text size="2" color="gray">Leads</Text>
                                 <Heading size="6">{leads.length}</Heading>
                             </Box>
                         </Flex>
@@ -287,16 +300,16 @@ export default async function AdminDashboard() {
                     )}
                 </Card>
 
-                {/* Recent Clients */}
+                {/* Recent Leads */}
                 <Card>
                     <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Recent Clients</Heading>
+                        <Heading size="4">Recent Leads</Heading>
                         <Button asChild size="1" variant="soft">
                             <Link href="/admin/leads">View all</Link>
                         </Button>
                     </Flex>
                     {recentLeads.length === 0 ? (
-                        <Text size="2" color="gray">No clients yet.</Text>
+                        <Text size="2" color="gray">No leads yet.</Text>
                     ) : (
                         <Flex direction="column" gap="2">
                             {recentLeads.map((lead) => (
