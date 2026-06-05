@@ -848,15 +848,17 @@ export default function NewDocumentForm({
             <style>{`
                 .document-form {
                     position: relative;
-                    padding-bottom: 120px;
+                    /* Clearance for the fixed footer stacked above the mobile bottom nav */
+                    padding-bottom: calc(240px + env(safe-area-inset-bottom, 0px));
                 }
                 .document-form-footer {
                     position: fixed;
                     left: 0;
                     right: 0;
-                    bottom: 0;
-                    z-index: 20;
-                    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+                    /* Sit above the admin bottom nav so the Status/Save controls aren't covered */
+                    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+                    z-index: 45;
+                    padding: 12px 16px;
                     background: linear-gradient(to top, var(--color-background) 85%, transparent);
                     border-top: 1px solid var(--gray-a5);
                 }
@@ -864,9 +866,13 @@ export default function NewDocumentForm({
                     max-width: 720px;
                     margin: 0 auto;
                 }
-                @media (min-width: 768px) {
+                @media (min-width: 960px) {
                     .document-form {
                         padding-bottom: 100px;
+                    }
+                    .document-form-footer {
+                        bottom: 0;
+                        padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
                     }
                 }
             `}</style>

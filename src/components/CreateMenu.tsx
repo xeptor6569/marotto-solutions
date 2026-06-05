@@ -16,7 +16,7 @@ export default function CreateMenu({ size = '2' }: { size?: '1' | '2' | '3' | '4
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
                 <DropdownMenu.Item asChild>
-                    <Link href="/admin/clients">Client</Link>
+                    <Link href="/admin/clients/create">Client</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/leads/create">Lead</Link>
