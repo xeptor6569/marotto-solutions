@@ -53,7 +53,7 @@ async function readConfigFromDisk(): Promise<Partial<AppConfig> | null> {
 export async function getAppConfig(): Promise<Partial<AppConfig>> {
     const parsed = await readConfigFromDisk();
     if (!parsed) {
-        return { billing: getDefaultBillingConfig() };
+        return { billing: getDefaultBillingConfig(), businessTimezone: 'America/New_York' };
     }
     return {
         ...parsed,

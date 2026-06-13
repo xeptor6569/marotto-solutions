@@ -74,6 +74,12 @@ jobs:
           echo "::error::Postgres failed to become ready"
           exit 1
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
       - name: Build and start application
         run: docker compose up -d --build --remove-orphans
 

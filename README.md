@@ -31,6 +31,7 @@ This README is intended to be an operational handbook you can come back to when 
   - receipts
 - track jobs and link documents to a job
 - manage recurring service contracts and issue cycle invoices
+- schedule work on a calendar tied to clients and jobs (see [Calendar & Scheduling](#calendar--scheduling))
 - per-line discounts, customizable warranty text, and per-invoice payment customization (see [Document & Invoice Features](#document--invoice-features))
 
 ## Document & Invoice Features
@@ -74,6 +75,18 @@ The editor uses a sticky action footer (mobile + desktop):
   - set a **Stripe payment link** specific to this invoice that overrides the global Stripe value (and forces Stripe to show even if globally disabled)
 - Stored on the document as `warranty` and `paymentOverrides` (`src/lib/types.ts`)
 
+## Calendar & Scheduling
+
+The work calendar lets you schedule site visits, installs, follow-ups, and other events tied to clients and jobs.
+
+- **Route:** `/admin/calendar` (accessible via the More menu)
+- **Views:** month grid and chronological list
+- **Event types:** timed or all-day; one-time or recurring (daily/weekly/monthly)
+- **Timezone:** all times stored in UTC; displayed in the configured `businessTimezone` setting (default `America/New_York`)
+- **Reminders:** non-recurring events can have an email reminder (N minutes before start); reminders fire via the `/api/cron/calendar` cron endpoint
+- **Docker cron:** calendar reminders run hourly by default (`CALENDAR_CRON_SCHEDULE` env var, default `0 * * * *`)
+- **Tests:** `npm test` runs the Vitest suite covering recurrence math, overlap detection, timezone conversions, and DST edge cases
+
 ## Admin UX and Navigation (Important)
 
 The admin area uses a shared shell across all pages:
@@ -97,6 +110,7 @@ The admin area uses a shared shell across all pages:
 - `/admin/invoices` invoices
 - `/admin/receipts` receipts
 - `/admin/contracts` recurring service contracts
+- `/admin/calendar` work calendar (month, week, list views)
 - `/admin/import` JSON import
 - `/admin/settings` app settings
 
@@ -136,6 +150,7 @@ The admin area uses a shared shell across all pages:
 ### Scheduler endpoint
 
 - `POST /api/cron/contracts` (protected with `X-Cron-Secret`)
+- `POST /api/cron/calendar` (protected with `X-Cron-Secret`)
 
 ## Tech Stack
 
@@ -187,6 +202,7 @@ Key file:
 - NextAuth models (`User`, `Account`, `Session`, `VerificationToken`)
 - business clients (`Client`)
 - service contracts and related scheduling records
+- calendar events (`CalendarEvent`)
 
 Key file:
 
@@ -212,6 +228,11 @@ Use `.env.example` as your source template.
 
 - `CRON_SECRET`
 - `CONTRACTS_CRON_SCHEDULE` (optional; defaults to `15 8 * * *`)
+
+### Calendar reminders
+
+- `CALENDAR_CRON_SCHEDULE` (optional; defaults to `0 * * * *` — every hour)
+- `OPERATOR_EMAIL` (optional; where reminder emails are sent; defaults to `EMAIL_FROM`)
 
 ### Port alignment rule
 
@@ -398,6 +419,8 @@ Per-method links become tappable "Pay $X" buttons on invoice previews where the 
 - `npm run build`
 - `npm run start`
 - `npm run lint`
+- `npm test` (Vitest)
+- `npm run test:watch` (Vitest watch mode)
 - `npm run prisma:generate`
 - `npm run prisma:migrate:dev`
 - `npm run prisma:migrate:deploy`

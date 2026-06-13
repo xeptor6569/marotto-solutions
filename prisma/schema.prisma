@@ -69,9 +69,10 @@ model Client {
   notes      String?
   /** True when created from the public quote form (or migrated lead) until promoted to a full client. */
   isProspect Boolean    @default(false)
-  jobs       Job[]
-  contracts  Contract[]
-  createdAt  DateTime   @default(now())
+   jobs       Job[]
+   contracts  Contract[]
+   events     CalendarEvent[]
+   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @updatedAt
 }
 
@@ -83,9 +84,10 @@ model Job {
   clientId    String?
   leadId      String?
   client      Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  attachments JobAttachment[]
-  contracts   Contract[]
-  createdAt   DateTime        @default(now())
+   attachments JobAttachment[]
+   contracts   Contract[]
+   events      CalendarEvent[]
+   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   @@index([clientId])
@@ -169,4 +171,40 @@ model DocumentCounter {
   type      String   @id // 'invoice' | 'estimate' | 'quote' | 'receipt' | 'lead' | 'contract'
   lastValue Int      @default(0)
   updatedAt DateTime @updatedAt
+}
+
+// Work calendar events for scheduling site visits, installs, follow-ups, etc.
+// Stored in UTC; displayed in the configured business timezone.
+model CalendarEvent {
+  id                    String    @id @default(uuid())
+  title                 String
+  description           String?
+  /** scheduled | confirmed | completed | cancelled */
+  status                String    @default("scheduled")
+  /** Start time in UTC. */
+  start                 DateTime
+  /** End time in UTC. For all-day events, use next-day exclusive boundary (00:00 following day). */
+  end                   DateTime
+  allDay                Boolean   @default(false)
+  location              String?
+  /** Optional; future multi-staff assignment. */
+  assignee              String?
+  clientId              String?
+  jobId                 String?
+  client                Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  job                   Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  /** JSON-encoded recurrence rule (v1: simple format, not full iCal RRULE). */
+  recurrenceRule        String?
+  /** Minutes before event start to send a reminder. Null = no reminder. v1: non-recurring events only. */
+  reminderMinutesBefore Int?
+  /** Set when a reminder email has been sent; prevents duplicates. */
+  reminderSentAt        DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([start])
+  @@index([end])
+  @@index([clientId])
+  @@index([jobId])
+  @@index([status])
 }

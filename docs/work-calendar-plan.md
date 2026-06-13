@@ -2,8 +2,8 @@
 
 This document is the implementation plan for adding a work calendar and scheduling feature to Marotto Solutions. It is intended to be read before starting implementation and updated as work progresses.
 
-**Status:** Planning (not yet implemented)  
-**Last updated:** 2026-06-12
+**Status:** Implemented (Phases 1–3 complete)  
+**Last updated:** 2026-06-13
 
 ---
 
@@ -127,6 +127,10 @@ Supported `frequency` values: `daily`, `weekly`, `monthly`.
 
 **Read-side expansion:** When querying a date range, expand recurring series into virtual occurrences within `[from, to]`. Persist only the series master row; do not materialize every occurrence in the DB for v1.
 
+### Recurring event reminders (v1 scope)
+
+`reminderSentAt` on the master row only tracks the **first** occurrence's reminder. For v1 (single operator), reminders are only supported on **non-recurring** events. Recurring events will gain per-occurrence reminders in a future version (likely via a `CalendarReminderSent` join table or a `reminderLastSentAt` + next-occurrence comparison approach).
+
 ### Migration
 
 - New migration under `prisma/migrations/YYYYMMDDHHMMSS_add_calendar_events/`
@@ -162,9 +166,11 @@ Add **`date-fns-tz`** (companion to existing `date-fns`):
 | UTC → wall-clock for display | `toZonedTime(utcDate, businessTimezone)` |
 | Format for UI | `formatInTimeZone(utcDate, businessTimezone, pattern)` |
 
+> **Note:** `date-fns-tz` import paths changed in date-fns v4. Verify exact imports when installing (e.g. `import { fromZonedTime, toZonedTime } from 'date-fns-tz'`).
+
 ### All-day events
 
-- Store `start` at **00:00:00** and `end` at **23:59:59.999** (or next-day exclusive boundary — pick one convention and document in tests).
+- Use **next-day exclusive boundaries**: `start = 00:00:00`, `end = following day 00:00:00` in the business timezone (then converted to UTC). This matches iCal/Google Calendar semantics and works cleanly with `date-fns` interval functions. Avoid the `23:59:59.999` approach — it creates microsecond edge-case bugs.
 - Set `allDay: true`; UI shows date only, no time inputs.
 - Recurrence for all-day events advances by calendar day in the business timezone.
 
@@ -269,7 +275,7 @@ Scheduling bugs (DST, month-end recurrence, overlap, reminder windows) are easy 
 
 ### CI
 
-Add `npm test` to `.github/workflows/` (deploy or a dedicated check job) so calendar logic regressions fail the pipeline.
+Add `npm test` step to `.github/workflows/deploy.yml` before the build step so calendar logic regressions fail the pipeline.
 
 ---
 
@@ -325,8 +331,9 @@ Navigation via URL search params: `?view=month&year=2026&month=6`.
 
 Add to `src/components/AdminShell.tsx`:
 
-- Desktop: `Calendar` with Lucide `Calendar` icon → `/admin/calendar`
-- Mobile: include in bottom nav or More menu
+- `NavItem` entry: `{ href: '/admin/calendar', label: 'Calendar', shortLabel: 'Calendar', icon: CalendarIcon, matchPrefixes: ['/admin/calendar'] }`
+- The desktop nav already has 8 items. Consider placing Calendar in the **MoreMenu** dropdown rather than the main desktop nav to avoid crowding.
+- Mobile: include in `mobileNavItems` if prioritized, otherwise accessible via More.
 
 ### Dashboard widget
 
@@ -344,6 +351,7 @@ Add `sendCalendarEventReminderEmail` in `src/lib/email.ts` (or extend existing e
 
 - To: operator email from env or settings (single operator v1).
 - Subject/body: event title, start time in business timezone, client/job links, location.
+- Return `{ ok: boolean; error?: string }` to match the existing `src/lib/email.ts` convention (not `{ success }`). Server actions continue using `{ success, error? }`.
 
 ### Cron endpoint
 
@@ -359,7 +367,7 @@ In `docker-compose.yml`, add cron schedule for calendar reminders (e.g. every 15
 
 ```yaml
 # Example: every hour at :00
-0 * * * * wget -qO- --header="X-Cron-Secret: $CRON_SECRET" http://web:3000/api/cron/calendar
+0 * * * * curl -fsS -X POST -H "X-Cron-Secret: $CRON_SECRET" http://web:3000/api/cron/calendar
 ```
 
 Document `CALENDAR_CRON_SCHEDULE` env override in `README.md`.
@@ -451,7 +459,7 @@ CHAT_CONTEXT.md  (post-implementation)
 | DST / timezone bugs | UTC storage + `date-fns-tz`; explicit unit tests for spring/fall transitions |
 | Recurrence edge cases (month-end, leap year) | Dedicated Vitest cases; document chosen behavior |
 | No existing test culture | Small Vitest setup scoped to `calendar.ts`; add CI step |
-| Reminder duplicate sends | Set `reminderSentAt` atomically after send; test idempotency |
+| Reminder duplicate sends | Set `reminderSentAt` atomically after send; test idempotency; v1 reminders on non-recurring events only |
 | Performance with many recurring series | Cap expansion per query; index `start`/`end`; paginate list view |
 | UI complexity without calendar library | Start with month + list; week view can be simplified (no drag-drop in v1) |
 
@@ -466,6 +474,7 @@ CHAT_CONTEXT.md  (post-implementation)
 - Full iCal RRULE import/export
 - Resource/room booking (beyond optional `assignee` string)
 - Conflict blocking (overlap may warn but not prevent save in v1)
+- Per-occurrence reminders on recurring events (v1 supports reminders on non-recurring events only)
 
 ---
 

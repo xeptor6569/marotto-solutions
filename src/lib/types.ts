@@ -173,4 +173,63 @@ export interface AppConfig {
     lastQuoteNumber: number;
     lastReceiptNumber: number;
     billing?: BillingConfig;
+    /** IANA timezone for calendar display and form parsing (default: "America/New_York"). */
+    businessTimezone?: string;
+}
+
+// ─── Calendar types ───────────────────────────────────────────────────
+
+export type CalendarEventStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly';
+
+export interface RecurrenceRule {
+    frequency: RecurrenceFrequency;
+    /** Repeat every N units (default 1). */
+    interval?: number;
+    /** Optional end date (UTC ISO string). */
+    until?: string;
+    /** Optional max occurrences (alternative to `until`). */
+    count?: number;
+}
+
+export interface CalendarEventInput {
+    title: string;
+    description?: string;
+    status?: CalendarEventStatus;
+    /** Wall-clock start in business timezone (ISO string without offset, e.g. "2026-06-15T09:00"). */
+    start: string;
+    /** Wall-clock end in business timezone (ISO string without offset). */
+    end: string;
+    allDay?: boolean;
+    location?: string;
+    assignee?: string;
+    clientId?: string;
+    jobId?: string;
+    recurrenceRule?: RecurrenceRule;
+    /** Minutes before event start to send a reminder. Null = no reminder. */
+    reminderMinutesBefore?: number | null;
+}
+
+export interface CalendarEventRecord {
+    id: string;
+    title: string;
+    description: string | null;
+    status: CalendarEventStatus;
+    /** UTC ISO string. */
+    start: string;
+    /** UTC ISO string. */
+    end: string;
+    allDay: boolean;
+    location: string | null;
+    assignee: string | null;
+    clientId: string | null;
+    jobId: string | null;
+    clientName: string | null;
+    jobName: string | null;
+    recurrenceRule: RecurrenceRule | null;
+    reminderMinutesBefore: number | null;
+    reminderSentAt: string | null;
+    createdAt: string;
+    updatedAt: string;
 }

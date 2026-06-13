@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
-import type { DocumentData } from './types';
+import type { DocumentData, CalendarEventRecord } from './types';
+import { formatInTimeZone } from 'date-fns-tz';
 
 export function createTransportFromEnv() {
     const server = process.env.EMAIL_SERVER;
@@ -82,6 +83,57 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
     } catch (error) {
         console.error('sendContractInvoiceEmail', error);
         const message = error instanceof Error ? error.message : 'Failed to send email';
+        return { ok: false, error: message };
+    }
+}
+
+export async function sendCalendarEventReminderEmail(
+    event: CalendarEventRecord,
+    businessTimezone: string,
+): Promise<SendInvoiceEmailResult> {
+    const transport = createTransportFromEnv();
+    if (!transport) {
+        return { ok: false, error: 'Email is not configured (EMAIL_SERVER missing).' };
+    }
+
+    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const to = process.env.OPERATOR_EMAIL || from;
+    const startLocal = formatInTimeZone(new Date(event.start), businessTimezone, event.allDay ? 'MMMM d, yyyy' : 'MMMM d, yyyy h:mm a z');
+
+    const subject = `Reminder: ${event.title} — ${startLocal}`;
+
+    const lines = [
+        `Upcoming event: ${event.title}`,
+        `Starts: ${startLocal}`,
+        event.allDay ? 'All day event' : null,
+        event.location ? `Location: ${event.location}` : null,
+        event.clientName ? `Client: ${event.clientName}` : null,
+        event.jobName ? `Job: ${event.jobName}` : null,
+    ].filter((l): l is string => l !== null);
+
+    const textBody = [
+        'This is a reminder for an upcoming scheduled event.',
+        '',
+        ...lines,
+        '',
+        '— Marotto Solutions Calendar',
+    ].join('\n');
+
+    const safeLines = lines.map((l) => `<p style="margin:0 0 8px;">${escapeHtml(l)}</p>`).join('\n');
+    const htmlBody = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.5;color:#111827;">
+  <p style="margin:0 0 16px;">This is a reminder for an upcoming scheduled event.</p>
+  ${safeLines}
+  <p style="margin:24px 0 0;color:#6b7280;">— Marotto Solutions Calendar</p>
+</body></html>`;
+
+    try {
+        await transport.sendMail({ from, to, subject, text: textBody, html: htmlBody });
+        return { ok: true };
+    } catch (error) {
+        console.error('sendCalendarEventReminderEmail', error);
+        const message = error instanceof Error ? error.message : 'Failed to send reminder email';
         return { ok: false, error: message };
     }
 }

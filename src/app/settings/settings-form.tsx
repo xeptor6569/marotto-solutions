@@ -93,6 +93,17 @@ export default function SettingsForm({ config }: { config: Partial<AppConfig> })
                     />
                 </Box>
 
+                <Heading size="3">Calendar</Heading>
+                <Box>
+                    <Text as="label" size="2" weight="bold">Business Timezone</Text>
+                    <TextField.Root
+                        name="businessTimezone"
+                        defaultValue={config.businessTimezone || "America/New_York"}
+                        placeholder="America/New_York"
+                    />
+                    <Text as="p" size="1" color="gray" mt="1">All calendar times are shown in this timezone. Use an IANA identifier (e.g. America/New_York, America/Chicago, America/Los_Angeles).</Text>
+                </Box>
+
                 <Heading size="3">Billing Configuration</Heading>
                 <Box>
                     <Text as="label" size="2" weight="bold">Checks Payable To</Text>

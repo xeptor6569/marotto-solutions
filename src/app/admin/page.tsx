@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { getJobs } from "@/lib/jobs";
 import { getContracts, getContractsNeedingReview } from "@/lib/contracts";
+import { getUpcomingEvents } from "@/lib/calendar";
 import { getClients } from "@/app/admin/clients/actions";
+import { isDatabaseConfigured } from "@/lib/prisma";
+import { formatInTimeZone } from "date-fns-tz";
 import CreateMenu from "@/components/CreateMenu";
 
 export default async function AdminDashboard() {
@@ -18,6 +21,8 @@ export default async function AdminDashboard() {
     const clients = (clientsResult.success && clientsResult.clients) ? clientsResult.clients : [];
     const activeContracts = contracts.filter((c) => c.status === 'active');
     const reviewQueue = await getContractsNeedingReview();
+    const dbReady = isDatabaseConfigured();
+    const upcomingEvents = dbReady ? await getUpcomingEvents(7) : [];
 
     const recentInvoices = invoices.slice(0, 5);
     const activeEstimatesList = estimates.filter((e) => e.status !== "void");
@@ -356,6 +361,41 @@ export default async function AdminDashboard() {
                         </Flex>
                     </Card>
                 ) : null}
+
+                {/* Upcoming events this week */}
+                <Card>
+                    <Flex justify="between" align="center" mb="3">
+                        <Heading size="4">Upcoming This Week</Heading>
+                        <Button asChild size="1" variant="soft">
+                            <Link href="/admin/calendar">Calendar</Link>
+                        </Button>
+                    </Flex>
+                    {upcomingEvents.length === 0 ? (
+                        <Text size="2" color="gray">No upcoming events this week.</Text>
+                    ) : (
+                        <Flex direction="column" gap="2">
+                            {upcomingEvents.slice(0, 5).map((event) => {
+                                const startLocal = formatInTimeZone(new Date(event.start), 'America/New_York', event.allDay ? 'MMM d' : 'MMM d h:mm a');
+                                const statusColor = event.status === 'confirmed' ? 'blue' : event.status === 'completed' ? 'green' : 'orange';
+                                return (
+                                    <Link
+                                        key={event.id}
+                                        href={`/admin/calendar/${event.id}`}
+                                        style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                                    >
+                                        <Flex justify="between" align="center" gap="2" py="1">
+                                            <Box style={{ minWidth: 0, flex: 1 }}>
+                                                <Text size="2" weight="bold">{event.title}</Text>
+                                                <Text as="div" size="1" color="gray">{startLocal}{event.clientName ? ` — ${event.clientName}` : ''}</Text>
+                                            </Box>
+                                            <Badge color={statusColor} style={{ flexShrink: 0 }}>{event.status}</Badge>
+                                        </Flex>
+                                    </Link>
+                                );
+                            })}
+                        </Flex>
+                    )}
+                </Card>
             </Grid>
         </Container>
     );

@@ -62,6 +62,9 @@ function MoreMenu() {
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
                 <DropdownMenu.Item asChild>
+                    <Link href="/admin/calendar">Calendar</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
                     <Link href="/admin/estimates">Estimates</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>

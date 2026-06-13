@@ -39,6 +39,7 @@ export async function saveSettingsAction(formData: FormData) {
     const password = ((formData.get('webdavPassword') as string) || '').trim();
     const checkPayableTo = ((formData.get('checkPayableTo') as string) || '').trim();
     const paymentInstructions = ((formData.get('paymentInstructions') as string) || '').trim();
+    const businessTimezone = ((formData.get('businessTimezone') as string) || '').trim();
     const paymentMethodKeys: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
     const currentConfig = await getAppConfig();
 
@@ -61,6 +62,7 @@ export async function saveSettingsAction(formData: FormData) {
         webdavUrl: url,
         webdavUsername: username,
         webdavPassword: password, // Note: Storing plain text password locally. Ideal? No. Functional for self-hosted? Yes.
+        businessTimezone: businessTimezone || undefined,
         billing: {
             checkPayableTo,
             paymentInstructions,
@@ -115,6 +117,7 @@ export async function saveSettingsAction(formData: FormData) {
     revalidatePath('/settings');
     revalidatePath('/');
     revalidatePath('/dashboard');
+    revalidatePath('/admin/calendar');
     return { success: true };
 }
 
