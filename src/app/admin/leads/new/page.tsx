@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Avoid `[id]` catching the segment `new`; canonical create URL is `/admin/leads/create`. */
+/** Leads are deprecated; client creation now lives under /admin/clients. */
 export default function LeadNewAliasPage() {
-    redirect("/admin/leads/create");
+    redirect("/admin/clients/create");
 }

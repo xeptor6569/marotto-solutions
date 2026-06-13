@@ -19,7 +19,6 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
     }
 
     const docSections = [
-        { key: 'leads', title: 'Leads', docs: groupedDocs.leads, hrefBase: '/admin/leads' },
         { key: 'estimates', title: 'Estimates', docs: groupedDocs.estimates, hrefBase: '/admin/estimates' },
         { key: 'quotes', title: 'Quotes', docs: groupedDocs.quotes, hrefBase: '/admin/quotes' },
         { key: 'invoices', title: 'Invoices', docs: groupedDocs.invoices, hrefBase: '/admin/invoices' },
