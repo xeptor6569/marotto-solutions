@@ -7,12 +7,12 @@ import AdminListPageHeader from "@/components/AdminListPageHeader";
 
 export default async function NewEstimatePage() {
     const nextNumber = await getNextNumber("estimate");
-    const { clients, leads, jobs, paymentMethods } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }}>
             <AdminListPageHeader title="New estimate" actions={<BackButton href="/admin/estimates" />} />
-            <NewDocumentForm nextNumber={nextNumber} type="estimate" clients={clients} leads={leads} jobs={jobs} paymentMethods={paymentMethods} />
+            <NewDocumentForm nextNumber={nextNumber} type="estimate" clients={clients} jobs={jobs} paymentMethods={paymentMethods} />
         </Container>
     );
 }

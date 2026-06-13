@@ -1,8 +1,8 @@
 'use client';
 
-import { Container, Heading, Card, Button, Flex, Text, Callout, Code, Box } from "@radix-ui/themes";
-import { Upload, Info, CheckCircle, XCircle } from "lucide-react";
-import { importDocumentsAction } from "./actions";
+import { Container, Heading, Card, Button, Flex, Text, Callout, Code, Box, Separator } from "@radix-ui/themes";
+import { Upload, Info, CheckCircle, XCircle, Users } from "lucide-react";
+import { importDocumentsAction, migrateLeadsToClientsAction } from "./actions";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
@@ -10,7 +10,25 @@ import BackButton from "@/components/BackButton";
 export default function ImportPage() {
     const [status, setStatus] = useState<{ success: boolean, message: string } | null>(null);
     const [loading, setLoading] = useState(false);
+    const [migrateStatus, setMigrateStatus] = useState<{ success: boolean, message: string } | null>(null);
+    const [migrating, setMigrating] = useState(false);
     const router = useRouter();
+
+    const handleMigrate = async () => {
+        setMigrating(true);
+        setMigrateStatus(null);
+        const result = await migrateLeadsToClientsAction();
+        if (result.success) {
+            setMigrateStatus({
+                success: true,
+                message: `Migrated ${result.created} lead${result.created === 1 ? '' : 's'} into clients` +
+                    `${result.skipped ? ` (${result.skipped} skipped as duplicates or unnamed)` : ''}.`,
+            });
+        } else {
+            setMigrateStatus({ success: false, message: result.error || 'Migration failed' });
+        }
+        setMigrating(false);
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -93,6 +111,40 @@ export default function ImportPage() {
                         </Flex>
                     </Flex>
                 </form>
+            </Card>
+
+            <Separator my="5" size="4" />
+
+            <Card>
+                <Flex direction="column" gap="3">
+                    <Box>
+                        <Heading size="4">Migrate leads to clients</Heading>
+                        <Text as="p" size="2" color="gray" mt="1">
+                            Leads are being deprecated in favor of a single Clients list. Run this once to copy any
+                            existing lead records into Clients. It deduplicates by email (or name) and is safe to re-run.
+                        </Text>
+                    </Box>
+
+                    {migrateStatus && (
+                        <Callout.Root color={migrateStatus.success ? 'green' : 'red'}>
+                            <Callout.Icon>
+                                {migrateStatus.success ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                            </Callout.Icon>
+                            <Callout.Text>{migrateStatus.message}</Callout.Text>
+                        </Callout.Root>
+                    )}
+
+                    <Flex gap="2">
+                        <Button color="violet" onClick={handleMigrate} loading={migrating} disabled={migrating}>
+                            <Users size={16} /> Migrate leads to clients
+                        </Button>
+                        {migrateStatus?.success && (
+                            <Button variant="soft" onClick={() => router.push('/admin/clients')}>
+                                View clients
+                            </Button>
+                        )}
+                    </Flex>
+                </Flex>
             </Card>
         </Container>
     );

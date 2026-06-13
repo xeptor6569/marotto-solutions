@@ -15,7 +15,6 @@ import {
     Repeat,
     Settings,
     Upload,
-    UserPlus,
     Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -34,7 +33,6 @@ const desktopNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
     { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
-    { href: '/admin/leads', label: 'Leads', shortLabel: 'Leads', icon: UserPlus },
     { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
     { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
     { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
@@ -63,9 +61,6 @@ function MoreMenu() {
                 </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/leads">Leads</Link>
-                </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/estimates">Estimates</Link>
                 </DropdownMenu.Item>

@@ -168,7 +168,6 @@ export async function createInvoiceAction(formData: FormData) {
     const paymentMethod = (formData.get('paymentMethod') as string) || '';
     const paymentNotes = (formData.get('paymentNotes') as string) || '';
     const selectedClientId = (formData.get('clientId') as string) || '';
-    const selectedLeadId = (formData.get('leadId') as string) || '';
     const selectedJobId = (formData.get('jobId') as string) || '';
 
     const warrantyEnabled = formData.has('warrantyEnabled');
@@ -197,17 +196,8 @@ export async function createInvoiceAction(formData: FormData) {
         address: formData.get('customerAddress') as string,
         phone: ((formData.get('customerPhone') as string) || '').trim() || undefined,
         clientId: selectedClientId || undefined,
-        leadId: selectedLeadId || undefined,
         jobId: selectedJobId || undefined,
     };
-
-    if (selectedLeadId) {
-        const leadDoc = await getDocumentById(selectedLeadId);
-        if (leadDoc?.type === 'lead') {
-            customer.leadId = selectedLeadId;
-            customer.id = leadDoc.customer.id;
-        }
-    }
 
     const items = parseLineItemsFromFormData(formData);
     if (items.length === 0) {
@@ -343,9 +333,6 @@ export async function createInvoiceAction(formData: FormData) {
 
     revalidatePath('/dashboard');
     revalidatePath('/admin');
-    if (selectedLeadId) {
-        revalidatePath('/admin/leads');
-    }
     if (selectedJobId) {
         revalidatePath('/admin/jobs');
         revalidatePath(`/admin/jobs/${selectedJobId}`);

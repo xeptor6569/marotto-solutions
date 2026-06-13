@@ -7,12 +7,12 @@ import AdminListPageHeader from "@/components/AdminListPageHeader";
 
 export default async function NewReceiptPage() {
     const nextNumber = await getNextNumber("receipt");
-    const { clients, leads, jobs, paymentMethods } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }}>
             <AdminListPageHeader title="New receipt" actions={<BackButton href="/admin/receipts" />} />
-            <NewDocumentForm nextNumber={nextNumber} type="receipt" clients={clients} leads={leads} jobs={jobs} paymentMethods={paymentMethods} />
+            <NewDocumentForm nextNumber={nextNumber} type="receipt" clients={clients} jobs={jobs} paymentMethods={paymentMethods} />
         </Container>
     );
 }

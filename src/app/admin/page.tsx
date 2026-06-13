@@ -1,5 +1,5 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "@radix-ui/themes";
-import { FileText, ReceiptText, ClipboardList, Users, UserPlus, BadgeCheck, Briefcase, Repeat } from "lucide-react";
+import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase, Repeat } from "lucide-react";
 import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { getJobs } from "@/lib/jobs";
@@ -12,7 +12,6 @@ export default async function AdminDashboard() {
     const estimates = await getDocuments('estimate');
     const quotes = await getDocuments('quote');
     const receipts = await getDocuments('receipt');
-    const leads = await getDocuments('lead');
     const jobs = await getJobs();
     const contracts = await getContracts();
     const clientsResult = await getClients();
@@ -26,14 +25,13 @@ export default async function AdminDashboard() {
     const recentActiveEstimates = activeEstimatesList.slice(0, 5);
     const recentActiveQuotes = activeQuotesList.slice(0, 5);
     const recentReceipts = receipts.slice(0, 5);
-    const recentLeads = leads.slice(0, 5);
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
             <Flex direction={{ initial: "column", md: "row" }} justify="between" align={{ initial: "start", md: "center" }} gap="4" mb="5">
                 <Box>
                     <Heading size="8">Dashboard</Heading>
-                    <Text size="3" color="gray">Quick view of invoices, estimates, quotes, receipts, clients, leads, jobs, and recurring contracts.</Text>
+                    <Text size="3" color="gray">Quick view of invoices, estimates, quotes, receipts, clients, jobs, and recurring contracts.</Text>
                 </Box>
                 <CreateMenu size="3" />
             </Flex>
@@ -90,17 +88,6 @@ export default async function AdminDashboard() {
                             <Box>
                                 <Text size="2" color="gray">Clients</Text>
                                 <Heading size="6">{clients.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/leads" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--purple-9)" }}><UserPlus size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Leads</Text>
-                                <Heading size="6">{leads.length}</Heading>
                             </Box>
                         </Flex>
                     </Card>
@@ -293,34 +280,6 @@ export default async function AdminDashboard() {
                                             <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
                                         </Box>
                                         <Badge color="green" style={{ flexShrink: 0 }}>${r.total.toFixed(2)}</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    )}
-                </Card>
-
-                {/* Recent Leads */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Recent Leads</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/leads">View all</Link>
-                        </Button>
-                    </Flex>
-                    {recentLeads.length === 0 ? (
-                        <Text size="2" color="gray">No leads yet.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {recentLeads.map((lead) => (
-                                <Link
-                                    key={lead.id}
-                                    href={`/admin/leads/${lead.id}`}
-                                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                                >
-                                    <Flex direction="column" gap="1" py="1">
-                                        <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{lead.customer.name}</Text>
-                                        <Text size="1" color="gray">{new Date(lead.date).toLocaleDateString()}</Text>
                                     </Flex>
                                 </Link>
                             ))}

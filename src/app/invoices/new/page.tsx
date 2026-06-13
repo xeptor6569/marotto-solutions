@@ -5,7 +5,7 @@ import { getDocumentFormPickers } from "@/lib/document-form-pickers";
 
 export default async function NewInvoicePage() {
     const nextNumber = await getNextNumber('invoice');
-    const { clients, leads, jobs, paymentMethods } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p="5">
@@ -13,7 +13,6 @@ export default async function NewInvoicePage() {
                 nextNumber={nextNumber}
                 type="invoice"
                 clients={clients}
-                leads={leads}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
             />

@@ -19,7 +19,6 @@ import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
 import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption, PaymentMethodKey } from '@/lib/types';
 import { ClientOption } from '@/lib/clients';
-import type { LeadOption } from '@/lib/leads';
 import type { PaymentMethodOption } from '@/lib/document-form-pickers';
 import { formatPhoneInput } from '@/lib/phone-format';
 import {
@@ -37,7 +36,6 @@ export default function NewDocumentForm({
     initialData,
     redirectTo,
     clients = [],
-    leads = [],
     jobs = [],
     paymentMethods = [],
 }: {
@@ -46,7 +44,6 @@ export default function NewDocumentForm({
     initialData?: DocumentData;
     redirectTo?: string;
     clients?: ClientOption[];
-    leads?: LeadOption[];
     jobs?: JobOption[];
     paymentMethods?: PaymentMethodOption[];
 }) {
@@ -58,7 +55,6 @@ export default function NewDocumentForm({
 
     const [docStatus, setDocStatus] = useState<DocumentData['status']>(initialData?.status || 'draft');
     const [selectedClientId, setSelectedClientId] = useState(initialData?.customer?.clientId || '');
-    const [selectedLeadId, setSelectedLeadId] = useState(initialData?.customer?.leadId || '');
     const [selectedJobId, setSelectedJobId] = useState(initialData?.jobId || initialData?.customer?.jobId || '');
     const [jobOptions, setJobOptions] = useState<JobOption[]>(jobs);
     const [newJobName, setNewJobName] = useState('');
@@ -122,21 +118,8 @@ export default function NewDocumentForm({
         if (input) input.value = value;
     };
 
-    const handleLeadChange = (id: string) => {
-        setSelectedLeadId(id);
-        setSelectedClientId('');
-        if (!id) return;
-        const selected = leads.find((lead) => lead.id === id);
-        if (!selected) return;
-        setCustomerInputValue('customerName', selected.name || '');
-        setCustomerInputValue('customerEmail', selected.email || '');
-        setCustomerPhone(formatPhoneInput(selected.phone || ''));
-        setCustomerInputValue('customerAddress', selected.address || '');
-    };
-
     const handleClientChange = (id: string) => {
         setSelectedClientId(id);
-        setSelectedLeadId('');
         if (!id) return;
         const selected = clients.find((client) => client.id === id);
         if (!selected) return;
@@ -153,10 +136,6 @@ export default function NewDocumentForm({
         if (!selectedJob) return;
         if (selectedJob.clientId) {
             handleClientChange(selectedJob.clientId);
-            return;
-        }
-        if (selectedJob.leadId) {
-            handleLeadChange(selectedJob.leadId);
         }
     };
 
@@ -172,7 +151,6 @@ export default function NewDocumentForm({
                 name,
                 description: newJobDescription.trim(),
                 clientId: selectedClientId || undefined,
-                leadId: selectedLeadId || undefined,
             });
             if (!result.success) {
                 setJobError(result.error || 'Unable to create job');
@@ -263,7 +241,6 @@ export default function NewDocumentForm({
             <input type="hidden" name="currentStatus" value={initialData?.status || 'draft'} />
             <input type="hidden" name="status" value={docStatus} />
             <input type="hidden" name="clientId" value={selectedClientId} />
-            <input type="hidden" name="leadId" value={selectedLeadId} />
             <input type="hidden" name="jobId" value={selectedJobId} />
             <input type="hidden" name="paymentsJson" value={JSON.stringify(payments)} />
             <input type="hidden" name="paidAmount" value={paidAmount} />
@@ -333,23 +310,6 @@ export default function NewDocumentForm({
                                 />
                                 {jobError ? <Text as="p" size="1" color="red" mt="1">{jobError}</Text> : null}
                             </Box>
-                            {leads.length > 0 ? (
-                                <Box>
-                                    <Text as="label" size="2">Select existing client record</Text>
-                                    <select
-                                        value={selectedLeadId}
-                                        onChange={(e) => handleLeadChange(e.target.value)}
-                                        style={nativeSelectStyle}
-                                    >
-                                        <option value="">None</option>
-                                        {leads.map((lead) => (
-                                            <option key={lead.id} value={lead.id}>
-                                                #{lead.number} — {lead.name}{lead.email ? ` (${lead.email})` : ''}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </Box>
-                            ) : null}
                             {clients.length > 0 ? (
                                 <Box>
                                     <Text as="label" size="2">Select existing client</Text>
