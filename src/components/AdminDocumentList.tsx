@@ -4,12 +4,15 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge, Box, Button, Callout, Card, Checkbox, Dialog, Flex, Table, Text, TextArea, TextField } from "@radix-ui/themes";
-import { CheckCircle, Copy, Edit, Search, Send, X, XCircle } from "lucide-react";
-import type { DocumentData } from "@/lib/types";
+import { ArrowRightLeft, CheckCircle, Copy, Edit, Search, Send, X, XCircle } from "lucide-react";
+import type { DocumentData, DocumentType } from "@/lib/types";
 import LeadEditDialog from "@/components/LeadEditDialog";
 import DeleteLeadButton from "@/components/DeleteLeadButton";
 import EmptyState from "@/components/EmptyState";
-import { duplicateDocumentsAction, sendDocumentsAction } from "@/app/admin/document-bulk-actions";
+import { convertDocumentsAction, duplicateDocumentsAction, sendDocumentsAction } from "@/app/admin/document-bulk-actions";
+import { convertTargets } from "@/lib/convert-document";
+import { DOC_LABEL } from "@/lib/document-labels";
+import { hasPendingApprovalLines } from "@/lib/pending-client-approval";
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
 
@@ -80,6 +83,9 @@ export default function AdminDocumentList({
     const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
     const [sendOpen, setSendOpen] = useState(false);
     const [sendMessage, setSendMessage] = useState("");
+    const [confirmConvertTarget, setConfirmConvertTarget] = useState<DocumentType | null>(null);
+
+    const conversionTargets = useMemo(() => convertTargets(type as DocumentType), [type]);
 
     const toggleOne = (id: string) => {
         setSelectedIds((prev) => {
@@ -159,6 +165,38 @@ export default function AdminDocumentList({
                 setFeedback({ success: false, message: result.error || "Failed to duplicate." });
             }
         });
+    };
+
+    const runConvert = (targetType: DocumentType, confirmPending = false) => {
+        const ids = Array.from(selectedIds);
+        if (ids.length === 0) return;
+        setFeedback(null);
+        startTransition(async () => {
+            const result = await convertDocumentsAction(ids, targetType, confirmPending);
+            if (result.success) {
+                const targetPlural = `${DOC_LABEL[targetType].toLowerCase()}s`;
+                const skippedNote = result.skipped ? ` (${result.skipped} skipped — not convertible)` : "";
+                setFeedback({
+                    success: true,
+                    message: `Converted ${result.count} ${result.count === 1 ? "document" : "documents"} to ${targetPlural} as drafts${skippedNote}.`,
+                });
+                clearSelection();
+                router.refresh();
+            } else {
+                setFeedback({ success: false, message: result.error || "Failed to convert." });
+            }
+        });
+    };
+
+    const handleConvert = (targetType: DocumentType) => {
+        const willBillPending = targetType === "invoice"
+            && selectedDocs.some((d) => hasPendingApprovalLines(d.lineItems));
+        if (willBillPending) {
+            setFeedback(null);
+            setConfirmConvertTarget(targetType);
+            return;
+        }
+        runConvert(targetType);
     };
 
     const handleSend = () => {
@@ -243,6 +281,17 @@ export default function AdminDocumentList({
                             <Button size="2" variant="soft" onClick={handleDuplicate} disabled={isPending}>
                                 <Copy size={14} /> Duplicate
                             </Button>
+                            {conversionTargets.map((target) => (
+                                <Button
+                                    key={target}
+                                    size="2"
+                                    variant="soft"
+                                    onClick={() => handleConvert(target)}
+                                    disabled={isPending}
+                                >
+                                    <ArrowRightLeft size={14} /> To {DOC_LABEL[target].toLowerCase()}
+                                </Button>
+                            ))}
                             <Button size="2" onClick={() => { setFeedback(null); setSendOpen(true); }} disabled={isPending}>
                                 <Send size={14} /> Send
                             </Button>
@@ -287,6 +336,34 @@ export default function AdminDocumentList({
                                 <Send size={14} /> Send emails
                             </Button>
                         </Flex>
+                    </Flex>
+                </Dialog.Content>
+            </Dialog.Root>
+
+            <Dialog.Root
+                open={confirmConvertTarget !== null}
+                onOpenChange={(open) => { if (!open) setConfirmConvertTarget(null); }}
+            >
+                <Dialog.Content style={{ maxWidth: 440 }}>
+                    <Dialog.Title>Include scope pending approval?</Dialog.Title>
+                    <Dialog.Description size="2" mb="3">
+                        Some selected documents have line items still pending client approval.
+                        Converting to an invoice will bill all line items. Continue?
+                    </Dialog.Description>
+                    <Flex gap="3" justify="end">
+                        <Dialog.Close>
+                            <Button variant="soft" color="gray" type="button">Cancel</Button>
+                        </Dialog.Close>
+                        <Button
+                            onClick={() => {
+                                const target = confirmConvertTarget;
+                                setConfirmConvertTarget(null);
+                                if (target) runConvert(target, true);
+                            }}
+                            loading={isPending}
+                        >
+                            Bill all & convert
+                        </Button>
                     </Flex>
                 </Dialog.Content>
             </Dialog.Root>

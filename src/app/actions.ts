@@ -10,6 +10,8 @@ import {
     buildDepositInvoiceDraft,
     type DepositMode,
 } from '@/lib/deposit-invoice';
+import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
+import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -152,6 +154,62 @@ export async function createDepositInvoiceAction(input: {
             }
         }
         console.error('Failed to create deposit invoice', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: message };
+    }
+}
+
+export async function createConvertedDocumentAction(input: {
+    sourceDocumentId: string;
+    targetType: DocumentType;
+    confirmPending?: boolean;
+}): Promise<{ success: false; error: string; requiresConfirmation?: boolean } | never> {
+    const sourceId = input.sourceDocumentId?.trim();
+    if (!sourceId) {
+        return { success: false, error: 'Source document is required.' };
+    }
+
+    try {
+        const source = await getDocumentById(sourceId);
+        if (!source) {
+            return { success: false, error: 'Source document not found.' };
+        }
+        if (!canConvert(source.type, input.targetType)) {
+            return { success: false, error: 'This conversion is not supported.' };
+        }
+
+        if (
+            input.targetType === 'invoice'
+            && hasPendingApprovalLines(source.lineItems)
+            && !input.confirmPending
+        ) {
+            return {
+                success: false,
+                requiresConfirmation: true,
+                error: 'This document has scope pending client approval. Confirm to bill all line items on the invoice.',
+            };
+        }
+
+        const number = await getNextNumber(input.targetType);
+        const doc = buildConvertedDocument(source, input.targetType, number);
+        await saveNewDocument(doc);
+
+        revalidatePath('/admin');
+        revalidatePath(`/admin/${input.targetType}s`);
+        revalidatePath(`/admin/${source.type}s`);
+        revalidatePath(`/admin/${source.type}s/${source.id}`);
+        revalidatePath(`/admin/${input.targetType}s/${doc.id}`);
+        revalidatePath(`/admin/${input.targetType}s/${doc.id}/edit`);
+
+        redirect(`/admin/${input.targetType}s/${doc.id}/edit`);
+    } catch (error) {
+        if (error && typeof error === 'object' && 'digest' in error) {
+            const digest = String((error as { digest?: string }).digest ?? '');
+            if (digest.startsWith('NEXT_REDIRECT')) {
+                throw error;
+            }
+        }
+        console.error('Failed to convert document', error);
         const message = error instanceof Error ? error.message : 'Unknown error';
         return { success: false, error: message };
     }

@@ -5,6 +5,8 @@ import { auth } from '@/lib/auth';
 import { getDocumentById, getNextNumber, saveNewDocument } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
 import { DOC_LABEL } from '@/lib/document-labels';
+import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
+import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import type { DocumentData, DocumentType } from '@/lib/types';
 
 const PREFIX: Record<DocumentType, string> = {
@@ -93,6 +95,83 @@ export async function duplicateDocumentsAction(ids: string[]): Promise<BulkDupli
     }
 
     return { success: true, count: newIds.length, ids: newIds };
+}
+
+export interface BulkConvertResult {
+    success: boolean;
+    error?: string;
+    count?: number;
+    ids?: string[];
+    /** Set when an invoice conversion needs confirmation for pending-approval scope. */
+    requiresConfirmation?: boolean;
+    /** Number of selected documents that could not be converted to the target type. */
+    skipped?: number;
+}
+
+/**
+ * Convert one or more documents to a new target type. Each converted document
+ * is a fresh draft (new number/id) linked back to its source via tags.
+ * Documents whose type cannot convert to `targetType` are skipped.
+ */
+export async function convertDocumentsAction(
+    ids: string[],
+    targetType: DocumentType,
+    confirmPending?: boolean,
+): Promise<BulkConvertResult> {
+    const session = await auth();
+    if (!session) {
+        return { success: false, error: 'You must be signed in.' };
+    }
+    if (!ids || ids.length === 0) {
+        return { success: false, error: 'No documents selected.' };
+    }
+
+    const docs: DocumentData[] = [];
+    for (const id of ids) {
+        const doc = await getDocumentById(id);
+        if (doc) docs.push(doc);
+    }
+
+    const convertible = docs.filter((doc) => canConvert(doc.type, targetType));
+    const skipped = docs.length - convertible.length;
+
+    if (convertible.length === 0) {
+        return { success: false, error: `None of the selected documents can be converted to a ${DOC_LABEL[targetType].toLowerCase()}.` };
+    }
+
+    if (
+        targetType === 'invoice'
+        && !confirmPending
+        && convertible.some((doc) => hasPendingApprovalLines(doc.lineItems))
+    ) {
+        return {
+            success: false,
+            requiresConfirmation: true,
+            error: 'Some selected documents have scope pending client approval. Confirm to bill all line items.',
+        };
+    }
+
+    const newIds: string[] = [];
+
+    try {
+        for (const doc of convertible) {
+            const number = await getNextNumber(targetType);
+            const converted = buildConvertedDocument(doc, targetType, number);
+            await saveNewDocument(converted);
+            newIds.push(converted.id);
+        }
+    } catch (e: unknown) {
+        console.error('convertDocumentsAction', e);
+        return { success: false, error: e instanceof Error ? e.message : 'Failed to convert documents.' };
+    }
+
+    revalidatePath('/admin');
+    revalidatePath(`/admin/${targetType}s`);
+    for (const doc of convertible) {
+        revalidatePath(`/admin/${doc.type}s`);
+    }
+
+    return { success: true, count: newIds.length, ids: newIds, skipped: skipped > 0 ? skipped : undefined };
 }
 
 export interface BulkSendResult {

@@ -24,8 +24,10 @@ import PrintButton from "@/components/PrintButton";
 import ShareButton from "@/components/ShareButton";
 import EmailDocumentButton from "@/components/EmailDocumentButton";
 import CreateDepositInvoiceButton from "@/components/CreateDepositInvoiceButton";
+import ConvertDocumentButton from "@/components/ConvertDocumentButton";
 import BackButton from "@/components/BackButton";
 import { depositBillingBase } from "@/lib/deposit-invoice";
+import { convertTargets } from "@/lib/convert-document";
 
 function getStatusColor(status: DocumentData["status"]) {
     if (status === "paid") return "#166534";
@@ -198,6 +200,7 @@ export default async function DocumentPreview({
         : undefined;
     const showDepositInvoice = doc.type === "quote" || doc.type === "estimate";
     const depositBase = showDepositInvoice ? depositBillingBase(doc) : 0;
+    const showConvert = convertTargets(doc.type).length > 0;
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
@@ -214,6 +217,13 @@ export default async function DocumentPreview({
                             sourceDocumentId={doc.id}
                             billingBase={depositBase}
                             sourceLabel={docTitle}
+                        />
+                    ) : null}
+                    {showConvert ? (
+                        <ConvertDocumentButton
+                            sourceDocumentId={doc.id}
+                            sourceType={doc.type}
+                            hasPendingApproval={pendingLines}
                         />
                     ) : null}
                     <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
