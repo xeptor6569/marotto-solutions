@@ -3,8 +3,8 @@ import Link from 'next/link';
 import { ArrowRight, Hammer, Monitor, Cpu, Code } from "lucide-react";
 import QuoteForm from "./components/QuoteForm";
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string }> }) {
-    const { submitted } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string; error?: string }> }) {
+    const { submitted, error } = await searchParams;
 
     return (
         <Box>
@@ -110,10 +110,24 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                             {submitted ? (
                                 <Card size="3" style={{ backgroundColor: 'var(--green-3)' }}>
                                     <Flex direction="column" align="center" py="5" gap="3">
-                                        <Heading size="5" color="green">Variable Received!</Heading>
+                                        <Heading size="5" color="green">Request Received!</Heading>
                                         <Text align="center">Thank you for your request. We will be in touch shortly.</Text>
                                         <Button variant="outline" asChild>
                                             <Link href="/">Submit Another</Link>
+                                        </Button>
+                                    </Flex>
+                                </Card>
+                            ) : error ? (
+                                <Card size="3" style={{ backgroundColor: 'var(--red-3)' }}>
+                                    <Flex direction="column" align="center" py="5" gap="3">
+                                        <Heading size="5" color="red">Something went wrong</Heading>
+                                        <Text align="center">
+                                            {error === 'missing'
+                                                ? 'Please fill in your name, email, and project details.'
+                                                : 'We could not save your request. Please try again or email us directly.'}
+                                        </Text>
+                                        <Button variant="outline" asChild>
+                                            <Link href="/#quote">Try again</Link>
                                         </Button>
                                     </Flex>
                                 </Card>

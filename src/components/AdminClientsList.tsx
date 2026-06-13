@@ -1,10 +1,11 @@
 'use client';
 
-import { Box, Button, Card, Flex, Table, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Card, Flex, Table, Text } from "@radix-ui/themes";
 import { Mail, Phone, MapPin, Edit } from "lucide-react";
 import Link from "next/link";
 import ClientForm from "@/app/admin/clients/ClientForm";
 import DeleteClientButton from "@/app/admin/clients/DeleteClientButton";
+import PromoteClientButton from "@/app/admin/clients/PromoteClientButton";
 
 export type AdminClientRow = {
     id: string;
@@ -13,6 +14,7 @@ export type AdminClientRow = {
     phone: string | null;
     address: string | null;
     notes: string | null;
+    isProspect: boolean;
     /** ISO string when passed from a Server Component to this client list */
     createdAt: string | Date;
 };
@@ -25,7 +27,12 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                     <Card key={client.id}>
                         <Flex direction="column" gap="3">
                             <Box>
-                                <Text weight="bold" size="3">{client.name}</Text>
+                                <Flex align="center" gap="2" wrap="wrap">
+                                    <Text weight="bold" size="3">{client.name}</Text>
+                                    {client.isProspect ? (
+                                        <Badge color="amber" variant="soft">Prospect</Badge>
+                                    ) : null}
+                                </Flex>
                                 {client.notes ? (
                                     <Text as="div" size="2" color="gray" mt="1" style={{ whiteSpace: "pre-line" }}>{client.notes}</Text>
                                 ) : null}
@@ -54,7 +61,12 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                                 ) : null}
                             </Flex>
                             <Text size="1" color="gray">Added {new Date(client.createdAt).toLocaleDateString()}</Text>
-                            <Flex gap="2" style={{ width: "100%" }}>
+                            <Flex gap="2" wrap="wrap" style={{ width: "100%" }}>
+                                {client.isProspect ? (
+                                    <Box style={{ flex: '1 1 100%', minWidth: 0 }}>
+                                        <PromoteClientButton clientId={client.id} clientName={client.name} size="2" fullWidth />
+                                    </Box>
+                                ) : null}
                                 <Box style={{ flex: 1, minWidth: 0 }}>
                                     <Button asChild size="2" variant="soft" style={{ width: "100%" }}>
                                         <Link href={`/admin/jobs/create?clientId=${encodeURIComponent(client.id)}&name=${encodeURIComponent(`${client.name} job`)}`}>
@@ -97,7 +109,12 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                             {clients.map((client) => (
                                 <Table.Row key={client.id}>
                                     <Table.Cell>
-                                        <Text weight="bold">{client.name}</Text>
+                                        <Flex align="center" gap="2" wrap="wrap">
+                                            <Text weight="bold">{client.name}</Text>
+                                            {client.isProspect ? (
+                                                <Badge color="amber" variant="soft" size="1">Prospect</Badge>
+                                            ) : null}
+                                        </Flex>
                                         {client.notes ? (
                                             <Text as="div" size="1" color="gray">{client.notes}</Text>
                                         ) : null}
@@ -135,7 +152,10 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                                         <Text size="2">{new Date(client.createdAt).toLocaleDateString()}</Text>
                                     </Table.Cell>
                                     <Table.Cell>
-                                        <Flex gap="2">
+                                        <Flex gap="2" wrap="wrap">
+                                            {client.isProspect ? (
+                                                <PromoteClientButton clientId={client.id} clientName={client.name} size="1" />
+                                            ) : null}
                                             <Button asChild size="1" variant="soft">
                                                 <Link href={`/admin/jobs/create?clientId=${encodeURIComponent(client.id)}&name=${encodeURIComponent(`${client.name} job`)}`}>
                                                     Job

@@ -61,16 +61,18 @@ model VerificationToken {
 
 // Client management
 model Client {
-  id        String     @id @default(uuid())
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  notes     String?
-  jobs      Job[]
-  contracts Contract[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  id         String     @id @default(uuid())
+  name       String
+  email      String?
+  phone      String?
+  address    String?
+  notes      String?
+  /** True when created from the public quote form (or migrated lead) until promoted to a full client. */
+  isProspect Boolean    @default(false)
+  jobs       Job[]
+  contracts  Contract[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 }
 
 model Job {

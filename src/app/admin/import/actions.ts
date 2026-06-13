@@ -113,6 +113,7 @@ export async function migrateLeadsToClientsAction(): Promise<MigrateLeadsResult>
                     phone: lead.customer.phone?.trim() || null,
                     address: lead.customer.address?.trim() || null,
                     notes: lead.notes?.trim() || null,
+                    isProspect: true,
                 },
             });
             created++;

@@ -13,6 +13,12 @@ import {
 import { createJob, getJobOptions } from '@/lib/jobs';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { isDatabaseConfigured } from '@/lib/prisma';
+import { upsertProspectFromQuoteRequest } from '@/lib/quote-intake';
+import {
+    sendQuoteRequestAdminEmail,
+    sendQuoteRequestConfirmationEmail,
+} from '@/lib/quote-request-email';
 import {
     parseFormStatus,
     resolveDocumentStatus,
@@ -534,35 +540,47 @@ export async function deleteLeadAction(input: { id: string }): Promise<{ success
 }
 
 export async function submitQuoteRequest(formData: FormData) {
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const service = formData.get('service') as string;
-    const details = formData.get('details') as string;
-    const date = formData.get('date') as string;
+    const name = ((formData.get('name') as string) || '').trim();
+    const email = ((formData.get('email') as string) || '').trim();
+    const service = ((formData.get('service') as string) || 'general').trim();
+    const details = ((formData.get('details') as string) || '').trim();
+    const date = ((formData.get('date') as string) || '').trim();
 
-    const number = await getNextNumber('lead');
+    if (!name || !email || !details) {
+        redirect('/?error=missing');
+    }
 
-    const doc: DocumentData = {
-        id: `LEAD-${number.toString().padStart(4, '0')}`,
-        number,
-        type: 'lead',
-        date: new Date().toISOString(),
-        customer: {
-            id: email, // simple dedupe key for now
-            name,
-            email,
-        },
-        lineItems: [], // No line items yet
-        subtotal: 0,
-        total: 0,
-        status: 'draft', // Draft lead
-        notes: `Service: ${service}\nRequested Date: ${date}\nDetails: ${details}`,
-        tags: ['new-lead'],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    };
+    const input = { name, email, service, details, date };
 
-    await saveNewDocument(doc);
+    let clientId: string | undefined;
+    if (isDatabaseConfigured()) {
+        const saved = await upsertProspectFromQuoteRequest(input);
+        if (saved.ok) {
+            clientId = saved.clientId;
+            revalidatePath('/admin/clients');
+            revalidatePath('/admin');
+        } else {
+            console.error('submitQuoteRequest: failed to save prospect', saved.error);
+        }
+    } else {
+        console.error('submitQuoteRequest: DATABASE_URL not configured');
+    }
+
+    // Notify admin and confirm to submitter (best-effort; don't block success UX)
+    const [adminResult, confirmResult] = await Promise.all([
+        sendQuoteRequestAdminEmail(input, clientId),
+        sendQuoteRequestConfirmationEmail(input),
+    ]);
+    if (!adminResult.ok) {
+        console.error('submitQuoteRequest: admin email failed', adminResult.error);
+    }
+    if (!confirmResult.ok) {
+        console.error('submitQuoteRequest: confirmation email failed', confirmResult.error);
+    }
+
+    if (!clientId && isDatabaseConfigured()) {
+        redirect('/?error=save');
+    }
 
     redirect('/?submitted=true');
 }

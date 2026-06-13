@@ -16,7 +16,8 @@ services:
       - ./public:/app/public
       - marotto_data:/app/data
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
 
   postgres:
     image: postgres:16-alpine
@@ -30,6 +31,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U marotto -d marotto_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # Lightweight cron sidecar that pings the contract scheduler endpoint daily.
   # Disable by setting CONTRACTS_CRON_PROFILE=disabled (or remove this service)

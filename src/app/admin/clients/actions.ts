@@ -14,7 +14,7 @@ export interface ClientFormData {
 export async function getClients() {
     try {
         const clients = await prisma.client.findMany({
-            orderBy: { createdAt: 'desc' },
+            orderBy: [{ isProspect: 'desc' }, { createdAt: 'desc' }],
         });
         return { success: true, clients };
     } catch (error) {
@@ -26,7 +26,7 @@ export async function getClients() {
 export async function createClient(data: ClientFormData) {
     try {
         const client = await prisma.client.create({
-            data,
+            data: { ...data, isProspect: false },
         });
         revalidatePath('/admin/clients');
         revalidatePath('/admin');
@@ -63,5 +63,21 @@ export async function deleteClient(id: string) {
     } catch (error) {
         console.error('Error deleting client:', error);
         return { success: false, error: 'Failed to delete client' };
+    }
+}
+
+/** Promote a website prospect (or re-opened inquiry) to a full client. */
+export async function promoteClientToFull(id: string) {
+    try {
+        await prisma.client.update({
+            where: { id },
+            data: { isProspect: false },
+        });
+        revalidatePath('/admin/clients');
+        revalidatePath('/admin');
+        return { success: true };
+    } catch (error) {
+        console.error('Error promoting client:', error);
+        return { success: false, error: 'Failed to update client' };
     }
 }

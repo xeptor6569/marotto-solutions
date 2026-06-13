@@ -58,21 +58,34 @@ jobs:
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
           fi
 
-      - name: Deploy with Docker Compose
-        run: |
-          # Build and start containers in detached mode
-          # --build forces a rebuild of the image
-          docker compose up -d --build --remove-orphans
+      - name: Start Postgres
+        run: docker compose up -d postgres
 
+      - name: Wait for Postgres
+        run: |
+          for i in $(seq 1 30); do
+            if docker compose exec -T postgres pg_isready -U marotto -d marotto_db >/dev/null 2>&1; then
+              echo "Postgres is ready"
+              exit 0
+            fi
+            echo "Waiting for Postgres ($i/30)..."
+            sleep 2
+          done
+          echo "::error::Postgres failed to become ready"
+          exit 1
+
+      - name: Build and start application
+        run: docker compose up -d --build --remove-orphans
+
+      # Applies every pending migration in prisma/migrations/ (e.g. client isProspect).
       # Clear a failed duplicate "init" migration if a previous deploy left the DB in P3018 state.
       - name: Resolve failed duplicate migration (idempotent)
         continue-on-error: true
         run: |
-          docker compose exec -T web npx prisma@6.2.0 migrate resolve --rolled-back 20260509180000_init --schema=/app/prisma/schema.prisma
+          docker compose exec -T web npx prisma@6.19.1 migrate resolve --rolled-back 20260509180000_init --schema=/app/prisma/schema.prisma
 
-      # Applies prisma/migrations against DATABASE_URL (same DB the app uses).
       - name: Run Prisma migrations
-        run: docker compose exec -T web npx prisma@6.2.0 migrate deploy --schema=/app/prisma/schema.prisma
+        run: docker compose exec -T web npx prisma@6.19.1 migrate deploy --schema=/app/prisma/schema.prisma
 
       - name: Prune unused images
         run: docker image prune -f

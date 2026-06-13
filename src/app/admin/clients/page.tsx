@@ -10,11 +10,16 @@ import EmptyState from "@/components/EmptyState";
 export default async function ClientsPage() {
     const result = await getClients();
     const clients = (result.success && result.clients) ? result.clients : [];
+    const prospectCount = clients.filter((c) => c.isProspect).length;
+    const description = prospectCount > 0
+        ? `${prospectCount} prospect${prospectCount === 1 ? '' : 's'} awaiting promotion to full client`
+        : undefined;
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
             <AdminListPageHeader
                 title="Clients"
+                description={description}
                 actions={
                     <>
                         <ClientForm
