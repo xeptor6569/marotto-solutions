@@ -16,6 +16,7 @@ import {
     Settings,
     Upload,
     Users,
+    Archive,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
@@ -84,6 +85,12 @@ function MoreMenu() {
                     </Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
+                    <Link href="/admin/backup">
+                        <Archive size={14} />
+                        Backup
+                    </Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
                     <Link href="/admin/settings">
                         <Settings size={14} />
                         Settings
@@ -139,6 +146,9 @@ export default function AdminShell({
                                 </Button>
                                 <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
                                     <Link href="/admin/import"><Upload size={16} /> Import</Link>
+                                </Button>
+                                <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
+                                    <Link href="/admin/backup"><Archive size={16} /> Backup</Link>
                                 </Button>
                                 <Separator size="4" />
                                 {userEmail ? (
