@@ -10,12 +10,13 @@ import {
     Flex,
     Grid,
     Heading,
+    IconButton,
     Table,
     Text,
     TextArea,
     TextField,
 } from '@radix-ui/themes';
-import { PlusIcon, TrashIcon, SaveIcon, XCircle } from 'lucide-react';
+import { PlusIcon, TrashIcon, SaveIcon, XCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import {
     createContractFormAction,
     updateContractFormAction,
@@ -150,6 +151,24 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
 
     const addLine = () => setLines((prev) => [...prev, defaultLine()]);
     const removeLine = (id: string) => setLines((prev) => (prev.length > 1 ? prev.filter((l) => l.id !== id) : prev));
+
+    const moveLineUp = (index: number) => {
+        if (index === 0) return;
+        setLines((prev) => {
+            const updated = [...prev];
+            [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+            return updated;
+        });
+    };
+
+    const moveLineDown = (index: number) => {
+        if (index === lines.length - 1) return;
+        setLines((prev) => {
+            const updated = [...prev];
+            [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+            return updated;
+        });
+    };
 
     return (
         <form action={isEdit ? updateContractFormAction : createContractFormAction}>
@@ -443,6 +462,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                     <Table.ColumnHeaderCell>Unit price</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell align="right">Cycle total</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell></Table.ColumnHeaderCell>
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
@@ -504,6 +524,16 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                             </Table.Cell>
                                             <Table.Cell align="right">
                                                 {line.kind === 'recurring' ? `$${cycleTotal.toFixed(2)}` : <Text size="1" color="gray">usage</Text>}
+                                            </Table.Cell>
+                                            <Table.Cell>
+                                                <Flex direction="column" gap="1">
+                                                    <IconButton size="1" variant="ghost" disabled={index === 0} onClick={() => moveLineUp(index)}>
+                                                        <ChevronUp size={14} />
+                                                    </IconButton>
+                                                    <IconButton size="1" variant="ghost" disabled={index === lines.length - 1} onClick={() => moveLineDown(index)}>
+                                                        <ChevronDown size={14} />
+                                                    </IconButton>
+                                                </Flex>
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Button type="button" variant="ghost" color="red" onClick={() => removeLine(line.id)}>

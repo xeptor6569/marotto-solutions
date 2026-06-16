@@ -13,8 +13,9 @@ import {
     TextArea,
     Badge,
     Checkbox,
+    IconButton,
 } from '@radix-ui/themes';
-import { PlusIcon, TrashIcon, SaveIcon, SendIcon, MoreHorizontal } from 'lucide-react';
+import { PlusIcon, TrashIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronUp, ChevronDown } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
 import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption, PaymentMethodKey } from '@/lib/types';
@@ -187,6 +188,20 @@ export default function NewDocumentForm({
         if (lineItems.length > 1) {
             setLineItems(lineItems.filter((item) => item.id !== id));
         }
+    };
+
+    const moveLineItemUp = (index: number) => {
+        if (index === 0) return;
+        const updated = [...lineItems];
+        [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+        setLineItems(updated);
+    };
+
+    const moveLineItemDown = (index: number) => {
+        if (index === lineItems.length - 1) return;
+        const updated = [...lineItems];
+        [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+        setLineItems(updated);
     };
 
     const updateLineItem = (id: string, field: keyof LineItem, value: string | number | boolean) => {
@@ -403,6 +418,7 @@ export default function NewDocumentForm({
                                         <Table.ColumnHeaderCell align="center">Needs approval</Table.ColumnHeaderCell>
                                     ) : null}
                                     <Table.ColumnHeaderCell />
+                                    <Table.ColumnHeaderCell />
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
@@ -492,6 +508,16 @@ export default function NewDocumentForm({
                                                 />
                                             </Table.Cell>
                                         ) : null}
+                                        <Table.Cell>
+                                            <Flex direction="column" gap="1">
+                                                <IconButton size="1" variant="ghost" disabled={index === 0} onClick={() => moveLineItemUp(index)}>
+                                                    <ChevronUp size={14} />
+                                                </IconButton>
+                                                <IconButton size="1" variant="ghost" disabled={index === lineItems.length - 1} onClick={() => moveLineItemDown(index)}>
+                                                    <ChevronDown size={14} />
+                                                </IconButton>
+                                            </Flex>
+                                        </Table.Cell>
                                         <Table.Cell>
                                             <Button type="button" variant="ghost" color="red" onClick={() => removeLineItem(item.id)}>
                                                 <TrashIcon size={16} />
