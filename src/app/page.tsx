@@ -1,6 +1,6 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Box, Section, Separator } from "@radix-ui/themes";
 import Link from 'next/link';
-import { ArrowRight, Hammer, Monitor, Cpu, Code } from "lucide-react";
+import { ArrowRight, Hammer, Monitor, Cpu, Code, Phone } from "lucide-react";
 import QuoteForm from "./components/QuoteForm";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string; error?: string }> }) {
@@ -62,7 +62,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                 <Heading size="4">IT & Networking</Heading>
                             </Flex>
                             <Text color="gray">
-                                Home and small business networking, WiFi optimization, firewall configuration, and troubleshooting.
+                                Home and small business networking, WiFi optimization, firewall configuration, infrastructure cabling, and troubleshooting.
                             </Text>
                         </Card>
 
@@ -105,6 +105,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                             <Text size="4" color="gray">
                                 Fill out the form and we'll get back to you with an estimate and availability.
                             </Text>
+                            <Button size="3" variant="outline" mt="5" asChild>
+                                <a href="tel:5703329262"><Phone size={16} /> Call Us: (570) 332-9262</a>
+                            </Button>
                         </Box>
                         <Box>
                             {submitted ? (
