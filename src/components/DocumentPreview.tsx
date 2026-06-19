@@ -1,6 +1,7 @@
 import { Badge, Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
 import type { AppConfig, DocumentData, PaymentMethodKey, PaymentMethodEntry } from "@/lib/types";
+import { workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
 import {
     Banknote,
     Building2,
@@ -524,6 +525,15 @@ export default async function DocumentPreview({
                             >
                                 {doc.status.toUpperCase()}
                             </Text>
+                            {(doc.type === 'estimate' || doc.type === 'quote') && doc.workflowStatus ? (
+                                <Badge
+                                    mt="2"
+                                    size="2"
+                                    color={workflowStatusColor(doc.workflowStatus) as 'gray' | 'orange' | 'blue' | 'green'}
+                                >
+                                    {workflowStatusLabel(doc.workflowStatus)}
+                                </Badge>
+                            ) : null}
                         </Box>
 
                         <Box className="doc-totals" style={{ width: showSplitTotals ? "min(100%, 320px)" : "240px" }}>

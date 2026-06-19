@@ -2,7 +2,7 @@
 
 import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
-import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey } from '@/lib/types';
+import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
@@ -321,6 +321,9 @@ export async function createInvoiceAction(formData: FormData) {
         balanceDue: existingBalanceDue,
         ...(warranty ? { warranty } : {}),
         ...(paymentOverrides ? { paymentOverrides } : {}),
+        ...((type === 'estimate' || type === 'quote') && formData.get('workflowStatus')
+            ? { workflowStatus: formData.get('workflowStatus') as WorkflowStatus }
+            : {}),
     };
 
     let createdReceiptId: string | null = null;
@@ -644,4 +647,19 @@ export async function submitQuoteRequest(formData: FormData) {
     }
 
     redirect('/?submitted=true');
+}
+
+export async function updateWorkflowStatusAction(docId: string, workflowStatus: WorkflowStatus | undefined) {
+    const doc = await getDocumentById(docId);
+    if (!doc || (doc.type !== 'estimate' && doc.type !== 'quote')) {
+        return { success: false, error: 'Document not found or not an estimate/quote.' };
+    }
+    doc.workflowStatus = workflowStatus;
+    doc.updatedAt = new Date().toISOString();
+    await saveNewDocument(doc);
+    revalidatePath('/admin/estimates');
+    revalidatePath('/admin/quotes');
+    revalidatePath(`/admin/estimates/${docId}`);
+    revalidatePath(`/admin/quotes/${docId}`);
+    return { success: true };
 }

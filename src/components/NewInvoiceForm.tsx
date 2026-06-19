@@ -18,7 +18,7 @@ import {
 import { PlusIcon, TrashIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronUp, ChevronDown } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
-import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption, PaymentMethodKey } from '@/lib/types';
+import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { ClientOption } from '@/lib/clients';
 import type { PaymentMethodOption } from '@/lib/document-form-pickers';
 import { formatPhoneInput } from '@/lib/phone-format';
@@ -55,6 +55,7 @@ export default function NewDocumentForm({
     ]);
 
     const [docStatus, setDocStatus] = useState<DocumentData['status']>(initialData?.status || 'draft');
+    const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | undefined>(initialData?.workflowStatus);
     const [selectedClientId, setSelectedClientId] = useState(initialData?.customer?.clientId || '');
     const [selectedJobId, setSelectedJobId] = useState(initialData?.jobId || initialData?.customer?.jobId || '');
     const [jobOptions, setJobOptions] = useState<JobOption[]>(jobs);
@@ -802,6 +803,23 @@ export default function NewDocumentForm({
                                     ))}
                                 </select>
                             </Box>
+                            {(type === 'estimate' || type === 'quote') ? (
+                                <Box style={{ minWidth: 140, flex: '1 1 140px' }}>
+                                    <Text as="label" size="1" color="gray">Workflow</Text>
+                                    <select
+                                        value={workflowStatus || ''}
+                                        onChange={(e) => setWorkflowStatus(e.target.value as WorkflowStatus || undefined)}
+                                        style={nativeSelectStyle}
+                                    >
+                                        <option value="">None</option>
+                                        <option value="backlog">Backlog</option>
+                                        <option value="todo">To Do</option>
+                                        <option value="in_progress">In Progress</option>
+                                        <option value="done">Done</option>
+                                    </select>
+                                    <input type="hidden" name="workflowStatus" value={workflowStatus || ''} />
+                                </Box>
+                            ) : null}
                             <Button type="submit" name="intent" value="save" variant="soft" style={{ flex: '1 1 120px' }}>
                                 <SaveIcon size={16} /> Save
                             </Button>

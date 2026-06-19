@@ -1,6 +1,6 @@
 import { Container, Button } from "@radix-ui/themes";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, LayoutGrid } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import BackButton from "@/components/BackButton";
 import AdminDocumentList from "@/components/AdminDocumentList";
@@ -15,6 +15,9 @@ export default async function AdminQuotesPage() {
                 title="Quotes"
                 actions={
                     <>
+                        <Button asChild size="2" variant="soft">
+                            <Link href="/admin/quotes/board"><LayoutGrid size={14} /> Board view</Link>
+                        </Button>
                         <Button asChild size="2" variant="solid">
                             <Link href="/admin/quotes/new"><Plus size={14} /> New quote</Link>
                         </Button>

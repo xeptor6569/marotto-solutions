@@ -1,5 +1,7 @@
 export type DocumentType = 'invoice' | 'estimate' | 'quote' | 'receipt' | 'lead';
 
+export type WorkflowStatus = 'backlog' | 'todo' | 'in_progress' | 'done';
+
 export interface LineItem {
     id: string;
     description: string;
@@ -71,6 +73,8 @@ export interface DocumentData {
     warranty?: DocumentWarranty;
     /** Per-invoice payment method customization (overrides global billing settings). */
     paymentOverrides?: InvoicePaymentOverrides;
+    /** Workflow progress label for estimates and quotes (Backlog / To Do / In Progress / Done). */
+    workflowStatus?: WorkflowStatus;
 }
 
 export interface DocumentWarranty {

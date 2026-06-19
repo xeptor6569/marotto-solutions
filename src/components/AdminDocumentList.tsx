@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Badge, Box, Button, Callout, Card, Checkbox, Dialog, Flex, Table, Text, TextArea, TextField } from "@radix-ui/themes";
 import { ArrowRightLeft, CheckCircle, Copy, Edit, Search, Send, X, XCircle } from "lucide-react";
-import type { DocumentData, DocumentType } from "@/lib/types";
+import type { DocumentData, DocumentType, WorkflowStatus } from "@/lib/types";
 import LeadEditDialog from "@/components/LeadEditDialog";
 import DeleteLeadButton from "@/components/DeleteLeadButton";
 import EmptyState from "@/components/EmptyState";
@@ -13,6 +13,7 @@ import { convertDocumentsAction, duplicateDocumentsAction, sendDocumentsAction }
 import { convertTargets } from "@/lib/convert-document";
 import { DOC_LABEL } from "@/lib/document-labels";
 import { hasPendingApprovalLines } from "@/lib/pending-client-approval";
+import { WORKFLOW_STATUSES, workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
 
@@ -73,6 +74,8 @@ export default function AdminDocumentList({
     const router = useRouter();
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState<"all" | DocumentData["status"]>("all");
+    const [workflowFilter, setWorkflowFilter] = useState<"all" | WorkflowStatus>("all");
+    const showWorkflow = type === "estimate" || type === "quote";
     const base = adminBase(type);
     const isLead = type === "lead";
     const showEdit = !isLead;
@@ -108,9 +111,12 @@ export default function AdminDocumentList({
                 || (doc.customer.email || "").toLowerCase().includes(q)
                 || (doc.notes || "").toLowerCase().includes(q);
             const matchesStatus = status === "all" || doc.status === status;
-            return matchesQuery && matchesStatus;
+            const matchesWorkflow = workflowFilter === "all"
+                || doc.workflowStatus === workflowFilter
+                || (workflowFilter === "backlog" && !doc.workflowStatus);
+            return matchesQuery && matchesStatus && matchesWorkflow;
         });
-    }, [docs, query, status]);
+    }, [docs, query, status, workflowFilter]);
 
     const numberLabel = docNumberLabel(type);
     const plural = typePluralLabel(type);
@@ -263,6 +269,43 @@ export default function AdminDocumentList({
                             </Flex>
                         </Box>
                     </Box>
+
+                    {showWorkflow ? (
+                        <Box style={{ width: "100%", maxWidth: "100%" }}>
+                            <Text as="label" size="2">Workflow</Text>
+                            <Box
+                                mt="1"
+                                style={{
+                                    overflowX: "auto",
+                                    WebkitOverflowScrolling: "touch",
+                                    marginLeft: -2,
+                                    paddingBottom: 4,
+                                }}
+                            >
+                                <Flex gap="2" wrap="nowrap" pb="1" style={{ width: "max-content", maxWidth: "100%" }}>
+                                    <Button
+                                        size="1"
+                                        variant={workflowFilter === "all" ? "solid" : "soft"}
+                                        onClick={() => setWorkflowFilter("all")}
+                                        style={{ flexShrink: 0 }}
+                                    >
+                                        All
+                                    </Button>
+                                    {WORKFLOW_STATUSES.map((s) => (
+                                        <Button
+                                            key={s}
+                                            size="1"
+                                            variant={workflowFilter === s ? "solid" : "soft"}
+                                            onClick={() => setWorkflowFilter(s)}
+                                            style={{ flexShrink: 0 }}
+                                        >
+                                            {workflowStatusLabel(s)}
+                                        </Button>
+                                    ))}
+                                </Flex>
+                            </Box>
+                        </Box>
+                    ) : null}
                 </Flex>
             </Card>
 
@@ -478,6 +521,7 @@ export default function AdminDocumentList({
                                         <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell align="right">Total</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
+                                        {showWorkflow ? <Table.ColumnHeaderCell>Workflow</Table.ColumnHeaderCell> : null}
                                         <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
                                     </Table.Row>
                                 </Table.Header>
@@ -512,6 +556,17 @@ export default function AdminDocumentList({
                                             <Table.Cell>
                                                 <Badge color={badgeColor(doc.status)}>{doc.status}</Badge>
                                             </Table.Cell>
+                                            {showWorkflow ? (
+                                                <Table.Cell>
+                                                    {doc.workflowStatus ? (
+                                                        <Badge color={workflowStatusColor(doc.workflowStatus) as 'gray' | 'orange' | 'blue' | 'green'}>
+                                                            {workflowStatusLabel(doc.workflowStatus)}
+                                                        </Badge>
+                                                    ) : (
+                                                        <Text size="1" color="gray">—</Text>
+                                                    )}
+                                                </Table.Cell>
+                                            ) : null}
                                             <Table.Cell>
                                                 <Flex gap="2" wrap="wrap">
                                                     <Button asChild size="2" variant="soft">
