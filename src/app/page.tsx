@@ -1,7 +1,13 @@
-import { Container, Heading, Text, Flex, Button, Card, Grid, Box, Section, Separator } from "@radix-ui/themes";
+import { Container, Heading, Text, Flex, Button, Card, Grid, Box, Section, Badge } from "@radix-ui/themes";
 import Link from 'next/link';
-import { ArrowRight, Hammer, Monitor, Cpu, Code, Phone } from "lucide-react";
+import { ArrowRight, Hammer, Monitor, Cpu, Code, Phone, MapPin, Wrench, Users, Zap } from "lucide-react";
 import QuoteForm from "./components/QuoteForm";
+import { testimonials } from "@/lib/testimonials";
+import { Quote } from "lucide-react";
+
+const SERVICE_AREA = "Pittston, PA and surrounding areas";
+const PHONE = "(570) 332-9262";
+const PHONE_HREF = "tel:5703329262";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string; error?: string }> }) {
     const { submitted, error } = await searchParams;
@@ -13,86 +19,184 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                 <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Heading size="5">Marotto Solutions</Heading>
                 </Link>
+                <Flex gap="4" align="center" display={{ initial: 'none', sm: 'flex' }}>
+                    <Button variant="ghost" size="2" asChild>
+                        <a href={PHONE_HREF}><Phone size={14} /> {PHONE}</a>
+                    </Button>
+                    <Button size="2" asChild>
+                        <Link href="#quote">Get a Quote</Link>
+                    </Button>
+                </Flex>
             </Flex>
 
             <Container size="3">
                 {/* Hero Section */}
-                <Section size="3">
+                <Section size="3" style={{ backgroundColor: 'var(--color-page-background)' }}>
                     <Flex direction="column" align="center" gap="5" style={{ textAlign: 'center' }}>
-                        <Heading size="9" style={{ maxWidth: 800 }}>
+                        <Heading size={{ initial: '8', sm: '9' }} style={{ maxWidth: 800 }}>
                             Expert General Contracting & IT Services
                         </Heading>
                         <Text size="5" color="gray" style={{ maxWidth: 600 }}>
-                            From home renovations to custom PC builds and networking. One partner for your physical and digital infrastructure.
+                            Home renovations, custom PC builds, networking, and automation — one call covers it all.
                         </Text>
-                        <Flex gap="3" mt="4">
+                        <Flex gap="2" align="center">
+                            <MapPin size={16} style={{ color: 'var(--gray-8)' }} />
+                            <Text size="3" color="gray">Serving {SERVICE_AREA}</Text>
+                        </Flex>
+                        <Flex gap="3" mt="4" wrap="wrap" justify="center">
                             <Button size="4" asChild>
                                 <Link href="#quote">Get a Quote <ArrowRight /></Link>
                             </Button>
                             <Button size="4" variant="soft" asChild>
                                 <Link href="#services">View Services</Link>
                             </Button>
+                            <Button size="4" variant="outline" asChild>
+                                <a href={PHONE_HREF}><Phone size={16} /> Call Us</a>
+                            </Button>
                         </Flex>
                     </Flex>
                 </Section>
 
-                <Separator size="4" />
+                {/* Why Choose Us */}
+                <Box style={{ backgroundColor: 'var(--gray-2)' }} py="8" px="5">
+                    <Container size="3">
+                        <Heading size="7" mb="6" align="center">Why Choose Marotto Solutions</Heading>
+                        <Grid columns={{ initial: '1', sm: '3' }} gap="5">
+                            <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                                className="hover-card">
+                                <Flex direction="column" align="center" gap="3" py="4">
+                                    <Box p="3" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                        <Wrench size={28} color="var(--accent-9)" />
+                                    </Box>
+                                    <Heading size="4" align="center">Physical & Digital, One Partner</Heading>
+                                    <Text color="gray" align="center" size="2">
+                                        No more juggling separate contractors for your renovation and your network. One call covers both.
+                                    </Text>
+                                </Flex>
+                            </Card>
+
+                            <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                                className="hover-card">
+                                <Flex direction="column" align="center" gap="3" py="4">
+                                    <Box p="3" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                        <Users size={28} color="var(--accent-9)" />
+                                    </Box>
+                                    <Heading size="4" align="center">Local & Personal</Heading>
+                                    <Text color="gray" align="center" size="2">
+                                        Based in Pittston, PA. You deal directly with the person doing the work — no runaround, no call centers.
+                                    </Text>
+                                </Flex>
+                            </Card>
+
+                            <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                                className="hover-card">
+                                <Flex direction="column" align="center" gap="3" py="4">
+                                    <Box p="3" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
+                                        <Zap size={28} color="var(--accent-9)" />
+                                    </Box>
+                                    <Heading size="4" align="center">Fast Turnaround</Heading>
+                                    <Text color="gray" align="center" size="2">
+                                        Small operation means quick response times. We get in, get it done right, and get you back to business.
+                                    </Text>
+                                </Flex>
+                            </Card>
+                        </Grid>
+                    </Container>
+                </Box>
 
                 {/* Services Section */}
                 <Section size="3" id="services">
                     <Heading size="7" mb="5" align="center">Our Services</Heading>
                     <Grid columns={{ initial: '1', sm: '2' }} gap="5">
-                        <Card size="3">
+                        <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                            className="hover-card">
                             <Flex gap="3" align="center" mb="2">
                                 <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
                                     <Hammer size={24} color="var(--accent-9)" />
                                 </Box>
                                 <Heading size="4">General Contracting</Heading>
                             </Flex>
-                            <Text color="gray">
-                                Home repairs, renovations, and custom installations. Professional craftsmanship for your property needs.
-                            </Text>
+                            <Flex direction="column" gap="1">
+                                <Text color="gray">Home repairs, renovations, and custom installations.</Text>
+                                <Text size="2" color="gray">
+                                    Drywall &amp; painting &bull; Flooring &bull; Kitchen &amp; bath updates &bull; Deck &amp; fence work
+                                </Text>
+                            </Flex>
                         </Card>
 
-                        <Card size="3">
+                        <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                            className="hover-card">
                             <Flex gap="3" align="center" mb="2">
                                 <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
                                     <Monitor size={24} color="var(--accent-9)" />
                                 </Box>
                                 <Heading size="4">IT & Networking</Heading>
                             </Flex>
-                            <Text color="gray">
-                                Home and small business networking, WiFi optimization, firewall configuration, infrastructure cabling, and troubleshooting.
-                            </Text>
+                            <Flex direction="column" gap="1">
+                                <Text color="gray">Home and small business networking, security, and infrastructure.</Text>
+                                <Text size="2" color="gray">
+                                    Ethernet &amp; cable runs &bull; Patch panels &bull; WiFi mesh setup &bull; Firewall configuration &bull; Troubleshooting
+                                </Text>
+                            </Flex>
                         </Card>
 
-                        <Card size="3">
+                        <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                            className="hover-card">
                             <Flex gap="3" align="center" mb="2">
                                 <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
                                     <Cpu size={24} color="var(--accent-9)" />
                                 </Box>
                                 <Heading size="4">Custom PC Building</Heading>
                             </Flex>
-                            <Text color="gray">
-                                High-performance workstations and gaming rigs tailored to your specific requirements and budget.
-                            </Text>
+                            <Flex direction="column" gap="1">
+                                <Text color="gray">High-performance systems tailored to your needs and budget.</Text>
+                                <Text size="2" color="gray">
+                                    Gaming rigs &bull; Workstations &bull; Home servers &bull; Quiet/compact builds
+                                </Text>
+                            </Flex>
                         </Card>
 
-                        <Card size="3">
+                        <Card size="3" style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                            className="hover-card">
                             <Flex gap="3" align="center" mb="2">
                                 <Box p="2" style={{ backgroundColor: 'var(--accent-3)', borderRadius: '50%' }}>
                                     <Code size={24} color="var(--accent-9)" />
                                 </Box>
                                 <Heading size="4">Programming & Automation</Heading>
                             </Flex>
-                            <Text color="gray">
-                                Custom scripts, small web applications, and automation solutions to streamline your workflows.
-                            </Text>
+                            <Flex direction="column" gap="1">
+                                <Text color="gray">Custom scripts, web apps, and automation to streamline your workflows.</Text>
+                                <Text size="2" color="gray">
+                                    Small business tools &bull; Workflow automation &bull; Data processing scripts &bull; Web applications
+                                </Text>
+                            </Flex>
                         </Card>
                     </Grid>
                 </Section>
 
-                <Separator size="4" />
+                {/* Testimonials */}
+                {testimonials.length > 0 ? (
+                    <Box style={{ backgroundColor: 'var(--gray-2)' }} py="8" px="5">
+                        <Container size="3">
+                            <Heading size="7" mb="6" align="center">What Clients Say</Heading>
+                            <Grid columns={{ initial: '1', sm: '2' }} gap="5">
+                                {testimonials.map((t, i) => (
+                                    <Card size="3" key={i} style={{ transition: 'transform 0.15s, box-shadow 0.15s', cursor: 'default' }}
+                                        className="hover-card">
+                                        <Flex direction="column" gap="3">
+                                            <Quote size={20} style={{ color: 'var(--gray-6)', transform: 'scaleX(-1)' }} />
+                                            <Text size="3" style={{ fontStyle: 'italic', lineHeight: 1.6 }}>{t.quote}</Text>
+                                            <Flex justify="between" align="center" mt="2">
+                                                <Text weight="bold">{t.name}</Text>
+                                                <Badge color="gray" variant="soft">{t.service}</Badge>
+                                            </Flex>
+                                        </Flex>
+                                    </Card>
+                                ))}
+                            </Grid>
+                        </Container>
+                    </Box>
+                ) : null}
 
                 {/* Quote Section */}
                 <Section size="3" id="quote">
@@ -105,9 +209,15 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                             <Text size="4" color="gray">
                                 Fill out the form and we'll get back to you with an estimate and availability.
                             </Text>
-                            <Button size="3" variant="outline" mt="5" asChild>
-                                <a href="tel:5703329262"><Phone size={16} /> Call Us: (570) 332-9262</a>
-                            </Button>
+                            <Flex direction="column" gap="3" mt="5">
+                                <Button size="3" variant="outline" asChild>
+                                    <a href={PHONE_HREF}><Phone size={16} /> Call Us: {PHONE}</a>
+                                </Button>
+                                <Flex gap="2" align="center">
+                                    <MapPin size={14} style={{ color: 'var(--gray-8)' }} />
+                                    <Text size="2" color="gray">Serving {SERVICE_AREA}</Text>
+                                </Flex>
+                            </Flex>
                         </Box>
                         <Box>
                             {submitted ? (
@@ -144,13 +254,36 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             </Container>
 
             {/* Footer */}
-            <Box py="5" style={{ backgroundColor: 'var(--gray-2)' }}>
+            <Box py="6" style={{ backgroundColor: 'var(--gray-2)' }}>
                 <Container size="3">
-                    <Text align="center" color="gray" size="2">
-                        &copy; {new Date().getFullYear()} Marotto Solutions. All rights reserved.
-                    </Text>
+                    <Flex direction="column" align="center" gap="3">
+                        <Flex gap="5" align="center" wrap="wrap" justify="center">
+                            <Flex gap="2" align="center">
+                                <Phone size={14} style={{ color: 'var(--gray-8)' }} />
+                                <Text size="2" color="gray"><a href={PHONE_HREF} style={{ color: 'inherit', textDecoration: 'none' }}>{PHONE}</a></Text>
+                            </Flex>
+                            <Flex gap="2" align="center">
+                                <MapPin size={14} style={{ color: 'var(--gray-8)' }} />
+                                <Text size="2" color="gray">{SERVICE_AREA}</Text>
+                            </Flex>
+                            <Link href="#quote" style={{ textDecoration: 'none' }}>
+                                <Text size="2" color="gray" style={{ textDecoration: 'underline' }}>Get a Quote</Text>
+                            </Link>
+                        </Flex>
+                        <Text align="center" color="gray" size="1">
+                            &copy; {new Date().getFullYear()} Marotto Solutions. All rights reserved.
+                        </Text>
+                    </Flex>
                 </Container>
             </Box>
+
+            {/* Hover card styles */}
+            <style>{`
+                .hover-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px var(--gray-a4);
+                }
+            `}</style>
         </Box>
     );
 }

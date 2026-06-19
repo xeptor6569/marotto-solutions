@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Marotto Solutions",
-  description: "Freelance Dashboard",
+  description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
 };
 
 export default function RootLayout({
