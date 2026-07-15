@@ -95,6 +95,18 @@ html.pdf-export .payment-options {
     color: #111827 !important;
   }
 
+  /* Keep brand left / document meta right even when print width is narrow */
+  .doc-header {
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+  }
+
+  .doc-meta {
+    text-align: right !important;
+  }
+
   .print-container {
     padding: 0 !important;
     max-width: none !important;

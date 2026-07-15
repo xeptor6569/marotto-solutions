@@ -636,7 +636,8 @@ export default async function DocumentPreview({
               .doc-table-wrap {
                 overflow-x: auto;
               }
-              @media (max-width: 768px) {
+              /* screen-only so print keeps the desktop header (meta top-right) */
+              @media screen and (max-width: 768px) {
                 .doc-card {
                   padding: 18px;
                 }

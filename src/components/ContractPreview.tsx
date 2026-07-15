@@ -250,7 +250,8 @@ export default function ContractPreview({ contract, showBackButton = false, back
             <style>{`
               .doc-card { padding: 40px; }
               .doc-table-wrap { overflow-x: auto; }
-              @media (max-width: 768px) {
+              /* screen-only so print keeps the desktop header (meta top-right) */
+              @media screen and (max-width: 768px) {
                 .doc-card { padding: 18px; }
                 .doc-toolbar { align-items: stretch; }
                 .doc-toolbar-actions { width: 100%; }
