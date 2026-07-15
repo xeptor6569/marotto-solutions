@@ -53,7 +53,12 @@ export default function PrintButton({
         }
 
         setSaving(true);
+        document.documentElement.classList.add("pdf-export");
         try {
+            // Let the browser apply .pdf-export styles before capture.
+            await new Promise<void>((resolve) => {
+                requestAnimationFrame(() => resolve());
+            });
             const html2pdf = (await import("html2pdf.js")).default;
             await html2pdf()
                 .set({
@@ -74,6 +79,7 @@ export default function PrintButton({
             // Fall back to the browser print dialog (Save as PDF).
             withPrintTitle(resolvedFileName, () => window.print());
         } finally {
+            document.documentElement.classList.remove("pdf-export");
             setSaving(false);
         }
     };

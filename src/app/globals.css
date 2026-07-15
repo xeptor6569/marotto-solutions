@@ -9,6 +9,32 @@ body {
   /* Radix Themes sets background on body usually, or we can let it handle it */
 }
 
+/* Screen-only / print-only helpers (also used for Save PDF via .pdf-export) */
+.print-only {
+  display: none !important;
+}
+
+html.pdf-export .no-print,
+html.pdf-export .admin-shell-sidebar,
+html.pdf-export .admin-shell-topbar,
+html.pdf-export .admin-shell-bottom-nav {
+  display: none !important;
+}
+
+html.pdf-export .print-only {
+  display: block !important;
+}
+
+html.pdf-export .payment-options-print-row + .payment-options-print-row {
+  margin-top: 4px;
+}
+
+html.pdf-export .payment-options {
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
 /* Isolate document previews so chrome (admin nav, toolbars) never prints */
 @media print {
   @page {
@@ -27,6 +53,20 @@ body {
   .admin-shell-topbar,
   .admin-shell-bottom-nav {
     display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .payment-options-print-row + .payment-options-print-row {
+    margin-top: 4px;
+  }
+
+  .payment-options {
+    border: none !important;
+    padding: 0 !important;
+    background: transparent !important;
   }
 
   .admin-shell-content {

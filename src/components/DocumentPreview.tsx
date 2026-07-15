@@ -364,6 +364,7 @@ export default async function DocumentPreview({
                     {doc.type === "invoice" && (activePaymentMethods.length > 0 || config.billing?.paymentInstructions || config.billing?.checkPayableTo) ? (
                         <Box
                             mb="4"
+                            className="payment-options"
                             style={{
                                 padding: "12px 16px",
                                 border: "1px solid #d1d5db",
@@ -375,82 +376,109 @@ export default async function DocumentPreview({
                                 Payment Options
                             </Text>
                             {activePaymentMethods.length > 0 ? (
-                                <Box
-                                    mt="2"
-                                    style={{
-                                        display: "grid",
-                                        gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-                                        columnGap: "1.25rem",
-                                        rowGap: "0.35rem",
-                                    }}
-                                >
-                                    {activePaymentMethods.map(([key, method]) => {
-                                        const isCheck = key === "check";
-                                        const detailParts: string[] = [];
-                                        if (method.value) detailParts.push(method.value);
-                                        if (isCheck && config.billing?.checkPayableTo) {
-                                            detailParts.push(`Payable to: ${config.billing.checkPayableTo}`);
-                                        }
-                                        const primary = detailParts.join(" · ");
-                                        const payLink = paymentLinkForMethod(key, method, invoiceAmountDue, doc.id);
-                                        return (
-                                            <Card key={key} variant="surface" style={{ padding: 12 }}>
-                                                <Flex direction="column" gap="2">
-                                                    <Flex justify="between" align="center" gap="2" wrap="wrap">
-                                                        <Flex align="center" gap="2">
-                                                            <Box
-                                                                style={{
-                                                                    width: 24,
-                                                                    height: 24,
-                                                                    borderRadius: 999,
-                                                                    display: "inline-flex",
-                                                                    alignItems: "center",
-                                                                    justifyContent: "center",
-                                                                    background: "#eef2ff",
-                                                                    color: "#3730a3",
-                                                                    flexShrink: 0,
-                                                                }}
-                                                            >
-                                                                {paymentMethodIcon(key)}
-                                                            </Box>
-                                                            <Text as="div" size="2" weight="bold" style={{ color: "#111827" }}>
-                                                                {method.label}
-                                                            </Text>
+                                <>
+                                    <Box
+                                        className="no-print payment-options-screen"
+                                        mt="2"
+                                        style={{
+                                            display: "grid",
+                                            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+                                            columnGap: "1.25rem",
+                                            rowGap: "0.35rem",
+                                        }}
+                                    >
+                                        {activePaymentMethods.map(([key, method]) => {
+                                            const isCheck = key === "check";
+                                            const detailParts: string[] = [];
+                                            if (method.value) detailParts.push(method.value);
+                                            if (isCheck && config.billing?.checkPayableTo) {
+                                                detailParts.push(`Payable to: ${config.billing.checkPayableTo}`);
+                                            }
+                                            const primary = detailParts.join(" · ");
+                                            const payLink = paymentLinkForMethod(key, method, invoiceAmountDue, doc.id);
+                                            return (
+                                                <Card key={key} variant="surface" style={{ padding: 12 }}>
+                                                    <Flex direction="column" gap="2">
+                                                        <Flex justify="between" align="center" gap="2" wrap="wrap">
+                                                            <Flex align="center" gap="2">
+                                                                <Box
+                                                                    style={{
+                                                                        width: 24,
+                                                                        height: 24,
+                                                                        borderRadius: 999,
+                                                                        display: "inline-flex",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        background: "#eef2ff",
+                                                                        color: "#3730a3",
+                                                                        flexShrink: 0,
+                                                                    }}
+                                                                >
+                                                                    {paymentMethodIcon(key)}
+                                                                </Box>
+                                                                <Text as="div" size="2" weight="bold" style={{ color: "#111827" }}>
+                                                                    {method.label}
+                                                                </Text>
+                                                            </Flex>
+                                                            {method.comingSoon ? <Badge color="gray" size="1">Coming soon</Badge> : null}
                                                         </Flex>
-                                                        {method.comingSoon ? <Badge color="gray" size="1">Coming soon</Badge> : null}
+                                                        {primary ? (
+                                                            <Text as="div" size="1" style={{ color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>
+                                                                {primary}
+                                                            </Text>
+                                                        ) : null}
+                                                        {payLink ? (
+                                                            <Button asChild size="2" className="no-print">
+                                                                <a href={payLink} target="_blank" rel="noreferrer">
+                                                                    Pay ${invoiceAmountDue.toFixed(2)}
+                                                                </a>
+                                                            </Button>
+                                                        ) : (
+                                                            <Text as="div" size="1" color="gray" className="no-print">
+                                                                {isCheck || key === "cash" || key === "applePay"
+                                                                    ? "Use details above to pay with this method."
+                                                                    : "Add a valid link/handle in settings to enable tap-to-pay."}
+                                                            </Text>
+                                                        )}
                                                     </Flex>
-                                                    {primary ? (
-                                                        <Text as="div" size="1" style={{ color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>
-                                                            {primary}
+                                                    {method.note ? (
+                                                        <Text
+                                                            as="div"
+                                                            size="1"
+                                                            style={{ color: "#6b7280", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
+                                                        >
+                                                            {method.note}
                                                         </Text>
                                                     ) : null}
-                                                    {payLink ? (
-                                                        <Button asChild size="2">
-                                                            <a href={payLink} target="_blank" rel="noreferrer">
-                                                                Pay ${invoiceAmountDue.toFixed(2)}
-                                                            </a>
-                                                        </Button>
-                                                    ) : (
-                                                        <Text as="div" size="1" color="gray">
-                                                            {isCheck || key === "cash" || key === "applePay"
-                                                                ? "Use details above to pay with this method."
-                                                                : "Add a valid link/handle in settings to enable tap-to-pay."}
-                                                        </Text>
-                                                    )}
-                                                </Flex>
-                                                {method.note ? (
+                                                </Card>
+                                            );
+                                        })}
+                                    </Box>
+                                    <Box className="print-only payment-options-print" mt="2">
+                                        {activePaymentMethods
+                                            .filter(([, method]) => !method.comingSoon)
+                                            .map(([key, method]) => {
+                                                const detailParts: string[] = [];
+                                                if (method.value) detailParts.push(method.value);
+                                                if (key === "check" && config.billing?.checkPayableTo) {
+                                                    detailParts.push(`Payable to: ${config.billing.checkPayableTo}`);
+                                                }
+                                                if (method.note) detailParts.push(method.note.replace(/\s+/g, " ").trim());
+                                                return (
                                                     <Text
                                                         as="div"
-                                                        size="1"
-                                                        style={{ color: "#6b7280", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
+                                                        key={key}
+                                                        size="2"
+                                                        className="payment-options-print-row"
+                                                        style={{ color: "#111827", lineHeight: 1.4 }}
                                                     >
-                                                        {method.note}
+                                                        <Text weight="bold" style={{ color: "#111827" }}>{method.label}</Text>
+                                                        {detailParts.length > 0 ? ` — ${detailParts.join(" · ")}` : null}
                                                     </Text>
-                                                ) : null}
-                                            </Card>
-                                        );
-                                    })}
-                                </Box>
+                                                );
+                                            })}
+                                    </Box>
+                                </>
                             ) : null}
                             {config.billing?.paymentInstructions ? (
                                 <Box mt="2">
