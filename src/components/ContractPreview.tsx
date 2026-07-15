@@ -36,11 +36,11 @@ export default function ContractPreview({ contract, showBackButton = false, back
                 {showBackButton ? <BackButton href={backHref} /> : <Box />}
                 <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
                     <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
-                    <PrintButton label={docTitle} />
+                    <PrintButton label={docTitle} fileName={`${docTitle} ${contract.displayId}`} />
                 </Flex>
             </Flex>
 
-            <Card size="3" className="doc-card" style={{ background: 'white', color: '#111827', border: '1px solid #d1d5db' }}>
+            <Card size="3" className="doc-card print-document" style={{ background: 'white', color: '#111827', border: '1px solid #d1d5db' }}>
                 <div className="receipt-content">
                     <Flex justify="between" align="start" mb="6" className="doc-header">
                         <Box>
@@ -260,14 +260,6 @@ export default function ContractPreview({ contract, showBackButton = false, back
                 .doc-summary { flex-direction: column; align-items: stretch; gap: 16px; }
                 .doc-status { align-self: flex-start; }
                 .doc-totals { width: 100% !important; }
-              }
-              @media print {
-                body { background: white; }
-                .no-print { display: none !important; }
-                .print-container { padding: 0 !important; max-width: none !important; width: 100% !important; margin: 0 !important; }
-                .receipt-content { color: black !important; background: white !important; }
-                .rt-Card { border: none !important; box-shadow: none !important; background: transparent !important; }
-                .receipt-content * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
               }
             `}</style>
         </Container>

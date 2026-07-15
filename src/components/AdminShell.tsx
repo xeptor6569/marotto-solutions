@@ -113,7 +113,7 @@ export default function AdminShell({
     return (
         <Box>
             <Flex style={{ minHeight: '100dvh' }}>
-                <Box className="admin-shell-sidebar">
+                <Box className="admin-shell-sidebar no-print">
                     <Flex direction="column" height="100%" px="3" py="4" gap="4">
                         <Box>
                             <Text as="div" size="3" weight="bold">Marotto Solutions</Text>
@@ -168,7 +168,7 @@ export default function AdminShell({
                 </Box>
 
                 <Flex direction="column" style={{ minWidth: 0, flex: 1 }}>
-                    <Box className="admin-shell-topbar">
+                    <Box className="admin-shell-topbar no-print">
                         <Flex align="center" justify="between" gap="2" px={{ initial: '3', sm: '5' }} py="3">
                             <Flex direction="column" gap="0">
                                 <Text size="3" weight="bold">Admin</Text>
@@ -189,7 +189,7 @@ export default function AdminShell({
                 </Flex>
             </Flex>
 
-            <Box className="admin-shell-bottom-nav">
+            <Box className="admin-shell-bottom-nav no-print">
                 <Flex align="center" justify="between" gap="1">
                     {mobileNavItems.map((item) => {
                         const active = isActivePath(pathname, item);

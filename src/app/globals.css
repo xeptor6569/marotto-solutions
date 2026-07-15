@@ -8,3 +8,70 @@ body {
   background-color: var(--color-page-background); 
   /* Radix Themes sets background on body usually, or we can let it handle it */
 }
+
+/* Isolate document previews so chrome (admin nav, toolbars) never prints */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .no-print,
+  .admin-shell-sidebar,
+  .admin-shell-topbar,
+  .admin-shell-bottom-nav {
+    display: none !important;
+  }
+
+  .admin-shell-content {
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-document,
+  .print-document * {
+    visibility: visible !important;
+  }
+
+  .print-document {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: #111827 !important;
+  }
+
+  .print-container {
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .receipt-content,
+  .receipt-content * {
+    color: inherit;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .rt-Card {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+}
