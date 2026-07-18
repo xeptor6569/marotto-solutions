@@ -6,12 +6,14 @@ import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
 import ContractStatusButtons from '@/components/ContractStatusButtons';
 import {
+    ensureContractShareToken,
     getContractById,
     getContractProgress,
     getInvoicesForContract,
     summarizeContractCadence,
     summarizeRecurringTotal,
 } from '@/lib/contracts';
+import { buildSharePath } from '@/lib/share-token';
 
 function statusColor(status: string) {
     if (status === 'active') return 'green' as const;
@@ -22,15 +24,17 @@ function statusColor(status: string) {
 
 export default async function AdminContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const contract = await getContractById(id);
-    if (!contract) {
+    const loaded = await getContractById(id);
+    if (!loaded) {
         notFound();
     }
+    const contract = await ensureContractShareToken(loaded);
     const invoices = await getInvoicesForContract(contract.id);
     const progress = getContractProgress(contract);
     const recurringTotal = summarizeRecurringTotal(contract);
     const cadence = summarizeContractCadence(contract);
     const hasUsageLines = contract.lines.some((line) => line.kind === 'usage');
+    const publicSharePath = buildSharePath(contract.shareToken);
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
@@ -42,7 +46,7 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
                             <Link href={`/admin/contracts/${contract.id}/edit`}><Edit size={14} /> Edit</Link>
                         </Button>
                         <Button asChild size="2" variant="soft">
-                            <Link href={`/contracts/${contract.displayId}`}><ExternalLink size={14} /> Public preview</Link>
+                            <Link href={publicSharePath}><ExternalLink size={14} /> Public preview</Link>
                         </Button>
                         <BackButton href="/admin/contracts" />
                     </>

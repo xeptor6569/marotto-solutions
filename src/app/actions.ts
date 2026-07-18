@@ -1,6 +1,6 @@
 'use server';
 
-import { signOut } from '@/lib/auth';
+import { auth, signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
 import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
@@ -126,6 +126,11 @@ export async function createDepositInvoiceAction(input: {
     mode: DepositMode;
     value: number;
 }): Promise<{ success: false; error: string } | never> {
+    const session = await auth();
+    if (!session) {
+        return { success: false, error: 'You must be signed in.' };
+    }
+
     const sourceId = input.sourceDocumentId?.trim();
     if (!sourceId) {
         return { success: false, error: 'Source document is required.' };
@@ -167,6 +172,11 @@ export async function createConvertedDocumentAction(input: {
     targetType: DocumentType;
     confirmPending?: boolean;
 }): Promise<{ success: false; error: string; requiresConfirmation?: boolean } | never> {
+    const session = await auth();
+    if (!session) {
+        return { success: false, error: 'You must be signed in.' };
+    }
+
     const sourceId = input.sourceDocumentId?.trim();
     if (!sourceId) {
         return { success: false, error: 'Source document is required.' };

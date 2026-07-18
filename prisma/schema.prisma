@@ -137,6 +137,8 @@ model Contract {
   lastIssuedDate  DateTime?
   nextDueDate     DateTime
   cyclesIssued    Int       @default(0)
+  /** Unguessable token for public client share links (`/d/{shareToken}`). */
+  shareToken      String    @unique
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

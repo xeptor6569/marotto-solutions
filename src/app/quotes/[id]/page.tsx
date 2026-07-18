@@ -1,8 +1,11 @@
 import { getDocumentById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import DocumentPreview from "@/components/DocumentPreview";
+import { requireAdminSession } from "@/lib/require-admin-session";
 
 export default async function QuotePage({ params }: { params: Promise<{ id: string }> }) {
+    await requireAdminSession();
+
     const { id } = await params;
     const doc = await getDocumentById(id);
 
