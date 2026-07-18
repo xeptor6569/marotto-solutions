@@ -1,17 +1,12 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
 import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList, BadgeCheck, Repeat } from "lucide-react";
 import Link from 'next/link';
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { getDocuments } from "@/lib/data";
 import { getContracts } from "@/lib/contracts";
+import { requireAdminPage } from "@/lib/require-admin-session";
 
 export default async function Home() {
-  const session = await auth();
-
-  if (!session) {
-    redirect("/auth/signin?callbackUrl=/dashboard");
-  }
+  await requireAdminPage("/dashboard");
 
   const invoices = await getDocuments('invoice');
   const estimates = await getDocuments('estimate');

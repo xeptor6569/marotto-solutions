@@ -3,6 +3,7 @@
 import { saveNewDocument } from '@/lib/data';
 import { DocumentData } from '@/lib/types';
 import { revalidatePath } from 'next/cache';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 // Simple validation
 function isValidDocument(doc: any): doc is DocumentData {
@@ -16,6 +17,9 @@ function isValidDocument(doc: any): doc is DocumentData {
 }
 
 export async function importDocumentsAction(formData: FormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const file = formData.get('file') as File;
     if (!file) {
         return { success: false, error: 'No file uploaded' };

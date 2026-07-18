@@ -1,6 +1,6 @@
 'use server';
 
-import { auth, signOut } from '@/lib/auth';
+import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
 import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
@@ -26,6 +26,10 @@ import {
     resolveDocumentStatus,
     validateRecordPayment,
 } from '@/lib/document-save';
+import {
+    requireAdminAction,
+    requireAdminActionOrRedirect,
+} from '@/lib/require-admin-session';
 
 function getPaymentKind(raw: string | null): PaymentKind {
     if (raw === 'down_payment') return 'down_payment';
@@ -34,6 +38,9 @@ function getPaymentKind(raw: string | null): PaymentKind {
 }
 
 export async function saveSettingsAction(formData: FormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const url = ((formData.get('webdavUrl') as string) || '').trim();
     const username = ((formData.get('webdavUsername') as string) || '').trim();
     const password = ((formData.get('webdavPassword') as string) || '').trim();
@@ -126,10 +133,8 @@ export async function createDepositInvoiceAction(input: {
     mode: DepositMode;
     value: number;
 }): Promise<{ success: false; error: string } | never> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
 
     const sourceId = input.sourceDocumentId?.trim();
     if (!sourceId) {
@@ -172,10 +177,8 @@ export async function createConvertedDocumentAction(input: {
     targetType: DocumentType;
     confirmPending?: boolean;
 }): Promise<{ success: false; error: string; requiresConfirmation?: boolean } | never> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
 
     const sourceId = input.sourceDocumentId?.trim();
     if (!sourceId) {
@@ -229,6 +232,7 @@ export async function createConvertedDocumentAction(input: {
 }
 
 export async function createInvoiceAction(formData: FormData) {
+    await requireAdminActionOrRedirect('/admin');
     const documentId = formData.get('documentId') as string | null;
     const createdAt = (formData.get('createdAt') as string) || new Date().toISOString();
     const redirectToInput = ((formData.get('redirectTo') as string) || '').trim();
@@ -438,6 +442,7 @@ export async function createInvoiceAction(formData: FormData) {
 }
 
 export async function createLeadAction(formData: FormData) {
+    await requireAdminActionOrRedirect('/admin/leads/create');
     const name = (formData.get('name') as string)?.trim();
     if (!name) {
         throw new Error('Name is required');
@@ -500,6 +505,9 @@ export async function createJobAction(input: {
     clientId?: string;
     leadId?: string;
 }) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false as const, error: gate.error };
+
     const name = input.name?.trim();
     if (!name) {
         return { success: false as const, error: 'Job name is required' };
@@ -523,6 +531,8 @@ export async function createJobAction(input: {
 }
 
 export async function getJobOptionsForForm(params?: { clientId?: string; leadId?: string }) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return [];
     return getJobOptions(params);
 }
 
@@ -547,6 +557,9 @@ export async function updateLeadAction(input: {
     notes?: string;
     clientStage?: 'lead' | 'potential_client';
 }): Promise<{ success: boolean; error?: string }> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const id = input.id?.trim();
     if (!id) {
         return { success: false, error: 'Lead id is required' };
@@ -593,6 +606,9 @@ export async function updateLeadAction(input: {
 }
 
 export async function deleteLeadAction(input: { id: string }): Promise<{ success: boolean; error?: string }> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const id = input.id?.trim();
     if (!id) {
         return { success: false, error: 'Lead id is required' };
@@ -660,6 +676,9 @@ export async function submitQuoteRequest(formData: FormData) {
 }
 
 export async function updateWorkflowStatusAction(docId: string, workflowStatus: WorkflowStatus | undefined) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const doc = await getDocumentById(docId);
     if (!doc || (doc.type !== 'estimate' && doc.type !== 'quote')) {
         return { success: false, error: 'Document not found or not an estimate/quote.' };

@@ -4,6 +4,7 @@ import { getDocuments, saveNewDocument } from '@/lib/data';
 import { DocumentData } from '@/lib/types';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 // Simple validation
 function isValidDocument(doc: any): doc is DocumentData {
@@ -17,6 +18,9 @@ function isValidDocument(doc: any): doc is DocumentData {
 }
 
 export async function importDocumentsAction(formData: FormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const file = formData.get('file') as File;
     if (!file) {
         return { success: false, error: 'No file uploaded' };
@@ -72,6 +76,9 @@ export interface MigrateLeadsResult {
  * falling back to name when a lead has no email. Safe to run multiple times.
  */
 export async function migrateLeadsToClientsAction(): Promise<MigrateLeadsResult> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     if (!isDatabaseConfigured()) {
         return { success: false, error: 'DATABASE_URL is not configured, so clients cannot be created.' };
     }

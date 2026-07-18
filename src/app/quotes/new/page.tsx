@@ -2,8 +2,10 @@ import { Container } from "@radix-ui/themes";
 import NewDocumentForm from "@/components/NewInvoiceForm";
 import { getNextNumber } from "@/lib/data";
 import { getDocumentFormPickers } from "@/lib/document-form-pickers";
+import { requireAdminPage } from "@/lib/require-admin-session";
 
 export default async function NewQuotePage() {
+    await requireAdminPage('/quotes/new');
     const nextNumber = await getNextNumber('quote');
     const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
 

@@ -4,8 +4,10 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createJobAction } from '@/app/actions';
 import { createJobAttachment, deleteJobAttachment } from '@/lib/job-attachments';
+import { requireAdminAction, requireAdminActionOrRedirect } from '@/lib/require-admin-session';
 
 export async function createJobFromFormAction(formData: FormData) {
+    await requireAdminActionOrRedirect('/admin/jobs/create');
     const name = (formData.get('name') as string) || '';
     const description = (formData.get('description') as string) || '';
     const status = (formData.get('status') as string) || 'active';
@@ -27,6 +29,9 @@ export async function createJobFromFormAction(formData: FormData) {
 }
 
 export async function uploadJobAttachmentAction(formData: FormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const jobId = (formData.get('jobId') as string) || '';
     const note = (formData.get('note') as string) || '';
     const file = formData.get('file');
@@ -47,6 +52,9 @@ export async function uploadJobAttachmentAction(formData: FormData) {
 }
 
 export async function deleteJobAttachmentAction(formData: FormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const attachmentId = (formData.get('attachmentId') as string) || '';
     const jobId = (formData.get('jobId') as string) || '';
     if (!attachmentId || !jobId) {

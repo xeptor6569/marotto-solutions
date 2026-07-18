@@ -5,6 +5,7 @@ import path from 'path';
 import os from 'os';
 import { extractBackupArchive, validateBackup, restoreFromBackup, cleanupExtracted } from '@/lib/backup';
 import { revalidatePath } from 'next/cache';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 export interface RestoreResult {
     success: boolean;
@@ -24,6 +25,9 @@ export interface RestoreResult {
 }
 
 export async function restoreBackupAction(formData: FormData): Promise<RestoreResult> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const file = formData.get('file') as File;
     if (!file) {
         return { success: false, error: 'No file uploaded.' };

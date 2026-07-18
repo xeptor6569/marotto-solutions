@@ -23,6 +23,10 @@ import type {
     DocumentData,
 } from '@/lib/types';
 import { sendContractInvoiceEmail } from '@/lib/email';
+import {
+    requireAdminAction,
+    requireAdminActionOrRedirect,
+} from '@/lib/require-admin-session';
 
 interface ContractFormResult {
     success: boolean;
@@ -101,6 +105,7 @@ function revalidateContractPaths(contractId?: string) {
 }
 
 export async function createContractFormAction(formData: FormData) {
+    await requireAdminActionOrRedirect('/admin/contracts/create');
     const input = parseContractFormInput(formData);
     if (!input.title) {
         const params = new URLSearchParams({ error: 'Contract title is required' });
@@ -125,6 +130,7 @@ export async function createContractFormAction(formData: FormData) {
 }
 
 export async function updateContractFormAction(formData: FormData) {
+    await requireAdminActionOrRedirect('/admin/contracts');
     const id = ((formData.get('id') as string) || '').trim();
     if (!id) {
         const params = new URLSearchParams({ error: 'Missing contract id' });
@@ -148,6 +154,9 @@ export async function updateContractFormAction(formData: FormData) {
 }
 
 export async function deleteContractAction(input: { id: string }): Promise<ContractFormResult> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const id = input.id?.trim();
     if (!id) return { success: false, error: 'Missing contract id' };
     try {
@@ -165,6 +174,9 @@ async function changeStatus(
     id: string,
     handler: (id: string) => Promise<unknown>,
 ): Promise<ContractFormResult> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     if (!id) return { success: false, error: 'Missing contract id' };
     try {
         await handler(id);
@@ -201,6 +213,9 @@ export interface IssueNextResult {
 }
 
 export async function issueNextInvoiceAction(input: { id: string; force?: boolean }): Promise<IssueNextResult> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     const id = input.id?.trim();
     if (!id) return { success: false, error: 'Missing contract id' };
     try {
@@ -228,6 +243,9 @@ export interface RunSchedulerResult {
 }
 
 export async function runContractSchedulerAction(): Promise<RunSchedulerResult> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     try {
         const summary = await runContractScheduler({
             now: new Date(),
