@@ -80,18 +80,27 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # Apply pending migrations from the runner (npm ci + host Postgres port),
+      # not inside the web image — the standalone container has no Prisma CLI.
+      - name: Run Prisma migrations
+        env:
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DATABASE_URL_SECRET}" ]; then
+            export DATABASE_URL="${DATABASE_URL_SECRET}"
+          else
+            # Bundled compose Postgres is published on host port 5433.
+            export DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5433/marotto_db"
+          fi
+          echo "Migrating database…"
+          # Clear a failed duplicate "init" migration if a previous deploy left the DB in P3018 state.
+          npx prisma migrate resolve --rolled-back 20260509180000_init || true
+          npx prisma migrate deploy
+          echo "Prisma migrations applied."
+
       - name: Build and start application
         run: docker compose up -d --build --remove-orphans
-
-      # Applies every pending migration in prisma/migrations/ (e.g. client isProspect).
-      # Clear a failed duplicate "init" migration if a previous deploy left the DB in P3018 state.
-      - name: Resolve failed duplicate migration (idempotent)
-        continue-on-error: true
-        run: |
-          docker compose exec -T web npx prisma@6.19.1 migrate resolve --rolled-back 20260509180000_init --schema=/app/prisma/schema.prisma
-
-      - name: Run Prisma migrations
-        run: docker compose exec -T web npx prisma@6.19.1 migrate deploy --schema=/app/prisma/schema.prisma
 
       - name: Prune unused images
         run: docker image prune -f
