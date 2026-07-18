@@ -4,10 +4,11 @@ import os from 'os';
 import path from 'path';
 import { auth } from '@/lib/auth';
 import { collectBackupData, createBackupArchiveFile, getBackupFilename } from '@/lib/backup';
+import { isAdminSession } from '@/lib/require-admin-session';
 
 export async function GET() {
     const session = await auth();
-    if (!session) {
+    if (!isAdminSession(session)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

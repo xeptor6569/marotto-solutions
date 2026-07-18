@@ -1,10 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getJobAttachmentById, readAttachmentBinary } from '@/lib/job-attachments';
+import { auth } from '@/lib/auth';
+import { isAdminSession } from '@/lib/require-admin-session';
 
 export async function GET(
     _request: Request,
     { params }: { params: Promise<{ id: string }> },
 ) {
+    const session = await auth();
+    if (!isAdminSession(session)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const attachment = await getJobAttachmentById(id);
     if (!attachment) {

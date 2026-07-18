@@ -1,7 +1,6 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { auth } from '@/lib/auth';
 import { getDocumentById, getNextNumber, saveNewDocument } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
@@ -9,6 +8,7 @@ import { DOC_LABEL } from '@/lib/document-labels';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import type { DocumentData, DocumentType } from '@/lib/types';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 const PREFIX: Record<DocumentType, string> = {
     invoice: 'INV',
@@ -38,10 +38,8 @@ export interface BulkDuplicateResult {
  * number/id, cleared payments, and no contract linkage.
  */
 export async function duplicateDocumentsAction(ids: string[]): Promise<BulkDuplicateResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
     if (!ids || ids.length === 0) {
         return { success: false, error: 'No documents selected.' };
     }
@@ -113,10 +111,8 @@ export async function convertDocumentsAction(
     targetType: DocumentType,
     confirmPending?: boolean,
 ): Promise<BulkConvertResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
     if (!ids || ids.length === 0) {
         return { success: false, error: 'No documents selected.' };
     }
@@ -185,10 +181,9 @@ export interface BulkSendResult {
  * single email listing links to all of their selected documents.
  */
 export async function sendDocumentsAction(ids: string[], message?: string): Promise<BulkSendResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in to send email.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: 'You must be signed in to send email.' };
+    const session = gate.session;
     if (!ids || ids.length === 0) {
         return { success: false, error: 'No documents selected.' };
     }

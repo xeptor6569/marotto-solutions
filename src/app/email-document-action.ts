@@ -1,6 +1,5 @@
 'use server';
 
-import { auth } from '@/lib/auth';
 import { getDocumentById } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
@@ -10,6 +9,7 @@ import {
     pendingApprovalLineTotal,
     pendingApprovalSummarySentence,
 } from '@/lib/pending-client-approval';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 export type EmailDocumentState = { success: boolean; error?: string };
 
@@ -25,10 +25,11 @@ export async function sendDocumentEmailAction(
     _prev: EmailDocumentState | undefined,
     formData: FormData,
 ): Promise<EmailDocumentState> {
-    const session = await auth();
-    if (!session) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) {
         return { success: false, error: 'You must be signed in to send email from the app.' };
     }
+    const session = gate.session;
 
     const documentId = (formData.get('documentId') as string)?.trim();
     const toRaw = (formData.get('to') as string)?.trim();

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
 import {
     createEvent,
     updateEvent,
@@ -11,6 +10,7 @@ import {
     validateEventInput,
 } from '@/lib/calendar';
 import type { CalendarEventInput } from '@/lib/types';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 export interface CalendarActionResult {
     success: boolean;
@@ -20,10 +20,8 @@ export interface CalendarActionResult {
 }
 
 export async function createCalendarEventAction(input: CalendarEventInput): Promise<CalendarActionResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
 
     const validationErrors = validateEventInput(input);
     if (validationErrors.length > 0) {
@@ -52,10 +50,8 @@ export async function updateCalendarEventAction(
     id: string,
     input: Partial<CalendarEventInput>,
 ): Promise<CalendarActionResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
 
     try {
         const event = await updateEvent(id, input);
@@ -71,10 +67,8 @@ export async function updateCalendarEventAction(
 }
 
 export async function cancelCalendarEventAction(id: string): Promise<CalendarActionResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
 
     try {
         await cancelEvent(id);
@@ -90,10 +84,8 @@ export async function cancelCalendarEventAction(id: string): Promise<CalendarAct
 }
 
 export async function deleteCalendarEventAction(id: string): Promise<CalendarActionResult> {
-    const session = await auth();
-    if (!session) {
-        return { success: false, error: 'You must be signed in.' };
-    }
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
 
     try {
         await deleteEvent(id);

@@ -2,8 +2,10 @@ import { Container } from "@radix-ui/themes";
 import NewDocumentForm from "@/components/NewInvoiceForm"; // I kept filename same for now
 import { getNextNumber } from "@/lib/data";
 import { getDocumentFormPickers } from "@/lib/document-form-pickers";
+import { requireAdminPage } from "@/lib/require-admin-session";
 
 export default async function NewEstimatePage() {
+    await requireAdminPage('/estimates/new');
     const nextNumber = await getNextNumber('estimate');
     const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
 

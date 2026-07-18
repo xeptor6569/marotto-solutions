@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
+import { requireAdminAction } from '@/lib/require-admin-session';
 
 export interface ClientFormData {
     name: string;
@@ -12,6 +13,9 @@ export interface ClientFormData {
 }
 
 export async function getClients() {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     try {
         const clients = await prisma.client.findMany({
             orderBy: [{ isProspect: 'desc' }, { createdAt: 'desc' }],
@@ -24,6 +28,9 @@ export async function getClients() {
 }
 
 export async function createClient(data: ClientFormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     try {
         const client = await prisma.client.create({
             data: { ...data, isProspect: false },
@@ -38,6 +45,9 @@ export async function createClient(data: ClientFormData) {
 }
 
 export async function updateClient(id: string, data: ClientFormData) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     try {
         const client = await prisma.client.update({
             where: { id },
@@ -53,6 +63,9 @@ export async function updateClient(id: string, data: ClientFormData) {
 }
 
 export async function deleteClient(id: string) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     try {
         await prisma.client.delete({
             where: { id },
@@ -68,6 +81,9 @@ export async function deleteClient(id: string) {
 
 /** Promote a website prospect (or re-opened inquiry) to a full client. */
 export async function promoteClientToFull(id: string) {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
     try {
         await prisma.client.update({
             where: { id },
