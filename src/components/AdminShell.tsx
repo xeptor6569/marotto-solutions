@@ -57,8 +57,13 @@ function MoreMenu() {
     return (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-                <IconButton variant="soft" size="2" aria-label="More admin navigation">
-                    <MoreHorizontal size={16} />
+                <IconButton
+                    variant="soft"
+                    size="3"
+                    aria-label="More admin navigation"
+                    className="admin-shell-nav-hit"
+                >
+                    <MoreHorizontal size={18} />
                 </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
@@ -96,6 +101,15 @@ function MoreMenu() {
                         Settings
                     </Link>
                 </DropdownMenu.Item>
+                <DropdownMenu.Separator />
+                <form action={signOutFromAdmin}>
+                    <DropdownMenu.Item color="red" asChild>
+                        <button type="submit" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <LogOut size={14} />
+                            Sign out
+                        </button>
+                    </DropdownMenu.Item>
+                </form>
             </DropdownMenu.Content>
         </DropdownMenu.Root>
     );
@@ -174,9 +188,9 @@ export default function AdminShell({
                                 <Text size="3" weight="bold">Admin</Text>
                                 <Text size="1" color="gray">Fast access across all documents</Text>
                             </Flex>
-                            <Flex align="center" gap="2">
+                            <Flex align="center" gap="2" className="admin-shell-topbar-desktop-only">
                                 <CreateMenu />
-                                <Button asChild size="2" variant="soft" className="admin-shell-topbar-desktop-only">
+                                <Button asChild size="2" variant="soft">
                                     <Link href="/admin/settings"><Settings size={14} /> Settings</Link>
                                 </Button>
                             </Flex>
@@ -197,19 +211,20 @@ export default function AdminShell({
                             <Button
                                 key={item.href}
                                 asChild
-                                size="1"
+                                size="2"
                                 variant={active ? 'solid' : 'ghost'}
+                                className="admin-shell-nav-hit"
                                 style={{ minWidth: 0, flex: 1, justifyContent: 'center' }}
                             >
                                 <Link href={item.href}>
-                                    <item.icon size={15} />
+                                    <item.icon size={18} />
                                     {item.shortLabel}
                                 </Link>
                             </Button>
                         );
                     })}
                     <Flex align="center" gap="1">
-                        <CreateMenu />
+                        <CreateMenu size="2" />
                         <MoreMenu />
                     </Flex>
                 </Flex>
@@ -229,6 +244,7 @@ export default function AdminShell({
                     position: sticky;
                     top: 0;
                     z-index: 40;
+                    padding-top: env(safe-area-inset-top, 0px);
                     background: color-mix(in srgb, var(--color-panel-solid) 92%, transparent);
                     backdrop-filter: blur(10px);
                     border-bottom: 1px solid var(--gray-6);
@@ -245,7 +261,10 @@ export default function AdminShell({
                     border-top: 1px solid var(--gray-6);
                     background: color-mix(in srgb, var(--color-panel-solid) 94%, transparent);
                     backdrop-filter: blur(10px);
-                    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+                    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+                }
+                .admin-shell-nav-hit {
+                    min-height: 44px;
                 }
                 .admin-shell-topbar-desktop-only {
                     display: none !important;
