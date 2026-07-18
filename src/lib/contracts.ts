@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { getNextNumber, saveNewDocument, getDocuments } from '@/lib/data';
+import { generateShareToken, withContractShareToken } from '@/lib/share-token';
 import type {
     ContractInput,
     ContractIntervalUnit,
@@ -51,6 +52,7 @@ export interface ContractRecord {
     lastIssuedDate: Date | null;
     nextDueDate: Date;
     cyclesIssued: number;
+    shareToken: string;
     createdAt: Date;
     updatedAt: Date;
     lines: ContractLineRecord[];
@@ -100,6 +102,7 @@ function toContractRecord(raw: RawContract): ContractRecord {
         lastIssuedDate: raw.lastIssuedDate,
         nextDueDate: raw.nextDueDate,
         cyclesIssued: raw.cyclesIssued,
+        shareToken: raw.shareToken,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
         lines: raw.lines
@@ -206,6 +209,46 @@ export async function getContractByDisplayId(displayId: string): Promise<Contrac
     return getContractById(trimmed);
 }
 
+/** Look up a contract by its unguessable public share token. */
+export async function getContractByShareToken(token: string): Promise<ContractRecord | null> {
+    if (!isDatabaseConfigured()) return null;
+    const trimmed = token?.trim();
+    if (!trimmed || trimmed.length < 16) return null;
+    try {
+        const row = await prisma.contract.findUnique({
+            where: { shareToken: trimmed },
+            include: { lines: true },
+        });
+        return row ? toContractRecord(row) : null;
+    } catch (error) {
+        console.error('Failed to load contract by share token', error);
+        return null;
+    }
+}
+
+/**
+ * Ensure the contract has a shareToken, persisting if one was minted.
+ * Returns the contract with a guaranteed shareToken.
+ */
+export async function ensureContractShareToken(contract: ContractRecord): Promise<ContractRecord> {
+    const { shareToken, minted } = withContractShareToken(contract);
+    if (!minted) return { ...contract, shareToken };
+    if (!isDatabaseConfigured()) {
+        return { ...contract, shareToken };
+    }
+    try {
+        const row = await prisma.contract.update({
+            where: { id: contract.id },
+            data: { shareToken },
+            include: { lines: true },
+        });
+        return toContractRecord(row);
+    } catch (error) {
+        console.error(`Failed to backfill share token for contract ${contract.id}`, error);
+        return { ...contract, shareToken };
+    }
+}
+
 export async function getContractsDue(now: Date = new Date()): Promise<ContractRecord[]> {
     if (!isDatabaseConfigured()) return [];
     try {
@@ -278,6 +321,7 @@ export async function createContract(input: ContractInput): Promise<ContractReco
             paymentTerms: input.paymentTerms?.trim() || null,
             notes: input.notes?.trim() || null,
             nextDueDate: startDate,
+            shareToken: generateShareToken(),
             lines: {
                 create: lines.map((line, index) => ({
                     kind: line.kind,

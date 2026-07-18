@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { getDocumentById, getNextNumber, saveNewDocument } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
@@ -23,12 +24,6 @@ function escapeHtml(s: string) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
-}
-
-function buildViewUrl(doc: DocumentData): string {
-    const base = getPublicSiteUrl();
-    if (doc.type === 'lead') return `${base}/`;
-    return `${base}/${doc.type}s/${encodeURIComponent(doc.id)}`;
 }
 
 export interface BulkDuplicateResult {
@@ -239,8 +234,16 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
                 ? `Marotto Solutions — ${DOC_LABEL[docs[0].type]} ${docs[0].id}`
                 : `Marotto Solutions — ${docs.length} documents`;
 
-            const listText = docs
-                .map((d) => `- ${DOC_LABEL[d.type]} ${d.id} ($${d.total.toFixed(2)}): ${buildViewUrl(d)}`)
+            const siteBase = getPublicSiteUrl();
+            const docsWithUrls = await Promise.all(
+                docs.map(async (d) => ({
+                    doc: d,
+                    url: await buildDocumentShareUrl(d, siteBase),
+                })),
+            );
+
+            const listText = docsWithUrls
+                .map(({ doc: d, url }) => `- ${DOC_LABEL[d.type]} ${d.id} ($${d.total.toFixed(2)}): ${url}`)
                 .join('\n');
 
             const textBody = [
@@ -254,10 +257,10 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
                 'Marotto Solutions',
             ].filter((line, i, arr) => !(line === '' && arr[i - 1] === '')).join('\n');
 
-            const listHtml = docs
-                .map((d) => {
-                    const url = escapeHtml(buildViewUrl(d));
-                    return `<li style="margin: 0 0 8px;"><a href="${url}" style="color: #4f46e5;">${escapeHtml(DOC_LABEL[d.type])} ${escapeHtml(d.id)}</a> — $${d.total.toFixed(2)}</li>`;
+            const listHtml = docsWithUrls
+                .map(({ doc: d, url }) => {
+                    const safeUrl = escapeHtml(url);
+                    return `<li style="margin: 0 0 8px;"><a href="${safeUrl}" style="color: #4f46e5;">${escapeHtml(DOC_LABEL[d.type])} ${escapeHtml(d.id)}</a> — $${d.total.toFixed(2)}</li>`;
                 })
                 .join('');
 

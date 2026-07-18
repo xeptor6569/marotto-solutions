@@ -2,8 +2,8 @@
 
 import { auth } from '@/lib/auth';
 import { getDocumentById } from '@/lib/data';
-import type { DocumentData } from '@/lib/types';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import {
     hasPendingApprovalLines,
@@ -19,12 +19,6 @@ function escapeHtml(s: string) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
-}
-
-function buildViewUrl(doc: DocumentData): string {
-    const base = getPublicSiteUrl();
-    if (doc.type === 'lead') return base + '/';
-    return `${base}/${doc.type}s/${encodeURIComponent(doc.id)}`;
 }
 
 export async function sendDocumentEmailAction(
@@ -64,7 +58,7 @@ export async function sendDocumentEmailAction(
 
     const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
     const docTitle = DOC_LABEL[doc.type];
-    const url = buildViewUrl(doc);
+    const url = await buildDocumentShareUrl(doc, getPublicSiteUrl());
     const subject = `Marotto Solutions — ${docTitle} ${doc.id}`;
     const greeting = doc.customer.name ? `Hi ${doc.customer.name},` : 'Hello,';
 

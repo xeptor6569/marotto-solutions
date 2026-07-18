@@ -60,6 +60,11 @@ export interface DocumentData {
     tags: string[];
     createdAt: string;
     updatedAt: string;
+    /**
+     * Unguessable token used for public client share links (`/d/{shareToken}`).
+     * Minted on save; backfilled lazily for older documents.
+     */
+    shareToken?: string;
     /** Optional grouping key that links this document to a Prisma Job. */
     jobId?: string;
     payments?: PaymentEntry[];

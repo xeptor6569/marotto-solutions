@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import type { DocumentData, CalendarEventRecord } from './types';
 import { formatInTimeZone } from 'date-fns-tz';
+import { buildDocumentShareUrl } from './document-share-url';
 
 export function createTransportFromEnv() {
     const server = process.env.EMAIL_SERVER;
@@ -44,7 +45,7 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
         return { ok: false, error: 'Customer has no email on file.' };
     }
     const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
-    const url = `${getPublicSiteUrl()}/invoices/${encodeURIComponent(invoice.id)}`;
+    const url = await buildDocumentShareUrl(invoice, getPublicSiteUrl());
     const cycleLabel = invoice.contractCycle ? `Cycle ${invoice.contractCycle}` : 'New invoice';
     const subject = `Marotto Solutions — ${cycleLabel} ${invoice.id}`;
     const greeting = invoice.customer?.name ? `Hi ${invoice.customer.name},` : 'Hello,';

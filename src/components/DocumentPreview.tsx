@@ -13,6 +13,7 @@ import {
     Wallet,
 } from "lucide-react";
 import { getAppConfig } from "@/lib/config";
+import { ensureDocumentShareToken } from "@/lib/data";
 import { DOC_LABEL } from "@/lib/document-labels";
 import {
     agreedScopeLineTotal,
@@ -21,6 +22,7 @@ import {
     pendingApprovalSummarySentence,
 } from "@/lib/pending-client-approval";
 import { auth } from "@/lib/auth";
+import { buildSharePath } from "@/lib/share-token";
 import PrintButton from "@/components/PrintButton";
 import ShareButton from "@/components/ShareButton";
 import EmailDocumentButton from "@/components/EmailDocumentButton";
@@ -164,17 +166,24 @@ export default async function DocumentPreview({
     showBackButton = false,
     backHref = "/admin",
     editHref,
+    publicMode = false,
 }: {
     doc: DocumentData;
     showBackButton?: boolean;
     backHref?: string;
     editHref?: string;
+    /** Client-facing share view: print only, no admin actions. */
+    publicMode?: boolean;
 }) {
-    const session = await auth();
+    const session = publicMode ? null : await auth();
     const config = await getAppConfig();
     const docTitle = DOC_LABEL[doc.type] ?? "Document";
     const billToLabel = doc.type === "receipt" ? "Received From" : "Bill To";
-    const sharePath = doc.type === "lead" ? "/" : `/${doc.type}s/${doc.id}`;
+    let sharePath = "/";
+    if (!publicMode && doc.type !== "lead") {
+        const ensured = await ensureDocumentShareToken(doc);
+        sharePath = buildSharePath(ensured.shareToken);
+    }
     const shareTitle = `${docTitle} ${doc.id}`;
     const activePaymentMethods = doc.type === "invoice"
         ? buildInvoicePaymentMethods(config, doc)
@@ -199,16 +208,16 @@ export default async function DocumentPreview({
     const pendingApprovalSummary = pendingLines
         ? pendingApprovalSummarySentence(docTitle, pendingSubtotal)
         : undefined;
-    const showDepositInvoice = doc.type === "quote" || doc.type === "estimate";
+    const showDepositInvoice = !publicMode && (doc.type === "quote" || doc.type === "estimate");
     const depositBase = showDepositInvoice ? depositBillingBase(doc) : 0;
-    const showConvert = convertTargets(doc.type).length > 0;
+    const showConvert = !publicMode && convertTargets(doc.type).length > 0;
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
             <Flex justify="between" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
-                {showBackButton ? <BackButton href={backHref} /> : <Box />}
+                {!publicMode && showBackButton ? <BackButton href={backHref} /> : <Box />}
                 <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
-                    {editHref ? (
+                    {!publicMode && editHref ? (
                         <Button asChild variant="soft">
                             <Link href={editHref}>Edit {docTitle}</Link>
                         </Button>
@@ -227,8 +236,10 @@ export default async function DocumentPreview({
                             hasPendingApproval={pendingLines}
                         />
                     ) : null}
-                    <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
-                    {doc.type !== "lead" ? (
+                    {!publicMode ? (
+                        <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                    ) : null}
+                    {!publicMode && doc.type !== "lead" ? (
                         <EmailDocumentButton
                             documentId={doc.id}
                             sharePath={sharePath}

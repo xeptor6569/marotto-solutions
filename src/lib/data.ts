@@ -1,6 +1,7 @@
 import { getAppConfig } from './config';
 import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote } from './webdav';
 import { isDatabaseConfigured, prisma } from './prisma';
+import { withDocumentShareToken } from './share-token';
 import { AppConfig, DocumentData, DocumentType } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -114,26 +115,53 @@ export async function getDocumentById(id: string): Promise<DocumentData | undefi
     return undefined;
 }
 
+/** Look up a document by its unguessable public share token. */
+export async function getDocumentByShareToken(token: string): Promise<DocumentData | undefined> {
+    const trimmed = token?.trim();
+    if (!trimmed || trimmed.length < 16) return undefined;
+
+    const types: DocumentType[] = ['invoice', 'estimate', 'quote', 'receipt'];
+    for (const type of types) {
+        const docs = await getDocuments(type);
+        const found = docs.find((d) => d.shareToken === trimmed);
+        if (found) return found;
+    }
+    return undefined;
+}
+
+/**
+ * Ensure the document has a shareToken, persisting if one was minted.
+ * Returns the document with a guaranteed shareToken.
+ */
+export async function ensureDocumentShareToken(doc: DocumentData): Promise<DocumentData & { shareToken: string }> {
+    const { doc: withToken, minted } = withDocumentShareToken(doc);
+    if (minted) {
+        await saveNewDocument(withToken);
+    }
+    return withToken;
+}
+
 function useWebDAVStorage(config: AppConfig): boolean {
     return Boolean(config.webdavUrl?.trim() && config.webdavUsername?.trim());
 }
 
 export async function saveNewDocument(doc: DocumentData) {
+    const { doc: toSave } = withDocumentShareToken(doc);
     const config = await getAppConfig() as AppConfig;
 
     if (!useWebDAVStorage(config)) {
-        await saveDocumentLocal(doc);
+        await saveDocumentLocal(toSave);
     } else {
         const client = getWebDAVClient(
             config.webdavUrl!,
             config.webdavUsername!,
             config.webdavPassword,
         );
-        await saveDocument(client, doc);
+        await saveDocument(client, toSave);
     }
 
     // Invalidate cache
-    delete cache[doc.type];
+    delete cache[toSave.type];
 }
 
 export async function deleteDocument(type: DocumentType, id: string) {

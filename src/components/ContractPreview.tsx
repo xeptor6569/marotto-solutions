@@ -3,16 +3,20 @@ import BackButton from '@/components/BackButton';
 import PrintButton from '@/components/PrintButton';
 import ShareButton from '@/components/ShareButton';
 import {
+    ensureContractShareToken,
     getContractProgress,
     summarizeContractCadence,
     summarizeRecurringTotal,
     type ContractRecord,
 } from '@/lib/contracts';
+import { buildSharePath } from '@/lib/share-token';
 
 interface Props {
     contract: ContractRecord;
     showBackButton?: boolean;
     backHref?: string;
+    /** Client-facing share view: print only, no admin actions. */
+    publicMode?: boolean;
 }
 
 function statusColor(status: ContractRecord['status']): string {
@@ -22,20 +26,30 @@ function statusColor(status: ContractRecord['status']): string {
     return '#b91c1c';
 }
 
-export default function ContractPreview({ contract, showBackButton = false, backHref = '/' }: Props) {
+export default async function ContractPreview({
+    contract: initialContract,
+    showBackButton = false,
+    backHref = '/',
+    publicMode = false,
+}: Props) {
+    const contract = publicMode
+        ? initialContract
+        : await ensureContractShareToken(initialContract);
     const cadence = summarizeContractCadence(contract);
     const progress = getContractProgress(contract);
     const recurringTotal = summarizeRecurringTotal(contract);
-    const sharePath = `/contracts/${contract.displayId}`;
+    const sharePath = buildSharePath(contract.shareToken);
     const shareTitle = `Service Contract ${contract.displayId}`;
     const docTitle = 'Service Agreement';
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }} className="print-container">
             <Flex justify="between" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
-                {showBackButton ? <BackButton href={backHref} /> : <Box />}
+                {!publicMode && showBackButton ? <BackButton href={backHref} /> : <Box />}
                 <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
-                    <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                    {!publicMode ? (
+                        <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                    ) : null}
                     <PrintButton label={docTitle} fileName={`${docTitle} ${contract.displayId}`} />
                 </Flex>
             </Flex>
