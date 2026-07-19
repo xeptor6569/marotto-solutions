@@ -118,6 +118,11 @@ export interface DocumentData {
     paymentOverrides?: InvoicePaymentOverrides;
     /** Workflow progress label for estimates and quotes (Backlog / To Do / In Progress / Done). */
     workflowStatus?: WorkflowStatus;
+    /**
+     * Estimated labor hours to complete the work (estimates/quotes).
+     * Aggregated onto linked Jobs; not copied to invoices.
+     */
+    estimatedHours?: number;
     /** Mutually exclusive project packages (estimates/quotes). */
     packages?: DocumentPackage[];
     /** Material/method choice groups applied on top of base + selected package. */

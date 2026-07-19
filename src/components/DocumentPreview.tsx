@@ -50,6 +50,7 @@ import DocumentOptionSelectionForm from "@/components/DocumentOptionSelectionFor
 import MarkdownContent from "@/components/MarkdownContent";
 import { depositBillingBase } from "@/lib/deposit-invoice";
 import { convertTargets } from "@/lib/convert-document";
+import { formatHours } from "@/lib/job-estimated-hours";
 
 function LineItemsTable({ items }: { items: LineItem[] }) {
     if (!items.length) {
@@ -384,6 +385,14 @@ export default async function DocumentPreview({
                                 <div className="doc-meta-row">
                                     <div className="doc-meta-label">Due date</div>
                                     <div className="doc-meta-value">{new Date(doc.dueDate).toLocaleDateString()}</div>
+                                </div>
+                            ) : null}
+                            {(doc.type === "estimate" || doc.type === "quote")
+                                && typeof doc.estimatedHours === "number"
+                                && doc.estimatedHours > 0 ? (
+                                <div className="doc-meta-row">
+                                    <div className="doc-meta-label">Est. time</div>
+                                    <div className="doc-meta-value">{formatHours(doc.estimatedHours)}</div>
                                 </div>
                             ) : null}
                         </Box>

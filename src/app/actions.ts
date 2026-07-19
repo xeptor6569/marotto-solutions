@@ -18,6 +18,7 @@ import {
     resolveSelectedLineItems,
     sanitizeOptionSelection,
 } from '@/lib/document-options';
+import { parseEstimatedHours } from '@/lib/job-estimated-hours';
 import {
     buildDepositInvoiceDraft,
     type DepositMode,
@@ -315,6 +316,9 @@ export async function createInvoiceAction(formData: FormData) {
     }
 
     const supportsOptions = type === 'estimate' || type === 'quote';
+    const estimatedHours = supportsOptions
+        ? parseEstimatedHours(formData.get('estimatedHours'))
+        : undefined;
     const packages = supportsOptions ? parsePackagesFromFormData(formData) : undefined;
     const choiceGroups = supportsOptions ? parseChoiceGroupsFromFormData(formData) : undefined;
 
@@ -399,6 +403,7 @@ export async function createInvoiceAction(formData: FormData) {
         ...((type === 'estimate' || type === 'quote') && formData.get('workflowStatus')
             ? { workflowStatus: formData.get('workflowStatus') as WorkflowStatus }
             : {}),
+        ...(estimatedHours !== undefined ? { estimatedHours } : {}),
         ...(supportsOptions && packages && packages.length > 0 ? { packages } : {}),
         ...(supportsOptions && choiceGroups && choiceGroups.length > 0 ? { choiceGroups } : {}),
         ...(supportsOptions && optionSelection ? { optionSelection } : {}),

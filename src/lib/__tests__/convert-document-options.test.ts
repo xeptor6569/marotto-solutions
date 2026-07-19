@@ -58,6 +58,7 @@ function sourceEstimate(): DocumentData {
             by: 'admin',
             at: '2026-07-19T00:00:00.000Z',
         },
+        estimatedHours: 12.5,
         subtotal: 1700,
         total: 1700,
         status: 'sent',
@@ -75,6 +76,7 @@ describe('buildConvertedDocument with options', () => {
         expect(quote.choiceGroups).toHaveLength(1);
         expect(quote.lineItems.map((i) => i.description)).toEqual(['Base']);
         expect(quote.optionSelection?.choices).toBeTruthy();
+        expect(quote.estimatedHours).toBe(12.5);
         // Selection remapped onto new ids by label
         const pkgId = quote.optionSelection?.packageId;
         expect(quote.packages?.some((p) => p.id === pkgId && p.label === 'Basic')).toBe(true);
@@ -86,6 +88,7 @@ describe('buildConvertedDocument with options', () => {
         expect(invoice.packages).toBeUndefined();
         expect(invoice.choiceGroups).toBeUndefined();
         expect(invoice.optionSelection).toBeUndefined();
+        expect(invoice.estimatedHours).toBeUndefined();
         expect(invoice.lineItems.map((i) => i.description).sort()).toEqual([
             'Base',
             'Basic approach',
