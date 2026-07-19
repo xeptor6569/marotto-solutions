@@ -8,6 +8,9 @@ import type { Adapter } from 'next-auth/adapters';
 import bcrypt from 'bcryptjs';
 
 export const authConfig: NextAuthConfig = {
+  // Required for self-hosted Docker/production. Without this, Auth.js rejects
+  // callback requests as UntrustedHost → /auth/error?error=Configuration.
+  trustHost: true,
   adapter: PrismaAdapter(prisma) as Adapter,
   providers: [
     Nodemailer({
@@ -71,16 +74,28 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        // @ts-ignore
-        token.role = user.role || 'admin';
+        // Prefer DB role when present; email magic-link User may omit custom fields.
+        let role = (user as { role?: string }).role;
+        if (!role && user.id) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { id: user.id },
+              select: { role: true },
+            });
+            role = dbUser?.role || undefined;
+          } catch {
+            // fall through to default
+          }
+        }
+        (token as { role?: string }).role = role || 'admin';
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        // @ts-ignore
-        session.user.role = token.role || 'admin';
+        (session.user as { role?: string }).role =
+          ((token as { role?: string }).role) || 'admin';
       }
       return session;
     },
