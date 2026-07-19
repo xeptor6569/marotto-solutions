@@ -15,6 +15,29 @@ type RawLineRow = {
     pending?: string;
 };
 
+type RawPackage = {
+    id?: string;
+    label?: string;
+    description?: string;
+    recommended?: string;
+    items: Map<number, RawLineRow>;
+};
+
+type RawChoice = {
+    id?: string;
+    label?: string;
+    description?: string;
+    items: Map<number, RawLineRow>;
+};
+
+type RawChoiceGroup = {
+    id?: string;
+    label?: string;
+    description?: string;
+    required?: string;
+    choices: Map<number, RawChoice>;
+};
+
 function finalizeLineItem(row: RawLineRow): LineItem {
     const qty = Number.isFinite(row.quantity) ? Number(row.quantity) : 0;
     const unitPrice = Number.isFinite(row.unitPrice) ? Number(row.unitPrice) : 0;
@@ -73,13 +96,7 @@ function sortedMapValues<T>(map: Map<number, T>): T[] {
  * Parse packages[i][…] and packages[i][items][j][…] from FormData.
  */
 export function parsePackagesFromFormData(formData: FormData): DocumentPackage[] {
-    const packages = new Map<number, {
-        id?: string;
-        label?: string;
-        description?: string;
-        recommended?: string;
-        items: Map<number, RawLineRow>;
-    }>();
+    const packages = new Map<number, RawPackage>();
 
     for (const [key, value] of formData.entries()) {
         if (typeof value !== 'string') continue;
@@ -89,7 +106,7 @@ export function parsePackagesFromFormData(formData: FormData): DocumentPackage[]
             const pkgIndex = Number(itemMatch[1]);
             const itemIndex = Number(itemMatch[2]);
             const field = itemMatch[3];
-            const pkg = packages.get(pkgIndex) ?? { items: new Map() };
+            const pkg: RawPackage = packages.get(pkgIndex) ?? { items: new Map() };
             const row = pkg.items.get(itemIndex) ?? {};
             applyLineField(row, field, value);
             pkg.items.set(itemIndex, row);
@@ -102,7 +119,7 @@ export function parsePackagesFromFormData(formData: FormData): DocumentPackage[]
         const pkgIndex = Number(fieldMatch[1]);
         const field = fieldMatch[2];
         if (field === 'items') continue;
-        const pkg = packages.get(pkgIndex) ?? { items: new Map() };
+        const pkg: RawPackage = packages.get(pkgIndex) ?? { items: new Map() };
         if (field === 'id') pkg.id = value;
         else if (field === 'label') pkg.label = value;
         else if (field === 'description') pkg.description = value;
@@ -129,18 +146,7 @@ export function parsePackagesFromFormData(formData: FormData): DocumentPackage[]
  * Parse choiceGroups[i][…] / choices[k][…] / items[j][…] from FormData.
  */
 export function parseChoiceGroupsFromFormData(formData: FormData): DocumentChoiceGroup[] {
-    const groups = new Map<number, {
-        id?: string;
-        label?: string;
-        description?: string;
-        required?: string;
-        choices: Map<number, {
-            id?: string;
-            label?: string;
-            description?: string;
-            items: Map<number, RawLineRow>;
-        }>;
-    }>();
+    const groups = new Map<number, RawChoiceGroup>();
 
     for (const [key, value] of formData.entries()) {
         if (typeof value !== 'string') continue;
@@ -153,8 +159,8 @@ export function parseChoiceGroupsFromFormData(formData: FormData): DocumentChoic
             const choiceIndex = Number(itemMatch[2]);
             const itemIndex = Number(itemMatch[3]);
             const field = itemMatch[4];
-            const group = groups.get(groupIndex) ?? { choices: new Map() };
-            const choice = group.choices.get(choiceIndex) ?? { items: new Map() };
+            const group: RawChoiceGroup = groups.get(groupIndex) ?? { choices: new Map() };
+            const choice: RawChoice = group.choices.get(choiceIndex) ?? { items: new Map() };
             const row = choice.items.get(itemIndex) ?? {};
             applyLineField(row, field, value);
             choice.items.set(itemIndex, row);
@@ -171,8 +177,8 @@ export function parseChoiceGroupsFromFormData(formData: FormData): DocumentChoic
             const choiceIndex = Number(choiceFieldMatch[2]);
             const field = choiceFieldMatch[3];
             if (field === 'items') continue;
-            const group = groups.get(groupIndex) ?? { choices: new Map() };
-            const choice = group.choices.get(choiceIndex) ?? { items: new Map() };
+            const group: RawChoiceGroup = groups.get(groupIndex) ?? { choices: new Map() };
+            const choice: RawChoice = group.choices.get(choiceIndex) ?? { items: new Map() };
             if (field === 'id') choice.id = value;
             else if (field === 'label') choice.label = value;
             else if (field === 'description') choice.description = value;
@@ -186,7 +192,7 @@ export function parseChoiceGroupsFromFormData(formData: FormData): DocumentChoic
         const groupIndex = Number(groupFieldMatch[1]);
         const field = groupFieldMatch[2];
         if (field === 'choices') continue;
-        const group = groups.get(groupIndex) ?? { choices: new Map() };
+        const group: RawChoiceGroup = groups.get(groupIndex) ?? { choices: new Map() };
         if (field === 'id') group.id = value;
         else if (field === 'label') group.label = value;
         else if (field === 'description') group.description = value;

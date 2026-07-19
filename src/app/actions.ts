@@ -2,7 +2,7 @@
 
 import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
-import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
+import { AppConfig, BillingConfig, DocumentData, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
@@ -367,7 +367,7 @@ export async function createInvoiceAction(formData: FormData) {
         }
     }
 
-    let status = resolveDocumentStatus({
+    const status = resolveDocumentStatus({
         type,
         intent,
         formStatus,

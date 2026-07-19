@@ -11,9 +11,8 @@ import {
     Grid,
     TextArea,
     Badge,
-    Checkbox,
 } from '@radix-ui/themes';
-import { PlusIcon, TrashIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
 import {
