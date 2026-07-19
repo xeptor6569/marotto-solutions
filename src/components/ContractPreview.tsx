@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Container, Flex, Heading, Table, Text } from '@radix-ui/themes';
+import { Badge, Box, Card, Container, Flex, Table } from '@radix-ui/themes';
 import BackButton from '@/components/BackButton';
 import PrintButton from '@/components/PrintButton';
 import ShareButton from '@/components/ShareButton';
@@ -54,102 +54,91 @@ export default async function ContractPreview({
                 </Flex>
             </Flex>
 
-            <Card size="3" className="doc-card print-document" style={{ background: 'white', color: '#111827', border: '1px solid #d1d5db' }}>
+            <Card size="2" className="doc-card print-document">
                 <div className="receipt-content">
-                    <Flex justify="between" align="start" mb="6" className="doc-header">
-                        <Box>
-                            <Heading size="8" style={{ color: '#111827', marginBottom: 4 }}>MAROTTO</Heading>
-                            <Text size="3" weight="bold" style={{ color: '#374151', letterSpacing: '2px' }}>SOLUTIONS</Text>
-                            <Box mt="4">
-                                <Text as="div" size="2" style={{ color: '#1f2937' }}>28 E Mountain Ridge MHP</Text>
-                                <Text as="div" size="2" style={{ color: '#1f2937' }}>Wilkes Barre, PA 18702</Text>
-                                <Text as="div" size="2" style={{ color: '#1f2937' }}>(570) 332-9262</Text>
-                            </Box>
+                    <div className="doc-header">
+                        <Box className="doc-brand">
+                            <p className="doc-brand-name">MAROTTO</p>
+                            <div className="doc-brand-sub">SOLUTIONS</div>
+                            <div className="doc-brand-address">
+                                <div>28 E Mountain Ridge MHP</div>
+                                <div>Wilkes Barre, PA 18702</div>
+                                <div>(570) 332-9262</div>
+                            </div>
                         </Box>
-                        <Box className="doc-meta" style={{ textAlign: 'right' }}>
-                            <Heading size="8" style={{ color: '#4b5563', textTransform: 'uppercase' }}>{docTitle}</Heading>
-                            <Flex direction="column" mt="2">
-                                <Text size="2" weight="bold" style={{ color: '#4b5563' }}>CONTRACT #</Text>
-                                <Text size="4" weight="bold" style={{ color: '#111827' }}>
+                        <Box className="doc-meta">
+                            <p className="doc-type">{docTitle}</p>
+                            <div className="doc-meta-row">
+                                <div className="doc-meta-label">Contract #</div>
+                                <div className="doc-meta-value">
                                     {contract.title ? `${contract.displayId} - ${contract.title}` : contract.displayId}
-                                </Text>
-                            </Flex>
-                            <Flex direction="column" mt="2">
-                                <Text size="2" weight="bold" style={{ color: '#4b5563' }}>STATUS</Text>
-                                <Badge size="2" color={contract.status === 'active' ? 'green' : contract.status === 'paused' ? 'amber' : contract.status === 'ended' ? 'gray' : 'red'}>
+                                </div>
+                            </div>
+                            <div className="doc-meta-row">
+                                <div className="doc-meta-label">Status</div>
+                                <div className="doc-meta-value" style={{ textTransform: 'capitalize' }}>
                                     {contract.status}
-                                </Badge>
-                            </Flex>
-                            <Flex direction="column" mt="2">
-                                <Text size="2" weight="bold" style={{ color: '#4b5563' }}>EFFECTIVE</Text>
-                                <Text size="3" style={{ color: '#111827' }}>{new Date(contract.startDate).toLocaleDateString()}</Text>
-                            </Flex>
+                                </div>
+                            </div>
+                            <div className="doc-meta-row">
+                                <div className="doc-meta-label">Effective</div>
+                                <div className="doc-meta-value">{new Date(contract.startDate).toLocaleDateString()}</div>
+                            </div>
                             {contract.endDate ? (
-                                <Flex direction="column" mt="2">
-                                    <Text size="2" weight="bold" style={{ color: '#4b5563' }}>THROUGH</Text>
-                                    <Text size="3" style={{ color: '#111827' }}>{new Date(contract.endDate).toLocaleDateString()}</Text>
-                                </Flex>
+                                <div className="doc-meta-row">
+                                    <div className="doc-meta-label">Through</div>
+                                    <div className="doc-meta-value">{new Date(contract.endDate).toLocaleDateString()}</div>
+                                </div>
                             ) : null}
                         </Box>
-                    </Flex>
+                    </div>
 
-                    <Box mb="6" style={{ borderTop: '2px solid #d1d5db', paddingTop: '20px' }}>
-                        <Text size="2" weight="bold" style={{ color: '#4b5563', textTransform: 'uppercase' }}>Service Recipient</Text>
-                        <Heading size="4" mt="1" style={{ color: '#111827' }}>{contract.customerName}</Heading>
+                    <Box className="doc-parties">
+                        <div className="doc-section-label">Service Recipient</div>
+                        <div className="doc-party-name">{contract.customerName}</div>
                         {contract.customerAddress ? (
-                            <Text as="div" size="2" style={{ whiteSpace: 'pre-line', color: '#1f2937' }}>{contract.customerAddress}</Text>
+                            <div className="doc-party-detail">{contract.customerAddress}</div>
                         ) : null}
                         {contract.customerEmail ? (
-                            <Text as="div" size="2" style={{ color: '#1f2937' }}>{contract.customerEmail}</Text>
+                            <div className="doc-party-detail">{contract.customerEmail}</div>
                         ) : null}
                         {contract.customerPhone ? (
-                            <Text as="div" size="2" style={{ color: '#1f2937' }}>{contract.customerPhone}</Text>
+                            <div className="doc-party-detail">{contract.customerPhone}</div>
                         ) : null}
                     </Box>
 
-                    <Box
-                        mb="6"
-                        style={{
-                            padding: '16px 20px',
-                            border: '1px solid #d1d5db',
-                            borderRadius: 12,
-                            background: '#f9fafb',
-                        }}
-                    >
-                        <Heading size="4" mb="2" style={{ color: '#111827' }}>Term &amp; cadence</Heading>
-                        <Flex direction={{ initial: 'column', md: 'row' }} gap="4" wrap="wrap">
-                            <Box>
-                                <Text size="1" weight="bold" style={{ color: '#4b5563', textTransform: 'uppercase' }}>Cadence</Text>
-                                <Text as="div" size="2" style={{ color: '#111827' }}>{cadence}</Text>
-                            </Box>
-                            <Box>
-                                <Text size="1" weight="bold" style={{ color: '#4b5563', textTransform: 'uppercase' }}>Term</Text>
-                                <Text as="div" size="2" style={{ color: '#111827' }}>
-                                    {contract.termCycles ? `${contract.termCycles} cycles` : 'Open-ended (until cancelled)'}
-                                    {contract.autoRenew ? ' · auto-renew' : ''}
-                                </Text>
-                            </Box>
-                            <Box>
-                                <Text size="1" weight="bold" style={{ color: '#4b5563', textTransform: 'uppercase' }}>Progress</Text>
-                                <Text as="div" size="2" style={{ color: '#111827' }}>{progress.progressLabel}</Text>
-                            </Box>
-                            {contract.paymentTerms ? (
-                                <Box>
-                                    <Text size="1" weight="bold" style={{ color: '#4b5563', textTransform: 'uppercase' }}>Payment terms</Text>
-                                    <Text as="div" size="2" style={{ color: '#111827' }}>{contract.paymentTerms}</Text>
-                                </Box>
-                            ) : null}
-                        </Flex>
-                    </Box>
+                    <div className="doc-term-strip">
+                        <div className="doc-term-item">
+                            <div className="doc-section-label">Cadence</div>
+                            <div className="doc-meta-value">{cadence}</div>
+                        </div>
+                        <div className="doc-term-item">
+                            <div className="doc-section-label">Term</div>
+                            <div className="doc-meta-value">
+                                {contract.termCycles ? `${contract.termCycles} cycles` : 'Open-ended (until cancelled)'}
+                                {contract.autoRenew ? ' · auto-renew' : ''}
+                            </div>
+                        </div>
+                        <div className="doc-term-item">
+                            <div className="doc-section-label">Progress</div>
+                            <div className="doc-meta-value">{progress.progressLabel}</div>
+                        </div>
+                        {contract.paymentTerms ? (
+                            <div className="doc-term-item">
+                                <div className="doc-section-label">Payment terms</div>
+                                <div className="doc-meta-value">{contract.paymentTerms}</div>
+                            </div>
+                        ) : null}
+                    </div>
 
                     <Box className="doc-table-wrap">
-                        <Table.Root variant="surface" style={{ width: '100%', marginBottom: '24px', minWidth: 560 }}>
+                        <Table.Root variant="ghost" className="doc-table">
                             <Table.Header>
-                                <Table.Row style={{ background: '#f3f4f6' }}>
-                                    <Table.ColumnHeaderCell style={{ color: '#1f2937' }}>Item</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right" style={{ color: '#1f2937' }}>Qty</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right" style={{ color: '#1f2937' }}>Unit</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right" style={{ color: '#1f2937' }}>Per cycle</Table.ColumnHeaderCell>
+                                <Table.Row>
+                                    <Table.ColumnHeaderCell>Item</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right">Qty</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right">Unit</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right">Per cycle</Table.ColumnHeaderCell>
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
@@ -159,27 +148,21 @@ export default async function ContractPreview({
                                         <Table.Row key={line.id}>
                                             <Table.Cell>
                                                 <Flex gap="2" align="center" wrap="wrap">
-                                                    <Text weight="bold" style={{ color: '#111827' }}>{line.description}</Text>
+                                                    <span className="doc-line-title">{line.description}</span>
                                                     <Badge size="1" color={line.kind === 'recurring' ? 'blue' : 'amber'}>{line.kind}</Badge>
                                                 </Flex>
                                                 {line.details ? (
-                                                    <Text as="div" size="2" mt="2" style={{ color: '#374151', whiteSpace: 'pre-line', lineHeight: 1.5 }}>
+                                                    <div className="doc-line-details" style={{ whiteSpace: 'pre-line' }}>
                                                         {line.details}
-                                                    </Text>
+                                                    </div>
                                                 ) : null}
                                             </Table.Cell>
                                             <Table.Cell align="right">
-                                                <Text style={{ color: '#111827' }}>
-                                                    {line.kind === 'usage' ? 'as-billed' : line.quantity}
-                                                </Text>
+                                                {line.kind === 'usage' ? 'as-billed' : line.quantity}
                                             </Table.Cell>
+                                            <Table.Cell align="right">${line.unitPrice.toFixed(2)}</Table.Cell>
                                             <Table.Cell align="right">
-                                                <Text style={{ color: '#111827' }}>${line.unitPrice.toFixed(2)}</Text>
-                                            </Table.Cell>
-                                            <Table.Cell align="right">
-                                                <Text style={{ color: '#111827' }}>
-                                                    {line.kind === 'recurring' ? `$${lineTotal.toFixed(2)}` : '—'}
-                                                </Text>
+                                                {line.kind === 'recurring' ? `$${lineTotal.toFixed(2)}` : '—'}
                                             </Table.Cell>
                                         </Table.Row>
                                     );
@@ -189,94 +172,49 @@ export default async function ContractPreview({
                     </Box>
 
                     {contract.notes ? (
-                        <Box
-                            mb="6"
-                            style={{
-                                padding: '18px 20px',
-                                border: '1px solid #d1d5db',
-                                borderRadius: 12,
-                                background: '#f9fafb',
-                            }}
-                        >
-                            <Text size="2" weight="bold" style={{ color: '#374151', textTransform: 'uppercase' }}>Scope &amp; terms</Text>
-                            <Text as="div" mt="2" style={{ color: '#111827', whiteSpace: 'pre-line', lineHeight: 1.6 }}>
+                        <Box className="doc-section">
+                            <div className="doc-section-label">Scope &amp; terms</div>
+                            <div className="doc-section-body" style={{ whiteSpace: 'pre-line' }}>
                                 {contract.notes}
-                            </Text>
+                            </div>
                         </Box>
                     ) : null}
 
-                    <Flex justify="between" align="end" className="doc-summary">
+                    <div className="doc-summary">
                         <Box className="doc-status">
-                            <Text
-                                size="5"
-                                weight="bold"
-                                style={{
-                                    color: statusColor(contract.status),
-                                    transform: 'rotate(-10deg)',
-                                    display: 'block',
-                                    border: `3px solid ${statusColor(contract.status)}`,
-                                    padding: '10px 20px',
-                                    borderRadius: 8,
-                                    letterSpacing: '0.08em',
-                                }}
-                            >
+                            <span className="doc-status-mark" style={{ color: statusColor(contract.status) }}>
                                 {contract.status.toUpperCase()}
-                            </Text>
+                            </span>
                         </Box>
 
-                        <Box className="doc-totals" style={{ width: '260px' }}>
-                            <Flex justify="between" py="2">
-                                <Text size="2" style={{ color: '#4b5563' }}>Recurring per cycle</Text>
-                                <Text size="2" style={{ color: '#111827' }}>${recurringTotal.toFixed(2)}</Text>
-                            </Flex>
+                        <Box className="doc-totals">
+                            <div className="doc-total-row">
+                                <span>Recurring per cycle</span>
+                                <span>${recurringTotal.toFixed(2)}</span>
+                            </div>
                             {contract.termCycles ? (
-                                <Flex justify="between" py="2" style={{ borderTop: '2px solid #111827' }}>
-                                    <Text size="3" weight="bold" style={{ color: '#111827' }}>Term value (recurring)</Text>
-                                    <Text size="4" weight="bold" style={{ color: '#111827' }}>
+                                <div className="doc-total-due">
+                                    <span>Term value (recurring)</span>
+                                    <span className="doc-total-due-amount">
                                         ${(recurringTotal * contract.termCycles).toFixed(2)}
-                                    </Text>
-                                </Flex>
+                                    </span>
+                                </div>
                             ) : null}
                         </Box>
-                    </Flex>
+                    </div>
 
-                    <Box mt="8" style={{ borderTop: '2px solid #d1d5db', paddingTop: '20px' }}>
-                        <Text size="2" weight="bold" style={{ color: '#374151', textTransform: 'uppercase' }}>Authorization</Text>
-                        <Text as="div" size="2" mt="2" style={{ color: '#111827', lineHeight: 1.5 }}>
+                    <Box className="doc-auth">
+                        <div className="doc-section-label">Authorization</div>
+                        <div className="doc-section-note" style={{ marginTop: 4 }}>
                             By signing below, the parties agree to the services, schedule, and terms above. This agreement may be cancelled in writing by either party with reasonable notice unless otherwise stated in the scope.
-                        </Text>
-                        <Flex mt="6" gap="6" wrap="wrap" justify="between">
-                            <Box style={{ flex: 1, minWidth: 200 }}>
-                                <Box style={{ borderTop: '1px solid #111827', paddingTop: 6 }}>
-                                    <Text size="2" style={{ color: '#374151' }}>Marotto Solutions</Text>
-                                </Box>
-                            </Box>
-                            <Box style={{ flex: 1, minWidth: 200 }}>
-                                <Box style={{ borderTop: '1px solid #111827', paddingTop: 6 }}>
-                                    <Text size="2" style={{ color: '#374151' }}>{contract.customerName}</Text>
-                                </Box>
-                            </Box>
-                        </Flex>
+                        </div>
+                        <div className="doc-auth-lines">
+                            <div className="doc-auth-line">Marotto Solutions</div>
+                            <div className="doc-auth-line">{contract.customerName}</div>
+                        </div>
                     </Box>
                 </div>
             </Card>
-
-            <style>{`
-              .doc-card { padding: 40px; }
-              .doc-table-wrap { overflow-x: auto; }
-              /* screen-only so print keeps the desktop header (meta top-right) */
-              @media screen and (max-width: 768px) {
-                .doc-card { padding: 18px; }
-                .doc-toolbar { align-items: stretch; }
-                .doc-toolbar-actions { width: 100%; }
-                .doc-toolbar-actions > * { flex: 1 1 calc(50% - 8px); }
-                .doc-header { flex-direction: column; gap: 14px; }
-                .doc-meta { text-align: left !important; }
-                .doc-summary { flex-direction: column; align-items: stretch; gap: 16px; }
-                .doc-status { align-self: flex-start; }
-                .doc-totals { width: 100% !important; }
-              }
-            `}</style>
         </Container>
     );
 }

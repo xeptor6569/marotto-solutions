@@ -1,4 +1,4 @@
-import { Badge, Box, Button, Card, Container, Flex, Heading, Table, Text } from "@radix-ui/themes";
+import { Badge, Box, Button, Card, Container, Flex, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
 import type { AppConfig, DocumentData, PaymentMethodKey, PaymentMethodEntry } from "@/lib/types";
 import { workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
@@ -276,73 +276,75 @@ export default async function DocumentPreview({
                 )}
             </Flex>
 
-            <Card size="3" className="doc-card print-document" style={{ background: "white", color: "#111827", border: "1px solid #d1d5db" }}>
+            <Card size="2" className="doc-card print-document">
                 <div className="receipt-content">
-                    <Flex justify="between" align="start" mb="6" className="doc-header">
-                        <Box>
-                            <Heading size="8" style={{ color: "#111827", marginBottom: 4 }}>MAROTTO</Heading>
-                            <Text size="3" weight="bold" style={{ color: "#374151", letterSpacing: "2px" }}>SOLUTIONS</Text>
-                            <Box mt="4">
-                                <Text as="div" size="2" style={{ color: "#1f2937" }}>28 E Mountain Ridge MHP</Text>
-                                <Text as="div" size="2" style={{ color: "#1f2937" }}>Wilkes Barre, PA 18702</Text>
-                                <Text as="div" size="2" style={{ color: "#1f2937" }}>(570) 332-9262</Text>
-                            </Box>
+                    <div className="doc-header">
+                        <Box className="doc-brand">
+                            <p className="doc-brand-name">MAROTTO</p>
+                            <div className="doc-brand-sub">SOLUTIONS</div>
+                            <div className="doc-brand-address">
+                                <div>28 E Mountain Ridge MHP</div>
+                                <div>Wilkes Barre, PA 18702</div>
+                                <div>(570) 332-9262</div>
+                            </div>
                         </Box>
-                        <Box className="doc-meta" style={{ textAlign: "right" }}>
-                            <Heading size="8" style={{ color: "#4b5563", textTransform: "uppercase" }}>{docTitle}</Heading>
-                            <Flex direction="column" mt="2">
-                                <Text size="2" weight="bold" style={{ color: "#4b5563" }}>{docTitle.toUpperCase()} #</Text>
-                                <Text size="4" weight="bold" style={{ color: "#111827" }}>{getDisplayName(doc)}</Text>
-                            </Flex>
-                            <Flex direction="column" mt="2">
-                                <Text size="2" weight="bold" style={{ color: "#4b5563" }}>DATE</Text>
-                                <Text size="3" style={{ color: "#111827" }}>{new Date(doc.date).toLocaleDateString()}</Text>
-                            </Flex>
+                        <Box className="doc-meta">
+                            <p className="doc-type">{docTitle}</p>
+                            <div className="doc-meta-row">
+                                <div className="doc-meta-label">{docTitle} #</div>
+                                <div className="doc-meta-value">{getDisplayName(doc)}</div>
+                            </div>
+                            <div className="doc-meta-row">
+                                <div className="doc-meta-label">Date</div>
+                                <div className="doc-meta-value">{new Date(doc.date).toLocaleDateString()}</div>
+                            </div>
                             {doc.dueDate ? (
-                                <Flex direction="column" mt="2">
-                                    <Text size="2" weight="bold" style={{ color: "#4b5563" }}>DUE DATE</Text>
-                                    <Text size="3" style={{ color: "#111827" }}>{new Date(doc.dueDate).toLocaleDateString()}</Text>
-                                </Flex>
+                                <div className="doc-meta-row">
+                                    <div className="doc-meta-label">Due date</div>
+                                    <div className="doc-meta-value">{new Date(doc.dueDate).toLocaleDateString()}</div>
+                                </div>
                             ) : null}
                         </Box>
-                    </Flex>
+                    </div>
 
-                    <Box mb="6" style={{ borderTop: "2px solid #d1d5db", paddingTop: "20px" }}>
-                        <Text size="2" weight="bold" style={{ color: "#4b5563", textTransform: "uppercase" }}>{billToLabel}</Text>
-                        <Heading size="4" mt="1" style={{ color: "#111827" }}>{doc.customer.name}</Heading>
-                        <Text as="div" size="2" style={{ whiteSpace: "pre-line", color: "#1f2937" }}>{doc.customer.address}</Text>
-                        {doc.customer.email ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.email}</Text> : null}
-                        {doc.customer.phone ? <Text as="div" size="2" style={{ color: "#1f2937" }}>{doc.customer.phone}</Text> : null}
+                    <Box className="doc-parties">
+                        <div className="doc-section-label">{billToLabel}</div>
+                        <div className="doc-party-name">{doc.customer.name}</div>
+                        {doc.customer.address ? (
+                            <div className="doc-party-detail">{doc.customer.address}</div>
+                        ) : null}
+                        {doc.customer.email ? <div className="doc-party-detail">{doc.customer.email}</div> : null}
+                        {doc.customer.phone ? <div className="doc-party-detail">{doc.customer.phone}</div> : null}
                         {doc.customer.leadId && doc.type !== "lead" ? (
-                            <Text as="div" size="1" color="gray" mt="2">Linked client record: {doc.customer.leadId}</Text>
+                            <div className="doc-party-meta">Linked client record: {doc.customer.leadId}</div>
                         ) : null}
                         {doc.type === "lead" ? (
-                            <Text as="div" size="1" color="gray" mt="1">
+                            <div className="doc-party-meta">
                                 Client stage: {doc.customer.clientStage === "potential_client" ? "Potential Client" : "Lead"}
-                            </Text>
+                            </div>
                         ) : null}
                         {jobId ? (
-                            <Text as="div" size="1" color="gray" mt="1">
+                            <div className="doc-party-meta">
                                 Linked job:{" "}
                                 {publicMode ? (
                                     linkedJob?.name || jobId
                                 ) : (
-                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "#4f46e5" }}>
+                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "#1e3a5f" }}>
                                         {linkedJob?.name || jobId}
                                     </Link>
                                 )}
-                            </Text>
+                            </div>
                         ) : null}
                     </Box>
 
                     <Box className="doc-table-wrap">
-                        <Table.Root variant="surface" style={{ width: "100%", marginBottom: "30px", minWidth: 560 }}>
+                        <Table.Root variant="ghost" className="doc-table">
                             <Table.Header>
-                                <Table.Row style={{ background: "#f3f4f6" }}>
-                                    <Table.ColumnHeaderCell style={{ color: "#1f2937" }}>Description</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Qty</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Unit</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right" style={{ color: "#1f2937" }}>Amount</Table.ColumnHeaderCell>
+                                <Table.Row>
+                                    <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right">Qty</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right">Unit</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell align="right">Amount</Table.ColumnHeaderCell>
                                 </Table.Row>
                             </Table.Header>
                             <Table.Body>
@@ -350,7 +352,7 @@ export default async function DocumentPreview({
                                     <Table.Row key={item.id}>
                                         <Table.Cell>
                                             <Flex align="center" gap="2" wrap="wrap">
-                                                <Text weight="bold" style={{ color: "#111827" }}>{item.description}</Text>
+                                                <span className="doc-line-title">{item.description}</span>
                                                 {item.discountPercent ? (
                                                     <Badge color="green" size="1">{item.discountPercent}% off</Badge>
                                                 ) : null}
@@ -359,23 +361,23 @@ export default async function DocumentPreview({
                                                 ) : null}
                                             </Flex>
                                             {item.details ? (
-                                                <Box mt="2" style={{ color: "#374151", lineHeight: 1.5, fontSize: 14 }}>
+                                                <Box className="doc-line-details">
                                                     <MarkdownContent>{item.details}</MarkdownContent>
                                                 </Box>
                                             ) : null}
                                         </Table.Cell>
-                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity ?? 0}</Text></Table.Cell>
-                                        <Table.Cell align="right"><Text style={{ color: "#111827" }}>${(Number(item.unitPrice) || 0).toFixed(2)}</Text></Table.Cell>
+                                        <Table.Cell align="right">{item.quantity ?? 0}</Table.Cell>
+                                        <Table.Cell align="right">${(Number(item.unitPrice) || 0).toFixed(2)}</Table.Cell>
                                         <Table.Cell align="right">
                                             {item.discountPercent ? (
                                                 <Box>
                                                     <Text as="div" size="1" style={{ color: "#9ca3af", textDecoration: "line-through" }}>
                                                         ${((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}
                                                     </Text>
-                                                    <Text as="div" weight="bold" style={{ color: "#111827" }}>${(Number(item.total) || 0).toFixed(2)}</Text>
+                                                    <span className="doc-line-title">${(Number(item.total) || 0).toFixed(2)}</span>
                                                 </Box>
                                             ) : (
-                                                <Text style={{ color: "#111827" }}>${(Number(item.total) || 0).toFixed(2)}</Text>
+                                                <>${(Number(item.total) || 0).toFixed(2)}</>
                                             )}
                                         </Table.Cell>
                                     </Table.Row>
@@ -385,38 +387,19 @@ export default async function DocumentPreview({
                     </Box>
 
                     {doc.notes ? (
-                        <Box
-                            mb="6"
-                            style={{
-                                padding: "18px 20px",
-                                border: "1px solid #d1d5db",
-                                borderRadius: 12,
-                                background: "#f9fafb",
-                            }}
-                        >
-                            <Text size="2" weight="bold" style={{ color: "#374151", textTransform: "uppercase" }}>
+                        <Box className="doc-section">
+                            <div className="doc-section-label">
                                 {doc.type === "estimate" ? "Project Details" : doc.type === "quote" ? "Scope & terms" : "Notes"}
-                            </Text>
-                            <Box mt="2" style={{ color: "#111827", lineHeight: 1.6 }}>
+                            </div>
+                            <Box className="doc-section-body">
                                 <MarkdownContent>{doc.notes}</MarkdownContent>
                             </Box>
                         </Box>
                     ) : null}
 
                     {doc.type === "invoice" && (activePaymentMethods.length > 0 || config.billing?.paymentInstructions || config.billing?.checkPayableTo) ? (
-                        <Box
-                            mb="4"
-                            className="payment-options"
-                            style={{
-                                padding: "12px 16px",
-                                border: "1px solid #d1d5db",
-                                borderRadius: 8,
-                                background: "#ffffff",
-                            }}
-                        >
-                            <Text size="2" weight="bold" style={{ color: "#374151", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                                Payment Options
-                            </Text>
+                        <Box className="doc-section payment-options">
+                            <div className="doc-section-label">Payment Options</div>
                             {activePaymentMethods.length > 0 ? (
                                 <>
                                     <Box
@@ -452,7 +435,7 @@ export default async function DocumentPreview({
                                                                         alignItems: "center",
                                                                         justifyContent: "center",
                                                                         background: "#eef2ff",
-                                                                        color: "#3730a3",
+                                                                        color: "#1e3a5f",
                                                                         flexShrink: 0,
                                                                     }}
                                                                 >
@@ -496,7 +479,7 @@ export default async function DocumentPreview({
                                             );
                                         })}
                                     </Box>
-                                    <Box className="print-only payment-options-print" mt="2">
+                                    <Box className="print-only payment-options-print" mt="1">
                                         {activePaymentMethods
                                             .filter(([, method]) => !method.comingSoon)
                                             .map(([key, method]) => {
@@ -507,16 +490,10 @@ export default async function DocumentPreview({
                                                 }
                                                 if (method.note) detailParts.push(method.note.replace(/\s+/g, " ").trim());
                                                 return (
-                                                    <Text
-                                                        as="div"
-                                                        key={key}
-                                                        size="2"
-                                                        className="payment-options-print-row"
-                                                        style={{ color: "#111827", lineHeight: 1.4 }}
-                                                    >
-                                                        <Text weight="bold" style={{ color: "#111827" }}>{method.label}</Text>
+                                                    <div key={key} className="payment-options-print-row doc-section-note">
+                                                        <strong>{method.label}</strong>
                                                         {detailParts.length > 0 ? ` — ${detailParts.join(" · ")}` : null}
-                                                    </Text>
+                                                    </div>
                                                 );
                                             })}
                                     </Box>
@@ -524,28 +501,18 @@ export default async function DocumentPreview({
                             ) : null}
                             {config.billing?.paymentInstructions ? (
                                 <Box mt="2">
-                                    <Text size="2" weight="bold" style={{ color: "#374151" }}>
-                                        Payment Instructions
-                                    </Text>
-                                    <Text as="div" size="2" mt="1" style={{ color: "#111827", whiteSpace: "pre-line", lineHeight: 1.45 }}>
+                                    <div className="doc-meta-label">Payment Instructions</div>
+                                    <div className="doc-section-note" style={{ whiteSpace: "pre-line", marginTop: 2 }}>
                                         {config.billing.paymentInstructions}
-                                    </Text>
+                                    </div>
                                 </Box>
                             ) : null}
                         </Box>
                     ) : null}
 
                     {doc.type === "estimate" || doc.type === "quote" ? (
-                        <Box
-                            mb="4"
-                            style={{
-                                padding: "12px 16px",
-                                border: "1px solid #d1d5db",
-                                borderRadius: 8,
-                                background: "#fffbeb",
-                            }}
-                        >
-                            <Text size="2" style={{ color: "#78350f", lineHeight: 1.5 }}>
+                        <Box className="doc-section">
+                            <div className="doc-section-note">
                                 {doc.type === "estimate"
                                     ? "Flexible estimate: figures are indicative and may change with final scope, materials, or site conditions."
                                     : "Firm quote: the total below is the agreed price for the work described in this document unless you attach a written change order."}
@@ -555,163 +522,102 @@ export default async function DocumentPreview({
                                         Lines marked pending approval are not part of the agreed firm price until you approve them in writing.
                                     </>
                                 ) : null}
-                            </Text>
+                            </div>
                         </Box>
                     ) : null}
 
                     {doc.warranty?.enabled && doc.warranty.text ? (
-                        <Box
-                            mb="4"
-                            style={{
-                                padding: "12px 16px",
-                                border: "1px solid #bfdbfe",
-                                borderRadius: 8,
-                                background: "#eff6ff",
-                            }}
-                        >
-                            <Text size="2" weight="bold" style={{ color: "#1e3a8a", textTransform: "uppercase", letterSpacing: "0.03em" }}>
-                                {doc.warranty.title || "Warranty"}
-                            </Text>
-                            <Box mt="1" style={{ color: "#1f2937", lineHeight: 1.5, fontSize: 14 }}>
+                        <Box className="doc-section">
+                            <div className="doc-section-label">{doc.warranty.title || "Warranty"}</div>
+                            <Box className="doc-section-body">
                                 <MarkdownContent>{doc.warranty.text}</MarkdownContent>
                             </Box>
                         </Box>
                     ) : null}
 
-                    <Flex justify="between" align="end" className="doc-summary">
+                    <div className="doc-summary">
                         <Box className="doc-status">
-                            <Text
-                                size="5"
-                                weight="bold"
-                                style={{
-                                    color: getStatusColor(doc.status),
-                                    transform: "rotate(-10deg)",
-                                    display: "block",
-                                    border: `3px solid ${getStatusColor(doc.status)}`,
-                                    padding: "10px 20px",
-                                    borderRadius: 8,
-                                    letterSpacing: "0.08em",
-                                }}
-                            >
+                            <span className="doc-status-mark" style={{ color: getStatusColor(doc.status) }}>
                                 {doc.status.toUpperCase()}
-                            </Text>
-                            {(doc.type === 'estimate' || doc.type === 'quote') && doc.workflowStatus ? (
+                            </span>
+                            {(doc.type === "estimate" || doc.type === "quote") && doc.workflowStatus ? (
                                 <Badge
                                     mt="2"
-                                    size="2"
-                                    color={workflowStatusColor(doc.workflowStatus) as 'gray' | 'orange' | 'blue' | 'green'}
+                                    size="1"
+                                    color={workflowStatusColor(doc.workflowStatus) as "gray" | "orange" | "blue" | "green"}
                                 >
                                     {workflowStatusLabel(doc.workflowStatus)}
                                 </Badge>
                             ) : null}
                         </Box>
 
-                        <Box className="doc-totals" style={{ width: showSplitTotals ? "min(100%, 320px)" : "240px" }}>
+                        <Box className={showSplitTotals ? "doc-totals doc-totals-wide" : "doc-totals"}>
                             {hasDiscounts ? (
                                 <>
-                                    <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Subtotal (before discounts)</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${grossSubtotal.toFixed(2)}</Text>
-                                    </Flex>
-                                    <Flex justify="between" py="2">
-                                        <Text size="2" weight="bold" style={{ color: "#15803d" }}>Discount savings</Text>
-                                        <Text size="2" weight="bold" style={{ color: "#15803d" }}>−${discountSavings.toFixed(2)}</Text>
-                                    </Flex>
+                                    <div className="doc-total-row">
+                                        <span>Subtotal (before discounts)</span>
+                                        <span>${grossSubtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="doc-total-row">
+                                        <span style={{ color: "#15803d", fontWeight: 600 }}>Discount savings</span>
+                                        <span style={{ color: "#15803d", fontWeight: 600 }}>−${discountSavings.toFixed(2)}</span>
+                                    </div>
                                 </>
                             ) : null}
                             {doc.type === "invoice" ? (
                                 <>
-                                    <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
-                                    </Flex>
-                                    <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Paid</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${paidAmount.toFixed(2)}</Text>
-                                    </Flex>
+                                    <div className="doc-total-row">
+                                        <span>Subtotal</span>
+                                        <span>${doc.subtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="doc-total-row">
+                                        <span>Paid</span>
+                                        <span>${paidAmount.toFixed(2)}</span>
+                                    </div>
                                 </>
                             ) : null}
                             {showSplitTotals ? (
                                 <>
-                                    <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Agreed scope subtotal</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${agreedSubtotal.toFixed(2)}</Text>
-                                    </Flex>
-                                    <Flex justify="between" py="2">
-                                        <Text size="2" style={{ color: "#4b5563" }}>Additional scope (pending approval)</Text>
-                                        <Text size="2" style={{ color: "#111827" }}>${pendingSubtotal.toFixed(2)}</Text>
-                                    </Flex>
+                                    <div className="doc-total-row">
+                                        <span>Agreed scope subtotal</span>
+                                        <span>${agreedSubtotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="doc-total-row">
+                                        <span>Additional scope (pending approval)</span>
+                                        <span>${pendingSubtotal.toFixed(2)}</span>
+                                    </div>
                                 </>
                             ) : doc.type !== "invoice" ? (
-                                <Flex justify="between" py="2">
-                                    <Text size="2" style={{ color: "#4b5563" }}>Subtotal</Text>
-                                    <Text size="2" style={{ color: "#111827" }}>${doc.subtotal.toFixed(2)}</Text>
-                                </Flex>
+                                <div className="doc-total-row">
+                                    <span>Subtotal</span>
+                                    <span>${doc.subtotal.toFixed(2)}</span>
+                                </div>
                             ) : null}
-                            <Flex justify="between" py="2" style={{ borderTop: "2px solid #111827" }}>
-                                <Text size="4" weight="bold" style={{ color: "#111827" }}>
+                            <div className="doc-total-due">
+                                <span>
                                     {showInvoiceAmountDue ? "Amount Due" : showSplitTotals ? "Total if all approved" : "Total"}
-                                </Text>
-                                <Text
-                                    size="6"
-                                    weight="bold"
-                                    style={{ color: showInvoiceAmountDue && invoiceAmountDue > 0 ? "#b91c1c" : getStatusColor(doc.status) }}
+                                </span>
+                                <span
+                                    className={`doc-total-due-amount${showInvoiceAmountDue && invoiceAmountDue > 0 ? " is-outstanding" : ""}`}
+                                    style={
+                                        !(showInvoiceAmountDue && invoiceAmountDue > 0)
+                                            ? { color: getStatusColor(doc.status) }
+                                            : undefined
+                                    }
                                 >
                                     ${invoiceAmountDue.toFixed(2)}
-                                </Text>
-                            </Flex>
+                                </span>
+                            </div>
                             {showInvoiceAmountDue && paidAmount > 0 ? (
-                                <Flex justify="between" pt="2">
-                                    <Text size="1" style={{ color: "#6b7280" }}>Original Invoice Total</Text>
-                                    <Text size="1" style={{ color: "#6b7280" }}>${doc.total.toFixed(2)}</Text>
-                                </Flex>
+                                <div className="doc-total-footnote">
+                                    <span>Original Invoice Total</span>
+                                    <span>${doc.total.toFixed(2)}</span>
+                                </div>
                             ) : null}
                         </Box>
-                    </Flex>
+                    </div>
                 </div>
             </Card>
-
-            <style>{`
-              .doc-card {
-                padding: 40px;
-              }
-              .doc-table-wrap {
-                overflow-x: auto;
-              }
-              /* screen-only so print keeps the desktop header (meta top-right) */
-              @media screen and (max-width: 768px) {
-                .doc-card {
-                  padding: 18px;
-                }
-                .doc-toolbar {
-                  align-items: stretch;
-                }
-                .doc-toolbar-actions {
-                  width: 100%;
-                }
-                .doc-toolbar-actions > * {
-                  flex: 1 1 calc(50% - 8px);
-                }
-                .doc-header {
-                  flex-direction: column;
-                  gap: 14px;
-                }
-                .doc-meta {
-                  text-align: left !important;
-                }
-                .doc-summary {
-                  flex-direction: column;
-                  align-items: stretch;
-                  gap: 16px;
-                }
-                .doc-status {
-                  align-self: flex-start;
-                }
-                .doc-totals {
-                  width: 100% !important;
-                }
-              }
-            `}</style>
         </Container>
     );
 }
