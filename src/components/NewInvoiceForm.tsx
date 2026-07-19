@@ -536,6 +536,26 @@ export default function NewDocumentForm({
                                         <input type="hidden" name="workflowStatus" value={workflowStatus || ''} />
                                     </Box>
                                 ) : null}
+                                {(type === 'estimate' || type === 'quote') ? (
+                                    <Box>
+                                        <Text as="label" size="2">Estimated hours</Text>
+                                        <TextField.Root
+                                            name="estimatedHours"
+                                            type="number"
+                                            min="0"
+                                            step="0.25"
+                                            placeholder="e.g. 8"
+                                            defaultValue={
+                                                typeof initialData?.estimatedHours === 'number'
+                                                    ? String(initialData.estimatedHours)
+                                                    : ''
+                                            }
+                                        />
+                                        <Text as="div" size="1" color="gray" mt="1">
+                                            Labor time to complete. Rolls up on the linked job.
+                                        </Text>
+                                    </Box>
+                                ) : null}
                             </Flex>
                         </Card>
                         <Card>

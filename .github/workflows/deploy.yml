@@ -84,8 +84,10 @@ jobs:
       - name: Run tests
         run: npm test
 
-      # Apply pending migrations from the runner (npm ci + host Postgres port),
-      # not inside the web image — the standalone container has no Prisma CLI.
+      # Apply all pending migrations from prisma/migrations/ on the runner
+      # (npm ci + host Postgres port), not inside the web image — the standalone
+      # container has no Prisma CLI. New tables/columns (e.g. JobTimeLog) ship
+      # automatically on merge to main; no manual migrate on prod.
       - name: Run Prisma migrations
         env:
           DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
@@ -101,7 +103,7 @@ jobs:
           # Clear a failed duplicate "init" migration if a previous deploy left the DB in P3018 state.
           npx prisma migrate resolve --rolled-back 20260509180000_init || true
           npx prisma migrate deploy
-          echo "Prisma migrations applied."
+          echo "Prisma migrations applied (including any newly added migrations in this deploy)."
 
       - name: Build and start application
         run: docker compose up -d --build --remove-orphans

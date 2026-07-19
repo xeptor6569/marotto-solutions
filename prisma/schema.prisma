@@ -84,10 +84,11 @@ model Job {
   clientId    String?
   leadId      String?
   client      Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
-   attachments JobAttachment[]
-   contracts   Contract[]
-   events      CalendarEvent[]
-   createdAt   DateTime        @default(now())
+  attachments JobAttachment[]
+  timeLogs    JobTimeLog[]
+  contracts   Contract[]
+  events      CalendarEvent[]
+  createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   @@index([clientId])
@@ -108,6 +109,21 @@ model JobAttachment {
 
   @@index([jobId])
   @@index([uploadedAt])
+}
+
+/** Manual time entries logged against a job (hours worked). */
+model JobTimeLog {
+  id        String   @id @default(uuid())
+  jobId     String
+  hours     Float
+  note      String?
+  /** When the work was performed (date or datetime). */
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([loggedAt])
 }
 
 // Recurring service contract (e.g. on-call IT, monthly retainer).

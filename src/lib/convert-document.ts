@@ -93,6 +93,14 @@ export function buildConvertedDocument(
         updatedAt: now,
     };
 
+    // Preserve estimate hours on estimate → quote; omit on invoices.
+    if (targetType === 'quote' && typeof source.estimatedHours === 'number') {
+        doc.estimatedHours = source.estimatedHours;
+    }
+    if (targetType === 'quote' && source.workflowStatus) {
+        doc.workflowStatus = source.workflowStatus;
+    }
+
     if (targetType === 'quote' && documentHasOptions(source)) {
         if (source.packages?.length) {
             doc.packages = source.packages.map((pkg) => ({

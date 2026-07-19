@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createJobAction } from '@/app/actions';
 import { createJobAttachment, deleteJobAttachment } from '@/lib/job-attachments';
+import { createJobTimeLog, deleteJobTimeLog } from '@/lib/job-time-logs';
 import { requireAdminAction, requireAdminActionOrRedirect } from '@/lib/require-admin-session';
 
 export async function createJobFromFormAction(formData: FormData) {
@@ -64,4 +65,74 @@ export async function deleteJobAttachmentAction(formData: FormData) {
     revalidatePath('/admin/jobs');
     revalidatePath(`/admin/jobs/${jobId}`);
     return { success: true };
+}
+
+export async function createJobTimeLogAction(input: {
+    jobId: string;
+    hours: number;
+    note?: string;
+    loggedAt?: string;
+}): Promise<{ success: true } | { success: false; error: string }> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
+    const jobId = input.jobId?.trim();
+    if (!jobId) {
+        return { success: false, error: 'Job is required.' };
+    }
+    if (!Number.isFinite(input.hours) || input.hours <= 0) {
+        return { success: false, error: 'Enter hours greater than zero.' };
+    }
+
+    let loggedAt: Date | undefined;
+    if (input.loggedAt?.trim()) {
+        const parsed = new Date(`${input.loggedAt.trim()}T12:00:00`);
+        if (Number.isNaN(parsed.getTime())) {
+            return { success: false, error: 'Enter a valid date.' };
+        }
+        loggedAt = parsed;
+    }
+
+    try {
+        await createJobTimeLog({
+            jobId,
+            hours: input.hours,
+            note: input.note,
+            loggedAt,
+        });
+        revalidatePath('/admin/jobs');
+        revalidatePath(`/admin/jobs/${jobId}`);
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to log time',
+        };
+    }
+}
+
+export async function deleteJobTimeLogAction(input: {
+    jobId: string;
+    timeLogId: string;
+}): Promise<{ success: true } | { success: false; error: string }> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
+    const jobId = input.jobId?.trim();
+    const timeLogId = input.timeLogId?.trim();
+    if (!jobId || !timeLogId) {
+        return { success: false, error: 'Missing time log reference.' };
+    }
+
+    try {
+        await deleteJobTimeLog(timeLogId);
+        revalidatePath('/admin/jobs');
+        revalidatePath(`/admin/jobs/${jobId}`);
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to delete time log',
+        };
+    }
 }

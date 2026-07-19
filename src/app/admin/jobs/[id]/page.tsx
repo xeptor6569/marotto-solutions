@@ -4,18 +4,22 @@ import { notFound } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
 import JobAttachmentsPanel from '@/components/JobAttachmentsPanel';
+import JobTimePanel from '@/components/JobTimePanel';
 import CreateMenu from '@/components/CreateMenu';
 import DeleteDocumentButton from '@/components/DeleteDocumentButton';
 import { getDocumentsByJobId, getJobById } from '@/lib/jobs';
 import { listJobAttachments } from '@/lib/job-attachments';
+import { listJobTimeLogs } from '@/lib/job-time-logs';
+import { aggregateJobEstimatedHours, formatHours } from '@/lib/job-estimated-hours';
 import { getClientOptions } from '@/lib/clients';
 
 export default async function AdminJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const [job, groupedDocs, attachments, clients] = await Promise.all([
+    const [job, groupedDocs, attachments, timeLogs, clients] = await Promise.all([
         getJobById(id),
         getDocumentsByJobId(id),
         listJobAttachments(id),
+        listJobTimeLogs(id),
         getClientOptions(),
     ]);
     if (!job) {
@@ -24,6 +28,7 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
 
     const client = job.clientId ? clients.find((c) => c.id === job.clientId) : undefined;
     const jobRedirect = `/admin/jobs/${job.id}`;
+    const estimated = aggregateJobEstimatedHours(groupedDocs.estimates, groupedDocs.quotes);
 
     const docSections = [
         { key: 'estimates', title: 'Estimates', docs: groupedDocs.estimates, hrefBase: '/admin/estimates', label: 'Estimate' },
@@ -72,6 +77,12 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                     </Flex>
                 </Card>
 
+                <JobTimePanel
+                    jobId={job.id}
+                    estimated={estimated}
+                    timeLogs={timeLogs}
+                />
+
                 <JobAttachmentsPanel jobId={job.id} attachments={attachments} />
 
                 <Card>
@@ -110,6 +121,11 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                                                         </Text>
                                                         <Text as="div" size="1" color="gray">
                                                             {doc.customer.name} · {new Date(doc.date).toLocaleDateString()} · ${doc.total.toFixed(2)}
+                                                            {(doc.type === 'estimate' || doc.type === 'quote')
+                                                                && typeof doc.estimatedHours === 'number'
+                                                                && doc.estimatedHours > 0
+                                                                ? ` · ${formatHours(doc.estimatedHours)}`
+                                                                : ''}
                                                         </Text>
                                                         <Badge mt="2" size="1" variant="soft">{doc.status}</Badge>
                                                     </Box>
