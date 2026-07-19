@@ -4,38 +4,69 @@ import Link from 'next/link';
 import { Button, DropdownMenu } from '@radix-ui/themes';
 import { ChevronDown, CirclePlus } from 'lucide-react';
 
-export default function CreateMenu({ size = '2' }: { size?: '1' | '2' | '3' | '4' }) {
+function withQuery(
+    href: string,
+    params: { jobId?: string; clientId?: string; redirectTo?: string },
+) {
+    const q = new URLSearchParams();
+    if (params.jobId) q.set('jobId', params.jobId);
+    if (params.clientId) q.set('clientId', params.clientId);
+    if (params.redirectTo) q.set('redirectTo', params.redirectTo);
+    const qs = q.toString();
+    return qs ? `${href}?${qs}` : href;
+}
+
+export default function CreateMenu({
+    size = '2',
+    jobId,
+    clientId,
+    redirectTo,
+    documentsOnly = false,
+}: {
+    size?: '1' | '2' | '3' | '4';
+    jobId?: string;
+    clientId?: string;
+    redirectTo?: string;
+    /** When true, only show document/contract create links (for job hub). */
+    documentsOnly?: boolean;
+}) {
+    const seed = { jobId, clientId, redirectTo };
+
     return (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-                <Button variant="solid" size={size}>
+                <Button variant="solid" size={size} style={{ minHeight: 44 }}>
                     <CirclePlus size={14} aria-hidden />
-                    Create
+                    {documentsOnly ? 'Create document' : 'Create'}
                     <ChevronDown size={14} aria-hidden />
                 </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
+                {!documentsOnly ? (
+                    <>
+                        <DropdownMenu.Item asChild>
+                            <Link href="/admin/clients/create">Client</Link>
+                        </DropdownMenu.Item>
+                        <DropdownMenu.Separator />
+                        <DropdownMenu.Item asChild>
+                            <Link href="/admin/jobs/create">Job</Link>
+                        </DropdownMenu.Item>
+                    </>
+                ) : null}
                 <DropdownMenu.Item asChild>
-                    <Link href="/admin/clients/create">Client</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/jobs/create">Job</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/estimates/new">Estimate</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/quotes/new">Quote</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/invoices/new">Invoice</Link>
+                    <Link href={withQuery('/admin/estimates/new', seed)}>Estimate</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
-                    <Link href="/admin/receipts/new">Receipt</Link>
+                    <Link href={withQuery('/admin/quotes/new', seed)}>Quote</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
-                    <Link href="/admin/contracts/create">Contract</Link>
+                    <Link href={withQuery('/admin/invoices/new', seed)}>Invoice</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
+                    <Link href={withQuery('/admin/receipts/new', seed)}>Receipt</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
+                    <Link href={withQuery('/admin/contracts/create', seed)}>Contract</Link>
                 </DropdownMenu.Item>
             </DropdownMenu.Content>
         </DropdownMenu.Root>

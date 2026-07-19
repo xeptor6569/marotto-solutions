@@ -629,6 +629,54 @@ export async function deleteLeadAction(input: { id: string }): Promise<{ success
     }
 }
 
+const DELETABLE_DOC_TYPES: DocumentType[] = ['invoice', 'estimate', 'quote', 'receipt'];
+
+export async function deleteAdminDocumentAction(input: {
+    id: string;
+    redirectTo?: string;
+}): Promise<{ success: boolean; error?: string }> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
+    const id = input.id?.trim();
+    if (!id) {
+        return { success: false, error: 'Document id is required' };
+    }
+
+    let redirectTo: string | undefined;
+    try {
+        const existing = await getDocumentById(id);
+        if (!existing || !DELETABLE_DOC_TYPES.includes(existing.type)) {
+            return { success: false, error: 'Document not found' };
+        }
+
+        await deleteDocument(existing.type, id);
+
+        const listPath = `/admin/${existing.type}s`;
+        revalidatePath('/admin');
+        revalidatePath(listPath);
+        const jobId = existing.jobId || existing.customer?.jobId;
+        if (jobId) {
+            revalidatePath('/admin/jobs');
+            revalidatePath(`/admin/jobs/${jobId}`);
+        }
+
+        const requested = input.redirectTo?.trim();
+        if (requested && requested.startsWith('/admin') && !requested.startsWith('//')) {
+            redirectTo = requested;
+        }
+    } catch (error) {
+        console.error('Failed to delete document', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: `Failed to delete document: ${message}` };
+    }
+
+    if (redirectTo) {
+        redirect(redirectTo);
+    }
+    return { success: true };
+}
+
 export async function submitQuoteRequest(formData: FormData) {
     const name = ((formData.get('name') as string) || '').trim();
     const email = ((formData.get('email') as string) || '').trim();

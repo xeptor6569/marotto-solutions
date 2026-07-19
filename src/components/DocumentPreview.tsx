@@ -23,12 +23,15 @@ import {
 } from "@/lib/pending-client-approval";
 import { auth } from "@/lib/auth";
 import { buildSharePath } from "@/lib/share-token";
+import { getJobById } from "@/lib/jobs";
 import PrintButton from "@/components/PrintButton";
 import ShareButton from "@/components/ShareButton";
 import EmailDocumentButton from "@/components/EmailDocumentButton";
 import CreateDepositInvoiceButton from "@/components/CreateDepositInvoiceButton";
 import ConvertDocumentButton from "@/components/ConvertDocumentButton";
 import BackButton from "@/components/BackButton";
+import DocumentPreviewActions from "@/components/DocumentPreviewActions";
+import MarkdownContent from "@/components/MarkdownContent";
 import { depositBillingBase } from "@/lib/deposit-invoice";
 import { convertTargets } from "@/lib/convert-document";
 
@@ -211,47 +214,66 @@ export default async function DocumentPreview({
     const showDepositInvoice = !publicMode && (doc.type === "quote" || doc.type === "estimate");
     const depositBase = showDepositInvoice ? depositBillingBase(doc) : 0;
     const showConvert = !publicMode && convertTargets(doc.type).length > 0;
+    const jobId = doc.jobId || doc.customer?.jobId;
+    const linkedJob = jobId && !publicMode ? await getJobById(jobId) : null;
+    const canDelete = !publicMode && (doc.type === "invoice" || doc.type === "estimate" || doc.type === "quote" || doc.type === "receipt");
+    const resolvedBackHref = backHref || (jobId ? `/admin/jobs/${jobId}` : "/admin");
+    const deleteRedirectTo = jobId ? `/admin/jobs/${jobId}` : `/admin/${doc.type}s`;
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
             <Flex justify="between" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
-                {!publicMode && showBackButton ? <BackButton href={backHref} /> : <Box />}
-                <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
-                    {!publicMode && editHref ? (
-                        <Button asChild variant="soft">
-                            <Link href={editHref}>Edit {docTitle}</Link>
-                        </Button>
-                    ) : null}
-                    {showDepositInvoice ? (
-                        <CreateDepositInvoiceButton
-                            sourceDocumentId={doc.id}
-                            billingBase={depositBase}
-                            sourceLabel={docTitle}
-                        />
-                    ) : null}
-                    {showConvert ? (
-                        <ConvertDocumentButton
-                            sourceDocumentId={doc.id}
-                            sourceType={doc.type}
-                            hasPendingApproval={pendingLines}
-                        />
-                    ) : null}
-                    {!publicMode ? (
-                        <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
-                    ) : null}
-                    {!publicMode && doc.type !== "lead" ? (
-                        <EmailDocumentButton
-                            documentId={doc.id}
-                            sharePath={sharePath}
-                            docTitle={docTitle}
-                            defaultTo={doc.customer.email}
-                            canSendViaServer={!!session}
-                            serverEmailConfigured={!!process.env.EMAIL_SERVER}
-                            pendingApprovalSummary={pendingApprovalSummary}
-                        />
-                    ) : null}
-                    <PrintButton label={docTitle} fileName={`${docTitle} ${doc.id}`} />
-                </Flex>
+                {!publicMode && showBackButton ? <BackButton href={resolvedBackHref} /> : <Box />}
+                {!publicMode ? (
+                    <DocumentPreviewActions
+                        editHref={editHref}
+                        docTitle={docTitle}
+                        documentId={doc.id}
+                        deleteRedirectTo={deleteRedirectTo}
+                        canDelete={canDelete}
+                        primaryEmail={
+                            doc.type !== "lead" ? (
+                                <EmailDocumentButton
+                                    documentId={doc.id}
+                                    sharePath={sharePath}
+                                    docTitle={docTitle}
+                                    defaultTo={doc.customer.email}
+                                    canSendViaServer={!!session}
+                                    serverEmailConfigured={!!process.env.EMAIL_SERVER}
+                                    pendingApprovalSummary={pendingApprovalSummary}
+                                />
+                            ) : null
+                        }
+                        primaryShare={
+                            <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                        }
+                        overflowDeposit={
+                            showDepositInvoice ? (
+                                <CreateDepositInvoiceButton
+                                    sourceDocumentId={doc.id}
+                                    billingBase={depositBase}
+                                    sourceLabel={docTitle}
+                                />
+                            ) : undefined
+                        }
+                        overflowConvert={
+                            showConvert ? (
+                                <ConvertDocumentButton
+                                    sourceDocumentId={doc.id}
+                                    sourceType={doc.type}
+                                    hasPendingApproval={pendingLines}
+                                />
+                            ) : undefined
+                        }
+                        overflowPrint={
+                            <PrintButton label={docTitle} fileName={`${docTitle} ${doc.id}`} />
+                        }
+                    />
+                ) : (
+                    <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
+                        <PrintButton label={docTitle} fileName={`${docTitle} ${doc.id}`} />
+                    </Flex>
+                )}
             </Flex>
 
             <Card size="3" className="doc-card print-document" style={{ background: "white", color: "#111827", border: "1px solid #d1d5db" }}>
@@ -299,8 +321,17 @@ export default async function DocumentPreview({
                                 Client stage: {doc.customer.clientStage === "potential_client" ? "Potential Client" : "Lead"}
                             </Text>
                         ) : null}
-                        {doc.jobId ? (
-                            <Text as="div" size="1" color="gray" mt="1">Linked job: {doc.jobId}</Text>
+                        {jobId ? (
+                            <Text as="div" size="1" color="gray" mt="1">
+                                Linked job:{" "}
+                                {publicMode ? (
+                                    linkedJob?.name || jobId
+                                ) : (
+                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "#4f46e5" }}>
+                                        {linkedJob?.name || jobId}
+                                    </Link>
+                                )}
+                            </Text>
                         ) : null}
                     </Box>
 
@@ -328,9 +359,9 @@ export default async function DocumentPreview({
                                                 ) : null}
                                             </Flex>
                                             {item.details ? (
-                                                <Text as="div" size="2" mt="2" style={{ color: "#374151", whiteSpace: "pre-line", lineHeight: 1.5 }}>
-                                                    {item.details}
-                                                </Text>
+                                                <Box mt="2" style={{ color: "#374151", lineHeight: 1.5, fontSize: 14 }}>
+                                                    <MarkdownContent>{item.details}</MarkdownContent>
+                                                </Box>
                                             ) : null}
                                         </Table.Cell>
                                         <Table.Cell align="right"><Text style={{ color: "#111827" }}>{item.quantity ?? 0}</Text></Table.Cell>
@@ -366,9 +397,9 @@ export default async function DocumentPreview({
                             <Text size="2" weight="bold" style={{ color: "#374151", textTransform: "uppercase" }}>
                                 {doc.type === "estimate" ? "Project Details" : doc.type === "quote" ? "Scope & terms" : "Notes"}
                             </Text>
-                            <Text as="div" mt="2" style={{ color: "#111827", whiteSpace: "pre-line", lineHeight: 1.6 }}>
-                                {doc.notes}
-                            </Text>
+                            <Box mt="2" style={{ color: "#111827", lineHeight: 1.6 }}>
+                                <MarkdownContent>{doc.notes}</MarkdownContent>
+                            </Box>
                         </Box>
                     ) : null}
 
@@ -541,9 +572,9 @@ export default async function DocumentPreview({
                             <Text size="2" weight="bold" style={{ color: "#1e3a8a", textTransform: "uppercase", letterSpacing: "0.03em" }}>
                                 {doc.warranty.title || "Warranty"}
                             </Text>
-                            <Text as="div" size="2" mt="1" style={{ color: "#1f2937", whiteSpace: "pre-line", lineHeight: 1.5 }}>
-                                {doc.warranty.text}
-                            </Text>
+                            <Box mt="1" style={{ color: "#1f2937", lineHeight: 1.5, fontSize: 14 }}>
+                                <MarkdownContent>{doc.warranty.text}</MarkdownContent>
+                            </Box>
                         </Box>
                     ) : null}
 
