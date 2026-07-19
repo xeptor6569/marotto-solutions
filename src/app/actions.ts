@@ -2,10 +2,22 @@
 
 import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
-import { AppConfig, BillingConfig, DocumentData, LineItem, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
+import { AppConfig, BillingConfig, DocumentData, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
+import {
+    parseChoiceGroupsFromFormData,
+    parsePackagesFromFormData,
+} from '@/lib/parse-document-options';
+import {
+    buildOptionSelection,
+    documentDisplayTotal,
+    documentHasOptions,
+    isOptionSelectionComplete,
+    resolveSelectedLineItems,
+    sanitizeOptionSelection,
+} from '@/lib/document-options';
 import {
     buildDepositInvoiceDraft,
     type DepositMode,
@@ -146,6 +158,12 @@ export async function createDepositInvoiceAction(input: {
         if (!source || (source.type !== 'quote' && source.type !== 'estimate')) {
             return { success: false, error: 'Source quote or estimate not found.' };
         }
+        if (documentHasOptions(source) && !isOptionSelectionComplete(source)) {
+            return {
+                success: false,
+                error: 'Select a package and required material options before creating a deposit invoice.',
+            };
+        }
 
         const number = await getNextNumber('invoice');
         const doc = buildDepositInvoiceDraft(source, number, input.mode, input.value);
@@ -196,7 +214,18 @@ export async function createConvertedDocumentAction(input: {
 
         if (
             input.targetType === 'invoice'
-            && hasPendingApprovalLines(source.lineItems)
+            && documentHasOptions(source)
+            && !isOptionSelectionComplete(source)
+        ) {
+            return {
+                success: false,
+                error: 'Select a package and required material options before converting to an invoice.',
+            };
+        }
+
+        if (
+            input.targetType === 'invoice'
+            && hasPendingApprovalLines(resolveSelectedLineItems(source))
             && !input.confirmPending
         ) {
             return {
@@ -285,8 +314,40 @@ export async function createInvoiceAction(formData: FormData) {
         throw new Error('Add at least one line item before saving.');
     }
 
-    const subtotal = items.reduce((acc, item) => acc + item.total, 0);
-    const total = subtotal; // Add tax logic if needed
+    const supportsOptions = type === 'estimate' || type === 'quote';
+    const packages = supportsOptions ? parsePackagesFromFormData(formData) : undefined;
+    const choiceGroups = supportsOptions ? parseChoiceGroupsFromFormData(formData) : undefined;
+
+    let existingOptionSelection: DocumentData['optionSelection'];
+    if (supportsOptions && documentId) {
+        try {
+            const existing = await getDocumentById(documentId);
+            if (existing && (existing.type === 'estimate' || existing.type === 'quote')) {
+                existingOptionSelection = existing.optionSelection;
+            }
+        } catch {
+            // Ignore — new docs or missing prior selection.
+        }
+    }
+
+    const optionSelection = supportsOptions
+        ? sanitizeOptionSelection({
+            packages,
+            choiceGroups,
+            optionSelection: existingOptionSelection,
+        })
+        : undefined;
+
+    const displayTotal = supportsOptions
+        ? documentDisplayTotal({
+            lineItems: items,
+            packages,
+            choiceGroups,
+            optionSelection,
+        })
+        : items.reduce((acc, item) => acc + item.total, 0);
+    const subtotal = displayTotal;
+    const total = displayTotal;
 
     const prefix =
         type === 'invoice' ? 'INV' :
@@ -306,7 +367,7 @@ export async function createInvoiceAction(formData: FormData) {
         }
     }
 
-    let status = resolveDocumentStatus({
+    const status = resolveDocumentStatus({
         type,
         intent,
         formStatus,
@@ -338,6 +399,9 @@ export async function createInvoiceAction(formData: FormData) {
         ...((type === 'estimate' || type === 'quote') && formData.get('workflowStatus')
             ? { workflowStatus: formData.get('workflowStatus') as WorkflowStatus }
             : {}),
+        ...(supportsOptions && packages && packages.length > 0 ? { packages } : {}),
+        ...(supportsOptions && choiceGroups && choiceGroups.length > 0 ? { choiceGroups } : {}),
+        ...(supportsOptions && optionSelection ? { optionSelection } : {}),
     };
 
     let createdReceiptId: string | null = null;
@@ -739,4 +803,59 @@ export async function updateWorkflowStatusAction(docId: string, workflowStatus: 
     revalidatePath(`/admin/estimates/${docId}`);
     revalidatePath(`/admin/quotes/${docId}`);
     return { success: true };
+}
+
+/** Admin selects the winning package and choice-group answers on an estimate/quote. */
+export async function updateDocumentOptionSelectionAction(input: {
+    documentId: string;
+    packageId?: string | null;
+    choices?: Record<string, string>;
+}): Promise<{ success: true } | { success: false; error: string }> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
+    const documentId = input.documentId?.trim();
+    if (!documentId) {
+        return { success: false, error: 'Document is required.' };
+    }
+
+    try {
+        const doc = await getDocumentById(documentId);
+        if (!doc || (doc.type !== 'estimate' && doc.type !== 'quote')) {
+            return { success: false, error: 'Document not found or not an estimate/quote.' };
+        }
+        if (!documentHasOptions(doc)) {
+            return { success: false, error: 'This document has no packages or choice groups.' };
+        }
+
+        const optionSelection = sanitizeOptionSelection({
+            packages: doc.packages,
+            choiceGroups: doc.choiceGroups,
+            optionSelection: buildOptionSelection({
+                packageId: input.packageId,
+                choices: input.choices,
+                by: 'admin',
+            }),
+        });
+
+        doc.optionSelection = optionSelection;
+        const total = documentDisplayTotal(doc);
+        doc.subtotal = total;
+        doc.total = total;
+        doc.updatedAt = new Date().toISOString();
+        await saveNewDocument(doc);
+
+        revalidatePath('/admin');
+        revalidatePath(`/admin/${doc.type}s`);
+        revalidatePath(`/admin/${doc.type}s/${doc.id}`);
+        revalidatePath(`/d`);
+        if (doc.shareToken) {
+            revalidatePath(`/d/${doc.shareToken}`);
+        }
+        return { success: true };
+    } catch (error) {
+        console.error('Failed to update option selection', error);
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        return { success: false, error: message };
+    }
 }

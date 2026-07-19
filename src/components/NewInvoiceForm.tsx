@@ -11,12 +11,21 @@ import {
     Grid,
     TextArea,
     Badge,
-    Checkbox,
 } from '@radix-ui/themes';
-import { PlusIcon, TrashIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
-import { DocumentData, LineItem, PaymentEntry, PaymentKind, JobOption, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
+import {
+    DocumentChoiceGroup,
+    DocumentData,
+    DocumentPackage,
+    LineItem,
+    PaymentEntry,
+    PaymentKind,
+    JobOption,
+    PaymentMethodKey,
+    WorkflowStatus,
+} from '@/lib/types';
 import { ClientOption } from '@/lib/clients';
 import type { PaymentMethodOption } from '@/lib/document-form-pickers';
 import type { DocumentFormSeed } from '@/lib/document-route-seed';
@@ -27,8 +36,14 @@ import {
     statusLabel,
     validateRecordPayment,
 } from '@/lib/document-save';
+import { documentDisplayTotal } from '@/lib/document-options';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownContent from '@/components/MarkdownContent';
+import DocumentLineItemEditor, {
+    emptyLineItem,
+    recalcLineItem,
+} from '@/components/DocumentLineItemEditor';
+import DocumentOptionsEditor from '@/components/DocumentOptionsEditor';
 
 const nativeSelectStyle = { width: '100%', marginTop: 6, borderRadius: 8, minHeight: 36, padding: '0 10px' } as const;
 
@@ -68,6 +83,8 @@ export default function NewDocumentForm({
             ? initialData.lineItems
             : [{ id: '1', description: 'Service', details: '', quantity: 1, unitPrice: 0, total: 0, pendingClientApproval: false }]),
     ]);
+    const [packages, setPackages] = useState<DocumentPackage[]>(initialData?.packages ?? []);
+    const [choiceGroups, setChoiceGroups] = useState<DocumentChoiceGroup[]>(initialData?.choiceGroups ?? []);
 
     const [docStatus, setDocStatus] = useState<DocumentData['status']>(initialData?.status || 'draft');
     const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | undefined>(initialData?.workflowStatus);
@@ -150,13 +167,22 @@ export default function NewDocumentForm({
         type === 'quote' ? 'Scope & terms' :
         'Notes';
     const showPendingApprovalColumn = type === 'quote' || type === 'estimate';
+    const showDocumentOptions = type === 'quote' || type === 'estimate';
     const showPayments = type === 'invoice';
     const showIssueAction = type !== 'receipt' && docStatus === 'draft';
     const issueLabel = issueActionLabel(type);
 
-    const subtotal = lineItems.reduce((acc, item) => acc + item.total, 0);
+    const subtotal = showDocumentOptions
+        ? documentDisplayTotal({
+            lineItems,
+            packages,
+            choiceGroups,
+            optionSelection: initialData?.optionSelection,
+        })
+        : lineItems.reduce((acc, item) => acc + item.total, 0);
+    const baseSubtotal = lineItems.reduce((acc, item) => acc + item.total, 0);
     const grossSubtotal = lineItems.reduce((acc, item) => acc + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0);
-    const discountSavings = Math.max(0, grossSubtotal - subtotal);
+    const discountSavings = Math.max(0, grossSubtotal - baseSubtotal);
     const paidAmount = initialData?.paidAmount ?? payments.reduce((acc, payment) => acc + payment.amount, 0);
     const balanceDue = Math.max(0, subtotal - paidAmount);
 
@@ -225,15 +251,7 @@ export default function NewDocumentForm({
     };
 
     const addLineItem = () => {
-        setLineItems([...lineItems, {
-            id: crypto.randomUUID(),
-            description: '',
-            details: '',
-            quantity: 1,
-            unitPrice: 0,
-            total: 0,
-            pendingClientApproval: false,
-        }]);
+        setLineItems([...lineItems, emptyLineItem()]);
     };
 
     const removeLineItem = (id: string) => {
@@ -257,18 +275,9 @@ export default function NewDocumentForm({
     };
 
     const updateLineItem = (id: string, field: keyof LineItem, value: string | number | boolean) => {
-        setLineItems(lineItems.map((item) => {
-            if (item.id === id) {
-                const updated = { ...item, [field]: value };
-                if (field === 'quantity' || field === 'unitPrice' || field === 'discountPercent') {
-                    const gross = Number(updated.quantity) * Number(updated.unitPrice);
-                    const disc = Math.min(100, Math.max(0, Number(updated.discountPercent) || 0));
-                    updated.total = gross * (1 - disc / 100);
-                }
-                return updated;
-            }
-            return item;
-        }));
+        setLineItems(lineItems.map((item) =>
+            item.id === id ? recalcLineItem(item, field, value) : item,
+        ));
     };
 
     const applyPaymentFraction = (fraction: number) => {
@@ -553,157 +562,34 @@ export default function NewDocumentForm({
                     data-step="items"
                 >
                     <Card>
-                        <Heading size="3" mb="3">Items</Heading>
+                        <Heading size="3" mb="3">{showDocumentOptions ? 'Base scope' : 'Items'}</Heading>
                         {type === 'quote' ? (
                             <Text size="2" color="gray" mb="3" as="p">
                                 Enter the agreed quantities and unit prices — the document total is the decided price for the customer.
                             </Text>
                         ) : null}
+                        {showDocumentOptions ? (
+                            <Text size="2" color="gray" mb="3" as="p">
+                                Shared work that always applies. Add packages and material choices below for alternate approaches.
+                            </Text>
+                        ) : null}
                         <Flex direction="column" gap="3">
                             {lineItems.map((item, index) => (
-                                <Box
+                                <DocumentLineItemEditor
                                     key={item.id}
-                                    style={{
-                                        border: '1px solid var(--gray-a5)',
-                                        borderRadius: 12,
-                                        padding: 14,
-                                        background: 'var(--gray-a2)',
-                                    }}
-                                >
-                                    <Flex justify="between" align="center" gap="2" mb="3" wrap="wrap">
-                                        <Text size="2" weight="bold">Item {index + 1}</Text>
-                                        <Flex gap="2" align="center">
-                                            <Button
-                                                type="button"
-                                                size="2"
-                                                variant="soft"
-                                                disabled={index === 0}
-                                                onClick={() => moveLineItemUp(index)}
-                                                style={{ minHeight: 44, minWidth: 44 }}
-                                                aria-label="Move item up"
-                                            >
-                                                <ChevronUp size={18} />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="2"
-                                                variant="soft"
-                                                disabled={index === lineItems.length - 1}
-                                                onClick={() => moveLineItemDown(index)}
-                                                style={{ minHeight: 44, minWidth: 44 }}
-                                                aria-label="Move item down"
-                                            >
-                                                <ChevronDown size={18} />
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                size="2"
-                                                variant="soft"
-                                                color="red"
-                                                onClick={() => removeLineItem(item.id)}
-                                                style={{ minHeight: 44 }}
-                                            >
-                                                <TrashIcon size={16} /> Delete
-                                            </Button>
-                                        </Flex>
-                                    </Flex>
-                                    <Flex direction="column" gap="3">
-                                        <Box>
-                                            <Text as="label" size="2">Description</Text>
-                                            <TextField.Root
-                                                value={item.description}
-                                                onChange={(e) => updateLineItem(item.id, 'description', e.target.value)}
-                                                placeholder="Description"
-                                            />
-                                        </Box>
-                                        <MarkdownEditor
-                                            label="Details"
-                                            value={item.details || ''}
-                                            onChange={(v) => updateLineItem(item.id, 'details', v)}
-                                            rows={type === 'estimate' ? 4 : 3}
-                                            placeholder="Optional details (markdown supported)"
-                                        />
-                                        <Grid columns={{ initial: '2', sm: '4' }} gap="3">
-                                            <Box>
-                                                <Text as="label" size="2">Qty</Text>
-                                                <TextField.Root
-                                                    type="number"
-                                                    min="0"
-                                                    value={item.quantity}
-                                                    onChange={(e) => {
-                                                        const v = e.target.value;
-                                                        const n = parseFloat(v);
-                                                        updateLineItem(item.id, 'quantity', v === '' ? 0 : Number.isFinite(n) ? Math.max(0, n) : 0);
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Box>
-                                                <Text as="label" size="2">{type === 'quote' ? 'Unit price' : 'Price'}</Text>
-                                                <TextField.Root
-                                                    type="number"
-                                                    min="0"
-                                                    step="0.01"
-                                                    value={item.unitPrice}
-                                                    onChange={(e) => {
-                                                        const v = e.target.value;
-                                                        const n = parseFloat(v);
-                                                        updateLineItem(item.id, 'unitPrice', v === '' ? 0 : Number.isFinite(n) ? Math.max(0, n) : 0);
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Box>
-                                                <Text as="label" size="2">% Off</Text>
-                                                <TextField.Root
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="1"
-                                                    value={item.discountPercent ?? 0}
-                                                    onChange={(e) => {
-                                                        const v = e.target.value;
-                                                        const n = parseFloat(v);
-                                                        updateLineItem(item.id, 'discountPercent', v === '' ? 0 : Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0);
-                                                    }}
-                                                />
-                                            </Box>
-                                            <Box>
-                                                <Text as="label" size="2">Total</Text>
-                                                <Text as="div" size="3" weight="bold" mt="2">
-                                                    {item.discountPercent ? (
-                                                        <>
-                                                            <Text as="span" size="1" color="gray" style={{ textDecoration: 'line-through', marginRight: 6 }}>
-                                                                ${((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toFixed(2)}
-                                                            </Text>
-                                                            ${item.total.toFixed(2)}
-                                                        </>
-                                                    ) : (
-                                                        `$${item.total.toFixed(2)}`
-                                                    )}
-                                                </Text>
-                                            </Box>
-                                        </Grid>
-                                        {showPendingApprovalColumn ? (
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, minHeight: 44 }}>
-                                                <Checkbox
-                                                    checked={item.pendingClientApproval === true}
-                                                    onCheckedChange={(v) => updateLineItem(item.id, 'pendingClientApproval', v === true)}
-                                                />
-                                                Needs client approval
-                                            </label>
-                                        ) : null}
-                                    </Flex>
-                                    <input type="hidden" name={`items[${index}][id]`} value={item.id} />
-                                    <input type="hidden" name={`items[${index}][description]`} value={item.description} />
-                                    <input type="hidden" name={`items[${index}][details]`} value={item.details || ''} />
-                                    <input type="hidden" name={`items[${index}][quantity]`} value={item.quantity} />
-                                    <input type="hidden" name={`items[${index}][unitPrice]`} value={item.unitPrice} />
-                                    <input type="hidden" name={`items[${index}][discountPercent]`} value={item.discountPercent ?? 0} />
-                                    <input
-                                        type="hidden"
-                                        name={`items[${index}][pendingClientApproval]`}
-                                        value={showPendingApprovalColumn && item.pendingClientApproval ? '1' : '0'}
-                                    />
-                                </Box>
+                                    item={item}
+                                    index={index}
+                                    totalCount={lineItems.length}
+                                    namePrefix={`items[${index}]`}
+                                    showPendingApproval={showPendingApprovalColumn}
+                                    unitPriceLabel={type === 'quote' ? 'Unit price' : 'Price'}
+                                    detailsRows={type === 'estimate' ? 4 : 3}
+                                    onChange={(field, value) => updateLineItem(item.id, field, value)}
+                                    onMoveUp={() => moveLineItemUp(index)}
+                                    onMoveDown={() => moveLineItemDown(index)}
+                                    onRemove={() => removeLineItem(item.id)}
+                                    canRemove={lineItems.length > 1}
+                                />
                             ))}
                         </Flex>
                         <Flex justify="between" align="center" mt="4" wrap="wrap" gap="2">
@@ -713,14 +599,31 @@ export default function NewDocumentForm({
                             <Box style={{ textAlign: 'right' }}>
                                 {discountSavings > 0 ? (
                                     <>
-                                        <Text as="div" size="2" color="gray">Subtotal: ${grossSubtotal.toFixed(2)}</Text>
+                                        <Text as="div" size="2" color="gray">Base subtotal: ${grossSubtotal.toFixed(2)}</Text>
                                         <Text as="div" size="2" color="green">Discount savings: −${discountSavings.toFixed(2)}</Text>
                                     </>
                                 ) : null}
-                                <Text size="4" weight="bold">Total: ${subtotal.toFixed(2)}</Text>
+                                {showDocumentOptions ? (
+                                    <Text as="div" size="2" color="gray">Base scope: ${baseSubtotal.toFixed(2)}</Text>
+                                ) : null}
+                                <Text size="4" weight="bold">
+                                    {showDocumentOptions && (packages.length > 0 || choiceGroups.length > 0)
+                                        ? `From / selected: $${subtotal.toFixed(2)}`
+                                        : `Total: $${subtotal.toFixed(2)}`}
+                                </Text>
                             </Box>
                         </Flex>
                     </Card>
+                    {showDocumentOptions ? (
+                        <DocumentOptionsEditor
+                            packages={packages}
+                            choiceGroups={choiceGroups}
+                            showPendingApproval={showPendingApprovalColumn}
+                            unitPriceLabel={type === 'quote' ? 'Unit price' : 'Price'}
+                            onPackagesChange={setPackages}
+                            onChoiceGroupsChange={setChoiceGroups}
+                        />
+                    ) : null}
                 </Box>
 
                 <Box
