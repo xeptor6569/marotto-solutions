@@ -1,5 +1,5 @@
-import { Container, Card, Heading, Text, Flex } from '@radix-ui/themes';
-import { Mail } from 'lucide-react';
+import { Container, Card, Heading, Text, Flex, Button } from '@radix-ui/themes';
+import { KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
 export default function VerifyRequestPage() {
@@ -8,14 +8,14 @@ export default function VerifyRequestPage() {
             <Flex direction="column" align="center" gap="6">
                 <Card size="4" style={{ width: '100%', maxWidth: '400px' }}>
                     <Flex direction="column" align="center" gap="4" py="4">
-                        <Mail size={48} color="var(--blue-9)" />
+                        <KeyRound size={48} color="var(--blue-9)" />
                         <Heading size="5">Check your email</Heading>
                         <Text align="center" color="gray">
-                            A sign in link has been sent to your email address. Please check your inbox and click the link to continue.
+                            We sent a 6-digit sign-in code to your email. Return to the sign-in screen in this app and enter the code — you do not need to open a link.
                         </Text>
-                        <Text align="center" size="1" color="gray">
-                            You can close this window.
-                        </Text>
+                        <Button asChild>
+                            <Link href="/auth/signin">Enter code</Link>
+                        </Button>
                     </Flex>
                 </Card>
 
