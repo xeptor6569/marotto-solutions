@@ -3,6 +3,10 @@ import {
     agreedScopeLineTotal,
     hasPendingApprovalLines,
 } from '@/lib/pending-client-approval';
+import {
+    documentHasOptions,
+    resolveSelectedLineItems,
+} from '@/lib/document-options';
 import { DOC_LABEL } from '@/lib/document-labels';
 
 export type DepositMode = 'percent' | 'fixed';
@@ -10,8 +14,14 @@ export type DepositMode = 'percent' | 'fixed';
 /** Billable total used when computing a deposit from a quote or estimate. */
 export function depositBillingBase(doc: DocumentData): number {
     if (doc.type === 'quote' || doc.type === 'estimate') {
-        if (hasPendingApprovalLines(doc.lineItems)) {
-            return agreedScopeLineTotal(doc.lineItems);
+        const scopeLines = documentHasOptions(doc)
+            ? resolveSelectedLineItems(doc)
+            : doc.lineItems;
+        if (hasPendingApprovalLines(scopeLines)) {
+            return agreedScopeLineTotal(scopeLines);
+        }
+        if (documentHasOptions(doc)) {
+            return agreedScopeLineTotal(scopeLines) || doc.total;
         }
     }
     return doc.total;

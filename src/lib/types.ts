@@ -15,6 +15,44 @@ export interface LineItem {
     pendingClientApproval?: boolean;
 }
 
+/** Mutually exclusive project approach on an estimate/quote (Option A / B). */
+export interface DocumentPackage {
+    id: string;
+    label: string;
+    description?: string;
+    recommended?: boolean;
+    lineItems: LineItem[];
+}
+
+/** One alternative inside a material/method choice group. */
+export interface DocumentChoice {
+    id: string;
+    label: string;
+    description?: string;
+    lineItems: LineItem[];
+}
+
+/** Per-section alternatives (e.g. Flooring: Hardwood vs Laminate). */
+export interface DocumentChoiceGroup {
+    id: string;
+    label: string;
+    description?: string;
+    /** When true (default), a choice must be selected before convert-to-invoice. */
+    required?: boolean;
+    choices: DocumentChoice[];
+}
+
+/**
+ * Selected package + choice-group answers.
+ * `by: 'client'` is reserved for a future public share-link picker.
+ */
+export interface DocumentOptionSelection {
+    packageId?: string | null;
+    choices: Record<string, string>;
+    by: 'admin' | 'client';
+    at: string;
+}
+
 export interface Customer {
     id: string; // Could be name-based or uuid
     name: string;
@@ -80,6 +118,12 @@ export interface DocumentData {
     paymentOverrides?: InvoicePaymentOverrides;
     /** Workflow progress label for estimates and quotes (Backlog / To Do / In Progress / Done). */
     workflowStatus?: WorkflowStatus;
+    /** Mutually exclusive project packages (estimates/quotes). */
+    packages?: DocumentPackage[];
+    /** Material/method choice groups applied on top of base + selected package. */
+    choiceGroups?: DocumentChoiceGroup[];
+    /** Admin (or future client) selection of package and choice-group answers. */
+    optionSelection?: DocumentOptionSelection;
 }
 
 export interface DocumentWarranty {

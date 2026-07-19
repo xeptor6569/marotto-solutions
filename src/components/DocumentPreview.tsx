@@ -1,6 +1,12 @@
 import { Badge, Box, Button, Card, Container, Flex, Table, Text } from "@radix-ui/themes";
 import Link from "next/link";
-import type { AppConfig, DocumentData, PaymentMethodKey, PaymentMethodEntry } from "@/lib/types";
+import type {
+    AppConfig,
+    DocumentData,
+    LineItem,
+    PaymentMethodKey,
+    PaymentMethodEntry,
+} from "@/lib/types";
 import { workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
 import {
     Banknote,
@@ -21,6 +27,15 @@ import {
     pendingApprovalLineTotal,
     pendingApprovalSummarySentence,
 } from "@/lib/pending-client-approval";
+import {
+    choiceTotal,
+    documentHasOptions,
+    isOptionSelectionComplete,
+    lineItemsTotal,
+    packageTotal,
+    resolveSelectedLineItems,
+    startingFromTotal,
+} from "@/lib/document-options";
 import { auth } from "@/lib/auth";
 import { buildSharePath } from "@/lib/share-token";
 import { getJobById } from "@/lib/jobs";
@@ -31,9 +46,66 @@ import CreateDepositInvoiceButton from "@/components/CreateDepositInvoiceButton"
 import ConvertDocumentButton from "@/components/ConvertDocumentButton";
 import BackButton from "@/components/BackButton";
 import DocumentPreviewActions from "@/components/DocumentPreviewActions";
+import DocumentOptionSelectionForm from "@/components/DocumentOptionSelectionForm";
 import MarkdownContent from "@/components/MarkdownContent";
 import { depositBillingBase } from "@/lib/deposit-invoice";
 import { convertTargets } from "@/lib/convert-document";
+
+function LineItemsTable({ items }: { items: LineItem[] }) {
+    if (!items.length) {
+        return <Text size="2" color="gray">No line items.</Text>;
+    }
+    return (
+        <Box className="doc-table-wrap">
+            <Table.Root variant="ghost" className="doc-table">
+                <Table.Header>
+                    <Table.Row>
+                        <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell align="right">Qty</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell align="right">Unit</Table.ColumnHeaderCell>
+                        <Table.ColumnHeaderCell align="right">Amount</Table.ColumnHeaderCell>
+                    </Table.Row>
+                </Table.Header>
+                <Table.Body>
+                    {items.map((item) => (
+                        <Table.Row key={item.id}>
+                            <Table.Cell>
+                                <Flex align="center" gap="2" wrap="wrap">
+                                    <span className="doc-line-title">{item.description}</span>
+                                    {item.discountPercent ? (
+                                        <Badge color="green" size="1">{item.discountPercent}% off</Badge>
+                                    ) : null}
+                                    {item.pendingClientApproval ? (
+                                        <Badge color="amber" size="1">Pending your approval</Badge>
+                                    ) : null}
+                                </Flex>
+                                {item.details ? (
+                                    <Box className="doc-line-details">
+                                        <MarkdownContent>{item.details}</MarkdownContent>
+                                    </Box>
+                                ) : null}
+                            </Table.Cell>
+                            <Table.Cell align="right">{item.quantity ?? 0}</Table.Cell>
+                            <Table.Cell align="right">${(Number(item.unitPrice) || 0).toFixed(2)}</Table.Cell>
+                            <Table.Cell align="right">
+                                {item.discountPercent ? (
+                                    <Box>
+                                        <Text as="div" size="1" style={{ color: "#9ca3af", textDecoration: "line-through" }}>
+                                            ${((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}
+                                        </Text>
+                                        <span className="doc-line-title">${(Number(item.total) || 0).toFixed(2)}</span>
+                                    </Box>
+                                ) : (
+                                    <>${(Number(item.total) || 0).toFixed(2)}</>
+                                )}
+                            </Table.Cell>
+                        </Table.Row>
+                    ))}
+                </Table.Body>
+            </Table.Root>
+        </Box>
+    );
+}
 
 function getStatusColor(status: DocumentData["status"]) {
     if (status === "paid") return "#166534";
@@ -194,26 +266,36 @@ export default async function DocumentPreview({
     const paidAmount = doc.paidAmount ?? doc.payments?.reduce((acc, payment) => acc + payment.amount, 0) ?? 0;
     const balanceDue = doc.balanceDue ?? Math.max(0, doc.total - paidAmount);
     const showInvoiceAmountDue = doc.type === "invoice";
-    const invoiceAmountDue = showInvoiceAmountDue ? balanceDue : doc.total;
 
     const lineItems = doc.lineItems ?? [];
-    const grossSubtotal = lineItems.reduce(
+    const hasOptions = documentHasOptions(doc);
+    const packages = doc.packages ?? [];
+    const choiceGroups = doc.choiceGroups ?? [];
+    const selectionComplete = isOptionSelectionComplete(doc);
+    const resolvedLines = hasOptions ? resolveSelectedLineItems(doc) : lineItems;
+    const grossSubtotal = resolvedLines.reduce(
         (acc, item) => acc + (Number(item.unitPrice) || 0) * (Number(item.quantity) || 0),
         0,
     );
-    const discountSavings = Math.max(0, grossSubtotal - doc.subtotal);
+    const resolvedTotal = lineItemsTotal(resolvedLines);
+    const discountSavings = Math.max(0, grossSubtotal - resolvedTotal);
     const hasDiscounts = discountSavings > 0.0001;
-    const pendingLines = hasPendingApprovalLines(lineItems);
+    const pendingLines = hasPendingApprovalLines(resolvedLines);
     const showSplitTotals =
         (doc.type === "quote" || doc.type === "estimate") && pendingLines;
-    const agreedSubtotal = agreedScopeLineTotal(lineItems);
-    const pendingSubtotal = pendingApprovalLineTotal(lineItems);
+    const agreedSubtotal = agreedScopeLineTotal(resolvedLines);
+    const pendingSubtotal = pendingApprovalLineTotal(resolvedLines);
     const pendingApprovalSummary = pendingLines
         ? pendingApprovalSummarySentence(docTitle, pendingSubtotal)
         : undefined;
     const showDepositInvoice = !publicMode && (doc.type === "quote" || doc.type === "estimate");
     const depositBase = showDepositInvoice ? depositBillingBase(doc) : 0;
     const showConvert = !publicMode && convertTargets(doc.type).length > 0;
+    const displayTotal = hasOptions
+        ? (selectionComplete ? resolvedTotal : startingFromTotal(doc))
+        : doc.total;
+    const invoiceAmountDue = showInvoiceAmountDue ? balanceDue : displayTotal;
+    const startingFrom = hasOptions ? startingFromTotal(doc) : displayTotal;
     const jobId = doc.jobId || doc.customer?.jobId;
     const linkedJob = jobId && !publicMode ? await getJobById(jobId) : null;
     const canDelete = !publicMode && (doc.type === "invoice" || doc.type === "estimate" || doc.type === "quote" || doc.type === "receipt");
@@ -337,54 +419,102 @@ export default async function DocumentPreview({
                         ) : null}
                     </Box>
 
-                    <Box className="doc-table-wrap">
-                        <Table.Root variant="ghost" className="doc-table">
-                            <Table.Header>
-                                <Table.Row>
-                                    <Table.ColumnHeaderCell>Description</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right">Qty</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right">Unit</Table.ColumnHeaderCell>
-                                    <Table.ColumnHeaderCell align="right">Amount</Table.ColumnHeaderCell>
-                                </Table.Row>
-                            </Table.Header>
-                            <Table.Body>
-                                {lineItems.map((item) => (
-                                    <Table.Row key={item.id}>
-                                        <Table.Cell>
-                                            <Flex align="center" gap="2" wrap="wrap">
-                                                <span className="doc-line-title">{item.description}</span>
-                                                {item.discountPercent ? (
-                                                    <Badge color="green" size="1">{item.discountPercent}% off</Badge>
-                                                ) : null}
-                                                {item.pendingClientApproval ? (
-                                                    <Badge color="amber" size="1">Pending your approval</Badge>
-                                                ) : null}
+                    {hasOptions ? (
+                        <Box className="doc-section" mb="3">
+                            <div className="doc-section-label">Base scope</div>
+                        </Box>
+                    ) : null}
+                    <LineItemsTable items={lineItems} />
+
+                    {packages.length > 0 ? (
+                        <Box className="doc-section" mt="4">
+                            <div className="doc-section-label">Project packages</div>
+                            <Text size="2" color="gray" as="p" mb="3">
+                                Choose one approach for how the project can be done.
+                            </Text>
+                            <Flex direction="column" gap="4">
+                                {packages.map((pkg) => {
+                                    const selected = doc.optionSelection?.packageId === pkg.id;
+                                    return (
+                                        <Box
+                                            key={pkg.id}
+                                            style={{
+                                                border: selected ? "2px solid #1e3a5f" : "1px solid var(--gray-a5)",
+                                                borderRadius: 10,
+                                                padding: 12,
+                                            }}
+                                        >
+                                            <Flex align="center" gap="2" wrap="wrap" mb="2">
+                                                <Text weight="bold">{pkg.label}</Text>
+                                                {pkg.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
+                                                {selected ? <Badge size="1" color="green">Selected</Badge> : null}
+                                                <Text size="2" color="gray">${packageTotal(pkg).toFixed(2)}</Text>
                                             </Flex>
-                                            {item.details ? (
-                                                <Box className="doc-line-details">
-                                                    <MarkdownContent>{item.details}</MarkdownContent>
-                                                </Box>
+                                            {pkg.description ? (
+                                                <Text size="2" color="gray" as="p" mb="2">{pkg.description}</Text>
                                             ) : null}
-                                        </Table.Cell>
-                                        <Table.Cell align="right">{item.quantity ?? 0}</Table.Cell>
-                                        <Table.Cell align="right">${(Number(item.unitPrice) || 0).toFixed(2)}</Table.Cell>
-                                        <Table.Cell align="right">
-                                            {item.discountPercent ? (
-                                                <Box>
-                                                    <Text as="div" size="1" style={{ color: "#9ca3af", textDecoration: "line-through" }}>
-                                                        ${((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}
-                                                    </Text>
-                                                    <span className="doc-line-title">${(Number(item.total) || 0).toFixed(2)}</span>
-                                                </Box>
-                                            ) : (
-                                                <>${(Number(item.total) || 0).toFixed(2)}</>
-                                            )}
-                                        </Table.Cell>
-                                    </Table.Row>
+                                            <LineItemsTable items={pkg.lineItems} />
+                                        </Box>
+                                    );
+                                })}
+                            </Flex>
+                        </Box>
+                    ) : null}
+
+                    {choiceGroups.length > 0 ? (
+                        <Box className="doc-section" mt="4">
+                            <div className="doc-section-label">Material & method options</div>
+                            <Flex direction="column" gap="4" mt="2">
+                                {choiceGroups.map((group) => (
+                                    <Box key={group.id}>
+                                        <Flex align="center" gap="2" wrap="wrap" mb="2">
+                                            <Text weight="bold">{group.label}</Text>
+                                            {group.required === false ? (
+                                                <Badge size="1" color="gray">Optional</Badge>
+                                            ) : null}
+                                        </Flex>
+                                        {group.description ? (
+                                            <Text size="2" color="gray" as="p" mb="2">{group.description}</Text>
+                                        ) : null}
+                                        <Flex direction="column" gap="3">
+                                            {group.choices.map((choice) => {
+                                                const selected = doc.optionSelection?.choices?.[group.id] === choice.id;
+                                                return (
+                                                    <Box
+                                                        key={choice.id}
+                                                        style={{
+                                                            border: selected ? "2px solid #1e3a5f" : "1px dashed var(--gray-a5)",
+                                                            borderRadius: 10,
+                                                            padding: 12,
+                                                        }}
+                                                    >
+                                                        <Flex align="center" gap="2" wrap="wrap" mb="2">
+                                                            <Text weight="medium">{choice.label}</Text>
+                                                            {selected ? <Badge size="1" color="green">Selected</Badge> : null}
+                                                            <Text size="2" color="gray">${choiceTotal(choice).toFixed(2)}</Text>
+                                                        </Flex>
+                                                        {choice.description ? (
+                                                            <Text size="2" color="gray" as="p" mb="2">{choice.description}</Text>
+                                                        ) : null}
+                                                        <LineItemsTable items={choice.lineItems} />
+                                                    </Box>
+                                                );
+                                            })}
+                                        </Flex>
+                                    </Box>
                                 ))}
-                            </Table.Body>
-                        </Table.Root>
-                    </Box>
+                            </Flex>
+                        </Box>
+                    ) : null}
+
+                    {hasOptions && !publicMode ? (
+                        <DocumentOptionSelectionForm
+                            documentId={doc.id}
+                            packages={packages}
+                            choiceGroups={choiceGroups}
+                            initialSelection={doc.optionSelection}
+                        />
+                    ) : null}
 
                     {doc.notes ? (
                         <Box className="doc-section">
@@ -576,6 +706,18 @@ export default async function DocumentPreview({
                                     </div>
                                 </>
                             ) : null}
+                            {hasOptions && !selectionComplete && doc.type !== "invoice" ? (
+                                <div className="doc-total-row">
+                                    <span>Starting from</span>
+                                    <span>${startingFrom.toFixed(2)}</span>
+                                </div>
+                            ) : null}
+                            {hasOptions && selectionComplete && doc.type !== "invoice" ? (
+                                <div className="doc-total-row">
+                                    <span>Selected configuration</span>
+                                    <span>${resolvedTotal.toFixed(2)}</span>
+                                </div>
+                            ) : null}
                             {showSplitTotals ? (
                                 <>
                                     <div className="doc-total-row">
@@ -587,7 +729,7 @@ export default async function DocumentPreview({
                                         <span>${pendingSubtotal.toFixed(2)}</span>
                                     </div>
                                 </>
-                            ) : doc.type !== "invoice" ? (
+                            ) : doc.type !== "invoice" && !hasOptions ? (
                                 <div className="doc-total-row">
                                     <span>Subtotal</span>
                                     <span>${doc.subtotal.toFixed(2)}</span>
@@ -595,7 +737,15 @@ export default async function DocumentPreview({
                             ) : null}
                             <div className="doc-total-due">
                                 <span>
-                                    {showInvoiceAmountDue ? "Amount Due" : showSplitTotals ? "Total if all approved" : "Total"}
+                                    {showInvoiceAmountDue
+                                        ? "Amount Due"
+                                        : showSplitTotals
+                                            ? "Total if all approved"
+                                            : hasOptions && !selectionComplete
+                                                ? "From"
+                                                : hasOptions && selectionComplete
+                                                    ? "Selected total"
+                                                    : "Total"}
                                 </span>
                                 <span
                                     className={`doc-total-due-amount${showInvoiceAmountDue && invoiceAmountDue > 0 ? " is-outstanding" : ""}`}
