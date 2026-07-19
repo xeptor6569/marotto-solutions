@@ -6,6 +6,7 @@ import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from './prisma';
 import type { Adapter } from 'next-auth/adapters';
 import bcrypt from 'bcryptjs';
+import { EMAIL_OTP_MAX_AGE_SECONDS, generateEmailOtp } from '@/lib/email-otp';
 
 export const authConfig: NextAuthConfig = {
   // Required for self-hosted Docker/production. Without this, Auth.js rejects
@@ -16,17 +17,19 @@ export const authConfig: NextAuthConfig = {
     Nodemailer({
       server: process.env.EMAIL_SERVER || '',
       from: process.env.EMAIL_FROM || 'noreply@marotto-solutions.com',
-      sendVerificationRequest: async ({ identifier: email, url }) => {
-        const { host } = new URL(url);
+      maxAge: EMAIL_OTP_MAX_AGE_SECONDS,
+      generateVerificationToken: async () => generateEmailOtp(),
+      sendVerificationRequest: async ({ identifier: email, token, expires }) => {
         const nodemailer = (await import('nodemailer')).default;
         const transport = nodemailer.createTransport(process.env.EMAIL_SERVER || '');
+        const minutes = Math.max(1, Math.round((expires.getTime() - Date.now()) / 60_000));
 
         await transport.sendMail({
           to: email,
           from: process.env.EMAIL_FROM,
-          subject: `Sign in to ${host}`,
-          text: text({ url, host }),
-          html: html({ url, host, email }),
+          subject: `${token} is your Marotto Solutions sign-in code`,
+          text: text({ token, email, minutes }),
+          html: html({ token, email, minutes }),
         });
       },
     }),
@@ -74,7 +77,7 @@ export const authConfig: NextAuthConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        // Prefer DB role when present; email magic-link User may omit custom fields.
+        // Prefer DB role when present; email OTP User may omit custom fields.
         let role = (user as { role?: string }).role;
         if (!role && user.id) {
           try {
@@ -104,10 +107,9 @@ export const authConfig: NextAuthConfig = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-// Email HTML template
-function html({ url, host, email }: { url: string; host: string; email: string }) {
+function html({ token, email, minutes }: { token: string; email: string; minutes: number }) {
   const escapedEmail = email.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const escapedHost = host.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const spaced = token.split('').join(' ');
 
   return `
 <!DOCTYPE html>
@@ -115,7 +117,7 @@ function html({ url, host, email }: { url: string; host: string; email: string }
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign in to ${escapedHost}</title>
+  <title>Your sign-in code</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
@@ -126,22 +128,18 @@ function html({ url, host, email }: { url: string; host: string; email: string }
     </tr>
     <tr>
       <td style="padding: 40px;">
-        <h2 style="margin: 0 0 20px; color: #333; font-size: 24px;">Sign in to your account</h2>
+        <h2 style="margin: 0 0 20px; color: #333; font-size: 24px;">Your sign-in code</h2>
         <p style="margin: 0 0 20px; color: #666; font-size: 16px; line-height: 1.5;">
           Hello ${escapedEmail},
         </p>
-        <p style="margin: 0 0 30px; color: #666; font-size: 16px; line-height: 1.5;">
-          Click the button below to sign in to your Marotto Solutions admin dashboard.
+        <p style="margin: 0 0 24px; color: #666; font-size: 16px; line-height: 1.5;">
+          Enter this code in the Marotto admin app to sign in. It expires in ${minutes} minutes.
         </p>
-        <table width="100%" cellpadding="0" cellspacing="0">
-          <tr>
-            <td style="text-align: center;">
-              <a href="${url}" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 16px;">Sign In</a>
-            </td>
-          </tr>
-        </table>
-        <p style="margin: 30px 0 0; color: #999; font-size: 14px; line-height: 1.5;">
-          If you didn't request this email, you can safely ignore it. This link will expire in 24 hours.
+        <p style="margin: 0 0 8px; text-align: center; font-size: 36px; font-weight: 700; letter-spacing: 0.35em; color: #111827; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
+          ${spaced}
+        </p>
+        <p style="margin: 24px 0 0; color: #999; font-size: 14px; line-height: 1.5;">
+          If you didn't request this code, you can safely ignore this email.
         </p>
       </td>
     </tr>
@@ -156,7 +154,6 @@ function html({ url, host, email }: { url: string; host: string; email: string }
 `;
 }
 
-// Email text fallback
-function text({ url, host }: { url: string; host: string }) {
-  return `Sign in to ${host}\n\n${url}\n\nIf you didn't request this email, you can safely ignore it.\n`;
+function text({ token, email, minutes }: { token: string; email: string; minutes: number }) {
+  return `Sign in to Marotto Solutions\n\nHello ${email},\n\nYour sign-in code is: ${token}\n\nEnter this code in the admin app. It expires in ${minutes} minutes.\n\nIf you didn't request this code, you can safely ignore this email.\n`;
 }
