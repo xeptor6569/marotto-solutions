@@ -1,9 +1,10 @@
 import { getClientOptions } from '@/lib/clients';
 import { getJobOptions } from '@/lib/jobs';
 import { getAppConfig } from '@/lib/config';
+import { DEFAULT_DOCUMENT_FORM_MODE, parseDocumentFormMode } from '@/lib/document-form-mode';
 import type { ClientOption } from '@/lib/clients';
 import type { LeadOption } from '@/lib/leads';
-import type { JobOption, PaymentMethodKey } from '@/lib/types';
+import type { DocumentFormMode, JobOption, PaymentMethodKey } from '@/lib/types';
 
 export type PaymentMethodOption = { key: PaymentMethodKey; label: string };
 
@@ -13,6 +14,7 @@ export async function getDocumentFormPickers(): Promise<{
     leads: LeadOption[];
     jobs: JobOption[];
     paymentMethods: PaymentMethodOption[];
+    documentFormMode: DocumentFormMode;
 }> {
     const [clients, jobs, config] = await Promise.all([
         getClientOptions(),
@@ -26,5 +28,11 @@ export async function getDocumentFormPickers(): Promise<{
             key: key as PaymentMethodKey,
             label: method.label,
         }));
-    return { clients, leads: [], jobs, paymentMethods };
+    return {
+        clients,
+        leads: [],
+        jobs,
+        paymentMethods,
+        documentFormMode: parseDocumentFormMode(config.documentFormMode ?? DEFAULT_DOCUMENT_FORM_MODE),
+    };
 }

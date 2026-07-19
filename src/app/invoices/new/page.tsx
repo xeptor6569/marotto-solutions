@@ -7,7 +7,7 @@ import { requireAdminPage } from "@/lib/require-admin-session";
 export default async function NewInvoicePage() {
     await requireAdminPage('/invoices/new');
     const nextNumber = await getNextNumber('invoice');
-    const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p="5">
@@ -17,6 +17,7 @@ export default async function NewInvoicePage() {
                 clients={clients}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
+                formMode={documentFormMode}
             />
         </Container>
     );

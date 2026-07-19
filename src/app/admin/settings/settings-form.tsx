@@ -104,6 +104,46 @@ export default function SettingsForm({ config }: { config: Partial<AppConfig> })
                     <Text as="p" size="1" color="gray" mt="1">All calendar times are shown in this timezone. Use an IANA identifier (e.g. America/New_York, America/Chicago, America/Los_Angeles).</Text>
                 </Box>
 
+                <Heading size="3">Documents</Heading>
+                <Box>
+                    <Text as="label" size="2" weight="bold">Create / edit view</Text>
+                    <Text as="p" size="1" color="gray" mt="1" mb="2">
+                        Choose how invoice, estimate, quote, and receipt editors are laid out.
+                    </Text>
+                    <Flex direction="column" gap="2">
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer' }}>
+                            <input
+                                type="radio"
+                                name="documentFormMode"
+                                value="guided"
+                                defaultChecked={(config.documentFormMode || 'guided') === 'guided'}
+                                style={{ marginTop: 4 }}
+                            />
+                            <Box>
+                                <Text as="div" size="2" weight="medium">Guided flow</Text>
+                                <Text as="div" size="1" color="gray">
+                                    One step at a time: Customer → Details → Items → Review. Best on phones.
+                                </Text>
+                            </Box>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, minHeight: 44, cursor: 'pointer' }}>
+                            <input
+                                type="radio"
+                                name="documentFormMode"
+                                value="full"
+                                defaultChecked={config.documentFormMode === 'full'}
+                                style={{ marginTop: 4 }}
+                            />
+                            <Box>
+                                <Text as="div" size="2" weight="medium">Full page</Text>
+                                <Text as="div" size="1" color="gray">
+                                    Show every section on one page with jump navigation. Best on desktop.
+                                </Text>
+                            </Box>
+                        </label>
+                    </Flex>
+                </Box>
+
                 <Heading size="3">Billing Configuration</Heading>
                 <Box>
                     <Text as="label" size="2" weight="bold">Checks Payable To</Text>

@@ -222,6 +222,9 @@ export interface BillingConfig {
     paymentMethods: Record<PaymentMethodKey, PaymentMethodEntry>;
 }
 
+/** Layout when creating/editing invoices, estimates, quotes, and receipts. */
+export type DocumentFormMode = 'guided' | 'full';
+
 export interface AppConfig {
     webdavUrl: string;
     webdavUsername: string; // Saved in local storage or env
@@ -233,6 +236,12 @@ export interface AppConfig {
     billing?: BillingConfig;
     /** IANA timezone for calendar display and form parsing (default: "America/New_York"). */
     businessTimezone?: string;
+    /**
+     * Document editor layout preference.
+     * - guided: one section at a time (Customer → Details → Items → Review)
+     * - full: all sections on one page with jump navigation
+     */
+    documentFormMode?: DocumentFormMode;
 }
 
 // ─── Calendar types ───────────────────────────────────────────────────

@@ -14,7 +14,7 @@ export default async function NewQuotePage({
     const params = (await searchParams) || {};
     const { seed, redirectTo } = parseDocumentRouteSeed(params);
     const nextNumber = await getNextNumber("quote");
-    const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
     const backHref = redirectTo || "/admin/quotes";
 
     return (
@@ -26,6 +26,7 @@ export default async function NewQuotePage({
                 clients={clients}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
+                formMode={documentFormMode}
                 seed={seed}
                 redirectTo={redirectTo}
             />

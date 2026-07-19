@@ -18,6 +18,7 @@ import { createInvoiceAction, createJobAction } from '@/app/actions';
 import {
     DocumentChoiceGroup,
     DocumentData,
+    DocumentFormMode,
     DocumentPackage,
     LineItem,
     PaymentEntry,
@@ -26,6 +27,7 @@ import {
     PaymentMethodKey,
     WorkflowStatus,
 } from '@/lib/types';
+import { DEFAULT_DOCUMENT_FORM_MODE } from '@/lib/document-form-mode';
 import { ClientOption } from '@/lib/clients';
 import type { PaymentMethodOption } from '@/lib/document-form-pickers';
 import type { DocumentFormSeed } from '@/lib/document-route-seed';
@@ -65,6 +67,7 @@ export default function NewDocumentForm({
     jobs = [],
     paymentMethods = [],
     seed,
+    formMode = DEFAULT_DOCUMENT_FORM_MODE,
 }: {
     nextNumber: number;
     type: 'invoice' | 'estimate' | 'quote' | 'receipt';
@@ -74,7 +77,10 @@ export default function NewDocumentForm({
     jobs?: JobOption[];
     paymentMethods?: PaymentMethodOption[];
     seed?: DocumentFormSeed;
+    /** From Settings → Documents. guided = step flow; full = all sections. */
+    formMode?: DocumentFormMode;
 }) {
+    const documentFormMode: DocumentFormMode = formMode === 'full' ? 'full' : 'guided';
     const seededJobId = seed?.jobId || initialData?.jobId || initialData?.customer?.jobId || '';
     const seededClientId = seed?.clientId || initialData?.customer?.clientId || '';
 
@@ -307,7 +313,8 @@ export default function NewDocumentForm({
     return (
         <form
             action={createInvoiceAction}
-            className="document-form"
+            className={`document-form document-form--${documentFormMode}`}
+            data-form-mode={documentFormMode}
             onSubmit={(e) => {
                 const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
                 const intent = submitter?.value;
@@ -941,7 +948,7 @@ export default function NewDocumentForm({
                     padding-bottom: calc(160px + env(safe-area-inset-bottom, 0px));
                 }
                 .document-form-section-nav {
-                    display: none;
+                    display: block;
                     position: sticky;
                     top: calc(64px + env(safe-area-inset-top, 0px));
                     z-index: 30;
@@ -949,31 +956,29 @@ export default function NewDocumentForm({
                     background: color-mix(in srgb, var(--color-background) 92%, transparent);
                     backdrop-filter: blur(8px);
                 }
-                .document-form-mobile-steps {
-                    display: block;
-                }
                 .document-form-section {
                     scroll-margin-top: 120px;
                 }
-                @media (max-width: 959px) {
-                    .document-form-section {
-                        display: none;
-                    }
-                    .document-form-section.is-active-step {
-                        display: block;
-                    }
+
+                /* Guided: one section at a time + step controls */
+                .document-form--guided .document-form-section {
+                    display: none;
                 }
-                @media (min-width: 960px) {
-                    .document-form-section-nav {
-                        display: block;
-                    }
-                    .document-form-mobile-steps {
-                        display: none;
-                    }
-                    .document-form-section {
-                        display: block !important;
-                    }
+                .document-form--guided .document-form-section.is-active-step {
+                    display: block;
                 }
+                .document-form--guided .document-form-mobile-steps {
+                    display: block;
+                }
+
+                /* Full page: every section visible; jump nav only */
+                .document-form--full .document-form-section {
+                    display: block !important;
+                }
+                .document-form--full .document-form-mobile-steps {
+                    display: none;
+                }
+
                 .document-form-footer {
                     position: fixed;
                     left: 0;

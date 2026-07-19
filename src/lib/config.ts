@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { AppConfig, BillingConfig } from './types';
+import { DEFAULT_DOCUMENT_FORM_MODE, parseDocumentFormMode } from './document-form-mode';
 
 // Settings live under the persistent `data/` volume so the runtime user
 // (e.g. the unprivileged `nextjs` user inside Docker) can always write to it
@@ -53,10 +54,15 @@ async function readConfigFromDisk(): Promise<Partial<AppConfig> | null> {
 export async function getAppConfig(): Promise<Partial<AppConfig>> {
     const parsed = await readConfigFromDisk();
     if (!parsed) {
-        return { billing: getDefaultBillingConfig(), businessTimezone: 'America/New_York' };
+        return {
+            billing: getDefaultBillingConfig(),
+            businessTimezone: 'America/New_York',
+            documentFormMode: DEFAULT_DOCUMENT_FORM_MODE,
+        };
     }
     return {
         ...parsed,
+        documentFormMode: parseDocumentFormMode(parsed.documentFormMode),
         billing: {
             ...getDefaultBillingConfig(),
             ...parsed.billing,

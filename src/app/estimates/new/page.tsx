@@ -7,11 +7,18 @@ import { requireAdminPage } from "@/lib/require-admin-session";
 export default async function NewEstimatePage() {
     await requireAdminPage('/estimates/new');
     const nextNumber = await getNextNumber('estimate');
-    const { clients, jobs, paymentMethods } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p="5">
-            <NewDocumentForm nextNumber={nextNumber} type="estimate" clients={clients} jobs={jobs} paymentMethods={paymentMethods} />
+            <NewDocumentForm
+                nextNumber={nextNumber}
+                type="estimate"
+                clients={clients}
+                jobs={jobs}
+                paymentMethods={paymentMethods}
+                formMode={documentFormMode}
+            />
         </Container>
     );
 }
