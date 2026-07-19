@@ -40,8 +40,12 @@ jobs:
         run: |
           echo "APP_PORT=${{ secrets.APP_PORT }}" >> .env
           echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}" >> .env
+          # Auth.js v5 prefers AUTH_URL / AUTH_SECRET / AUTH_TRUST_HOST in production.
+          echo "AUTH_URL=${{ vars.NEXTAUTH_URL }}" >> .env
+          echo "AUTH_TRUST_HOST=true" >> .env
           if [ -n "${{ secrets.NEXTAUTH_SECRET }}" ]; then
             echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
+            echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
           fi
           if [ -n "${{ secrets.EMAIL_SERVER }}" ]; then
             echo "EMAIL_SERVER=${{ secrets.EMAIL_SERVER }}" >> .env
