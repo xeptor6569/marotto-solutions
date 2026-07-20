@@ -3,6 +3,7 @@
 import { signOut } from '@/lib/auth';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
 import { AppConfig, BillingConfig, DocumentData, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
+import { parseDocumentFormMode } from '@/lib/document-form-mode';
 import { checkConnection } from '@/lib/webdav';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
@@ -60,6 +61,7 @@ export async function saveSettingsAction(formData: FormData) {
     const checkPayableTo = ((formData.get('checkPayableTo') as string) || '').trim();
     const paymentInstructions = ((formData.get('paymentInstructions') as string) || '').trim();
     const businessTimezone = ((formData.get('businessTimezone') as string) || '').trim();
+    const documentFormMode = parseDocumentFormMode(formData.get('documentFormMode'));
     const paymentMethodKeys: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
     const currentConfig = await getAppConfig();
 
@@ -83,6 +85,7 @@ export async function saveSettingsAction(formData: FormData) {
         webdavUsername: username,
         webdavPassword: password, // Note: Storing plain text password locally. Ideal? No. Functional for self-hosted? Yes.
         businessTimezone: businessTimezone || undefined,
+        documentFormMode,
         billing: {
             checkPayableTo,
             paymentInstructions,
@@ -137,6 +140,7 @@ export async function saveSettingsAction(formData: FormData) {
     revalidatePath('/settings');
     revalidatePath('/');
     revalidatePath('/dashboard');
+    revalidatePath('/admin');
     revalidatePath('/admin/calendar');
     return { success: true };
 }
