@@ -1,16 +1,9 @@
-import { notFound } from 'next/navigation';
 import ContractPreview from '@/components/ContractPreview';
-import { getContractByDisplayId } from '@/lib/contracts';
-import { requireAdminSession } from '@/lib/require-admin-session';
+import { resolveLegacyContractShare } from '@/lib/legacy-share-redirect';
 
 export default async function ContractPublicPage({ params }: { params: Promise<{ id: string }> }) {
-    await requireAdminSession();
-
     const { id } = await params;
-    const contract = await getContractByDisplayId(id);
-    if (!contract) {
-        notFound();
-    }
+    const contract = await resolveLegacyContractShare(id);
     return (
         <ContractPreview
             contract={contract}

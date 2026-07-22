@@ -6,8 +6,8 @@ import type { Session } from 'next-auth';
 export { isAdminSession } from '@/lib/admin-auth';
 
 /**
- * Require an admin session for sequential document ID routes.
- * Anonymous / non-admin callers get 404 (do not reveal resource existence).
+ * Require an admin session (e.g. for routes that should 404 when anonymous).
+ * Prefer {@link requireAdminPage} for operator pages that should redirect to sign-in.
  */
 export async function requireAdminSession(): Promise<Session> {
     const session = await auth();
