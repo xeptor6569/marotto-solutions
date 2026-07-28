@@ -47,7 +47,14 @@ import DocumentLineItemEditor, {
 } from '@/components/DocumentLineItemEditor';
 import DocumentOptionsEditor from '@/components/DocumentOptionsEditor';
 
-const nativeSelectStyle = { width: '100%', marginTop: 6, borderRadius: 8, minHeight: 36, padding: '0 10px' } as const;
+const nativeSelectStyle = {
+    width: '100%',
+    marginTop: 6,
+    borderRadius: 8,
+    minHeight: 36,
+    padding: '0 10px',
+    fontSize: 16,
+} as const;
 
 type FormStep = 'customer' | 'details' | 'items' | 'review';
 
@@ -304,10 +311,15 @@ export default function NewDocumentForm({
         docStatus === 'sent' ? 'blue' :
         docStatus === 'void' ? 'red' : 'orange';
 
-    const scrollToSection = (id: FormStep) => {
+    const goToStep = (id: FormStep) => {
         setStep(id);
-        const el = document.getElementById(`doc-section-${id}`);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (documentFormMode === 'full') {
+            requestAnimationFrame(() => {
+                document.getElementById(`doc-section-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            return;
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     return (
@@ -369,7 +381,7 @@ export default function NewDocumentForm({
                                 type="button"
                                 size="2"
                                 variant={step === s.id ? 'solid' : 'soft'}
-                                onClick={() => scrollToSection(s.id)}
+                                onClick={() => goToStep(s.id)}
                             >
                                 {s.label}
                             </Button>
@@ -377,31 +389,21 @@ export default function NewDocumentForm({
                     </Flex>
                 </Box>
 
-                <Box className="document-form-mobile-steps no-print">
-                    <Flex justify="between" align="center" gap="2">
-                        <Text size="2" weight="bold">
-                            Step {stepIndex + 1} of {STEPS.length}: {STEPS[stepIndex]?.label}
-                        </Text>
-                        <Flex gap="2">
-                            <Button
+                <Box className="document-form-guided-progress no-print">
+                    <Text size="2" weight="bold">
+                        Step {stepIndex + 1} of {STEPS.length} · {STEPS[stepIndex]?.label}
+                    </Text>
+                    <Flex gap="1" mt="2" className="document-form-progress-segments" role="navigation" aria-label="Form steps">
+                        {STEPS.map((s, i) => (
+                            <button
+                                key={s.id}
                                 type="button"
-                                size="2"
-                                variant="soft"
-                                disabled={stepIndex === 0}
-                                onClick={() => setStep(STEPS[stepIndex - 1].id)}
-                            >
-                                <ChevronLeft size={16} /> Back
-                            </Button>
-                            <Button
-                                type="button"
-                                size="2"
-                                variant="soft"
-                                disabled={stepIndex === STEPS.length - 1}
-                                onClick={() => setStep(STEPS[stepIndex + 1].id)}
-                            >
-                                Next <ChevronRight size={16} />
-                            </Button>
-                        </Flex>
+                                className={`document-form-progress-segment${i < stepIndex ? ' is-complete' : ''}${i === stepIndex ? ' is-active' : ''}`}
+                                onClick={() => goToStep(s.id)}
+                                aria-label={`Go to ${s.label}`}
+                                aria-current={i === stepIndex ? 'step' : undefined}
+                            />
+                        ))}
                     </Flex>
                 </Box>
 
@@ -913,6 +915,33 @@ export default function NewDocumentForm({
 
             <Box className="document-form-footer no-print">
                 <Card>
+                    {documentFormMode === 'guided' ? (
+                        <Flex justify="between" align="center" gap="2" mb="2" className="document-form-footer-steps">
+                            <Button
+                                type="button"
+                                size="2"
+                                variant="soft"
+                                disabled={stepIndex === 0}
+                                onClick={() => goToStep(STEPS[stepIndex - 1].id)}
+                                style={{ minHeight: 44 }}
+                            >
+                                <ChevronLeft size={16} /> Back
+                            </Button>
+                            {stepIndex < STEPS.length - 1 ? (
+                                <Button
+                                    type="button"
+                                    size="2"
+                                    variant="soft"
+                                    onClick={() => goToStep(STEPS[stepIndex + 1].id)}
+                                    style={{ minHeight: 44 }}
+                                >
+                                    Next <ChevronRight size={16} />
+                                </Button>
+                            ) : (
+                                <Text size="2" color="gray">Done — save below</Text>
+                            )}
+                        </Flex>
+                    ) : null}
                     <Flex gap="2" wrap="wrap" align="center">
                         <Button type="submit" name="intent" value="save" variant="soft" style={{ flex: '1 1 120px', minHeight: 44 }}>
                             <SaveIcon size={16} /> Save
@@ -959,15 +988,40 @@ export default function NewDocumentForm({
                 .document-form-section {
                     scroll-margin-top: 120px;
                 }
+                .document-form-guided-progress {
+                    display: none;
+                }
+                .document-form-progress-segments {
+                    width: 100%;
+                }
+                .document-form-progress-segment {
+                    flex: 1;
+                    height: 6px;
+                    min-height: 24px;
+                    border: none;
+                    padding: 9px 0;
+                    border-radius: 2px;
+                    background: var(--gray-a5);
+                    background-clip: content-box;
+                    cursor: pointer;
+                }
+                .document-form-progress-segment.is-complete,
+                .document-form-progress-segment.is-active {
+                    background: var(--accent-9);
+                    background-clip: content-box;
+                }
 
-                /* Guided: one section at a time + step controls */
+                /* Guided: one section at a time + progress; hide full-mode jump pills */
                 .document-form--guided .document-form-section {
                     display: none;
                 }
                 .document-form--guided .document-form-section.is-active-step {
                     display: block;
                 }
-                .document-form--guided .document-form-mobile-steps {
+                .document-form--guided .document-form-section-nav {
+                    display: none;
+                }
+                .document-form--guided .document-form-guided-progress {
                     display: block;
                 }
 
@@ -975,7 +1029,7 @@ export default function NewDocumentForm({
                 .document-form--full .document-form-section {
                     display: block !important;
                 }
-                .document-form--full .document-form-mobile-steps {
+                .document-form--full .document-form-guided-progress {
                     display: none;
                 }
 
@@ -993,9 +1047,22 @@ export default function NewDocumentForm({
                     max-width: 720px;
                     margin: 0 auto;
                 }
+                @media (max-width: 959px) {
+                    .document-form input,
+                    .document-form select,
+                    .document-form textarea {
+                        font-size: 16px !important;
+                    }
+                    .document-form--guided {
+                        padding-bottom: calc(220px + env(safe-area-inset-bottom, 0px));
+                    }
+                }
                 @media (min-width: 960px) {
                     .document-form {
                         padding-bottom: 100px;
+                    }
+                    .document-form--guided {
+                        padding-bottom: 140px;
                     }
                     .document-form-footer {
                         bottom: 0;

@@ -79,7 +79,7 @@ export default function MarkdownEditor({
                 value={isControlled ? value : undefined}
                 defaultValue={isControlled ? undefined : defaultValue}
                 onChange={isControlled ? (e) => onChange?.(e.target.value) : undefined}
-                style={{ fontFamily: 'var(--font-geist-mono), ui-monospace, monospace', fontSize: 13 }}
+                style={{ fontFamily: 'var(--font-geist-mono), ui-monospace, monospace', fontSize: 16 }}
             />
         </Box>
     );
