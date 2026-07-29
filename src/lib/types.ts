@@ -244,6 +244,32 @@ export interface AppConfig {
     documentFormMode?: DocumentFormMode;
 }
 
+/** Document types that support reusable presets (excludes leads). */
+export type PresetDocumentType = Exclude<DocumentType, 'lead'>;
+
+/**
+ * Named, client-agnostic blueprint for new documents.
+ * Empty `documentTypes` means the preset applies to all invoice/estimate/quote/receipt forms.
+ */
+export interface DocumentPreset {
+    id: string;
+    name: string;
+    documentTypes: PresetDocumentType[];
+    title?: string;
+    notes?: string;
+    lineItems: LineItem[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface DocumentPresetInput {
+    name: string;
+    documentTypes?: PresetDocumentType[];
+    title?: string;
+    notes?: string;
+    lineItems: LineItem[];
+}
+
 // ─── Calendar types ───────────────────────────────────────────────────
 
 export type CalendarEventStatus = 'scheduled' | 'confirmed' | 'completed' | 'cancelled';

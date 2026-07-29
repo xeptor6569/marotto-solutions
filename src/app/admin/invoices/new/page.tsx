@@ -14,7 +14,7 @@ export default async function NewInvoicePage({
     const params = (await searchParams) || {};
     const { seed, redirectTo } = parseDocumentRouteSeed(params);
     const nextNumber = await getNextNumber("invoice");
-    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
     const backHref = redirectTo || "/admin/invoices";
 
     return (
@@ -26,6 +26,7 @@ export default async function NewInvoicePage({
                 clients={clients}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
+                presets={presets}
                 formMode={documentFormMode}
                 seed={seed}
                 redirectTo={redirectTo}

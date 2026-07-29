@@ -21,6 +21,7 @@ export interface RestoreResult {
         documents: number;
         attachmentsRestored: number;
         settingsRestored: boolean;
+        presetsRestored: number;
     };
 }
 

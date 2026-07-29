@@ -17,6 +17,7 @@ import {
     Upload,
     Users,
     Archive,
+    Bookmark,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
@@ -78,6 +79,9 @@ function MoreMenu() {
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/contracts">Contracts</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
+                    <Link href="/admin/presets">Presets</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/receipts">Receipts</Link>
@@ -155,6 +159,9 @@ export default function AdminShell({
                         </Flex>
                         <Box mt="auto">
                             <Flex direction="column" gap="2">
+                                <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
+                                    <Link href="/admin/presets"><Bookmark size={16} /> Presets</Link>
+                                </Button>
                                 <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
                                     <Link href="/admin/settings"><Settings size={16} /> Settings</Link>
                                 </Button>

@@ -2,9 +2,10 @@ import { getClientOptions } from '@/lib/clients';
 import { getJobOptions } from '@/lib/jobs';
 import { getAppConfig } from '@/lib/config';
 import { DEFAULT_DOCUMENT_FORM_MODE, parseDocumentFormMode } from '@/lib/document-form-mode';
+import { listPresets } from '@/lib/presets';
 import type { ClientOption } from '@/lib/clients';
 import type { LeadOption } from '@/lib/leads';
-import type { DocumentFormMode, JobOption, PaymentMethodKey } from '@/lib/types';
+import type { DocumentFormMode, DocumentPreset, JobOption, PaymentMethodKey } from '@/lib/types';
 
 export type PaymentMethodOption = { key: PaymentMethodKey; label: string };
 
@@ -15,11 +16,13 @@ export async function getDocumentFormPickers(): Promise<{
     jobs: JobOption[];
     paymentMethods: PaymentMethodOption[];
     documentFormMode: DocumentFormMode;
+    presets: DocumentPreset[];
 }> {
-    const [clients, jobs, config] = await Promise.all([
+    const [clients, jobs, config, presets] = await Promise.all([
         getClientOptions(),
         getJobOptions(),
         getAppConfig(),
+        listPresets(),
     ]);
     const paymentMethods = Object.entries(config.billing?.paymentMethods || {})
         .filter(([, method]) => method.enabled)
@@ -34,5 +37,6 @@ export async function getDocumentFormPickers(): Promise<{
         jobs,
         paymentMethods,
         documentFormMode: parseDocumentFormMode(config.documentFormMode ?? DEFAULT_DOCUMENT_FORM_MODE),
+        presets,
     };
 }

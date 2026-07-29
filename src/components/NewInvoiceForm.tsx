@@ -20,6 +20,7 @@ import {
     DocumentData,
     DocumentFormMode,
     DocumentPackage,
+    DocumentPreset,
     LineItem,
     PaymentEntry,
     PaymentKind,
@@ -39,6 +40,10 @@ import {
     validateRecordPayment,
 } from '@/lib/document-save';
 import { documentDisplayTotal } from '@/lib/document-options';
+import {
+    applyPresetLineItems,
+    presetMatchesDocumentType,
+} from '@/lib/preset-utils';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownContent from '@/components/MarkdownContent';
 import DocumentLineItemEditor, {
@@ -46,6 +51,7 @@ import DocumentLineItemEditor, {
     recalcLineItem,
 } from '@/components/DocumentLineItemEditor';
 import DocumentOptionsEditor from '@/components/DocumentOptionsEditor';
+import SaveAsPresetButton from '@/components/SaveAsPresetButton';
 
 const nativeSelectStyle = {
     width: '100%',
@@ -73,6 +79,7 @@ export default function NewDocumentForm({
     clients = [],
     jobs = [],
     paymentMethods = [],
+    presets = [],
     seed,
     formMode = DEFAULT_DOCUMENT_FORM_MODE,
 }: {
@@ -83,11 +90,13 @@ export default function NewDocumentForm({
     clients?: ClientOption[];
     jobs?: JobOption[];
     paymentMethods?: PaymentMethodOption[];
+    presets?: DocumentPreset[];
     seed?: DocumentFormSeed;
     /** From Settings → Documents. guided = step flow; full = all sections. */
     formMode?: DocumentFormMode;
 }) {
     const documentFormMode: DocumentFormMode = formMode === 'full' ? 'full' : 'guided';
+    const isEditing = Boolean(initialData);
     const seededJobId = seed?.jobId || initialData?.jobId || initialData?.customer?.jobId || '';
     const seededClientId = seed?.clientId || initialData?.customer?.clientId || '';
 
@@ -119,8 +128,11 @@ export default function NewDocumentForm({
     const [customerPhone, setCustomerPhone] = useState(() =>
         formatPhoneInput(initialData?.customer?.phone || ''),
     );
+    const [docTitle, setDocTitle] = useState(initialData?.title || '');
     const [notes, setNotes] = useState(initialData?.notes || '');
+    const [selectedPresetId, setSelectedPresetId] = useState('');
     const [step, setStep] = useState<FormStep>('customer');
+    const applicablePresets = presets.filter((preset) => presetMatchesDocumentType(preset, type));
 
     const [warrantyEnabled, setWarrantyEnabled] = useState<boolean>(initialData?.warranty?.enabled ?? false);
     const [warrantyTitle, setWarrantyTitle] = useState(initialData?.warranty?.title || '');
@@ -291,6 +303,20 @@ export default function NewDocumentForm({
         setLineItems(lineItems.map((item) =>
             item.id === id ? recalcLineItem(item, field, value) : item,
         ));
+    };
+
+    const applyPreset = (presetId: string) => {
+        setSelectedPresetId(presetId);
+        if (!presetId) return;
+        const preset = applicablePresets.find((p) => p.id === presetId);
+        if (!preset) return;
+        setLineItems(applyPresetLineItems(preset));
+        if (preset.notes != null && preset.notes !== '') {
+            setNotes(preset.notes);
+        }
+        if (preset.title) {
+            setDocTitle(preset.title);
+        }
     };
 
     const applyPaymentFraction = (fraction: number) => {
@@ -509,6 +535,15 @@ export default function NewDocumentForm({
                             <Heading size="3" mb="3">Details</Heading>
                             <Flex direction="column" gap="3">
                                 <Box>
+                                    <Text as="label" size="2">Title (optional)</Text>
+                                    <TextField.Root
+                                        name="title"
+                                        value={docTitle}
+                                        onChange={(e) => setDocTitle(e.target.value)}
+                                        placeholder="Short label for lists"
+                                    />
+                                </Box>
+                                <Box>
                                     <Text as="label" size="2">Date</Text>
                                     <TextField.Root name="date" type="date" defaultValue={initialData?.date?.split('T')[0] || new Date().toISOString().split('T')[0]} required />
                                 </Box>
@@ -591,7 +626,27 @@ export default function NewDocumentForm({
                     data-step="items"
                 >
                     <Card>
-                        <Heading size="3" mb="3">{showDocumentOptions ? 'Base scope' : 'Items'}</Heading>
+                        <Flex justify="between" align="start" gap="3" wrap="wrap" mb="3">
+                            <Heading size="3">{showDocumentOptions ? 'Base scope' : 'Items'}</Heading>
+                            {!isEditing && applicablePresets.length > 0 ? (
+                                <Box style={{ minWidth: 220, flex: '1 1 220px', maxWidth: 360 }}>
+                                    <Text as="label" size="1" color="gray">Apply preset</Text>
+                                    <select
+                                        value={selectedPresetId}
+                                        onChange={(e) => applyPreset(e.target.value)}
+                                        style={nativeSelectStyle}
+                                        aria-label="Apply document preset"
+                                    >
+                                        <option value="">Choose a preset…</option>
+                                        {applicablePresets.map((preset) => (
+                                            <option key={preset.id} value={preset.id}>
+                                                {preset.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Box>
+                            ) : null}
+                        </Flex>
                         {type === 'quote' ? (
                             <Text size="2" color="gray" mb="3" as="p">
                                 Enter the agreed quantities and unit prices — the document total is the decided price for the customer.
@@ -622,9 +677,19 @@ export default function NewDocumentForm({
                             ))}
                         </Flex>
                         <Flex justify="between" align="center" mt="4" wrap="wrap" gap="2">
-                            <Button type="button" variant="soft" onClick={addLineItem} style={{ minHeight: 44 }}>
-                                <PlusIcon size={16} /> Add Item
-                            </Button>
+                            <Flex gap="2" wrap="wrap">
+                                <Button type="button" variant="soft" onClick={addLineItem} style={{ minHeight: 44 }}>
+                                    <PlusIcon size={16} /> Add Item
+                                </Button>
+                                <SaveAsPresetButton
+                                    mode="inline"
+                                    defaultName={docTitle || undefined}
+                                    documentType={type}
+                                    title={docTitle}
+                                    notes={notes}
+                                    lineItems={lineItems}
+                                />
+                            </Flex>
                             <Box style={{ textAlign: 'right' }}>
                                 {discountSavings > 0 ? (
                                     <>

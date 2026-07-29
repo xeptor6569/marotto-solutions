@@ -18,7 +18,7 @@ export default async function EditInvoicePage({
     const query = (await searchParams) || {};
     const { redirectTo: redirectFromQuery } = parseDocumentRouteSeed(query);
     const doc = await getDocumentById(id);
-    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
 
     if (!doc || doc.type !== "invoice") {
         notFound();
@@ -43,6 +43,7 @@ export default async function EditInvoicePage({
                 clients={clients}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
+                presets={presets}
                 formMode={documentFormMode}
             />
         </Container>

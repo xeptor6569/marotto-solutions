@@ -274,6 +274,7 @@ export async function createInvoiceAction(formData: FormData) {
     const date = formData.get('date') as string;
     const dueDate = formData.get('dueDate') as string;
     const notes = (formData.get('notes') as string) || '';
+    const title = ((formData.get('title') as string) || '').trim();
     const type = (formData.get('type') as string) as DocumentType || 'invoice';
     const currentStatus = parseFormStatus(formData.get('currentStatus') as string | null, 'draft');
     const formStatus = parseFormStatus(formData.get('status') as string | null, currentStatus);
@@ -385,6 +386,7 @@ export async function createInvoiceAction(formData: FormData) {
 
     const doc: DocumentData = {
         id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,
+        ...(title ? { title } : {}),
         number,
         type,
         date,
