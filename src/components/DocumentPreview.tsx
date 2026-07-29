@@ -117,7 +117,7 @@ function getStatusColor(status: DocumentData["status"]) {
 }
 
 function getDisplayName(doc: DocumentData) {
-    return doc.title ? `${doc.id} - ${doc.title}` : doc.id;
+    return doc.title ? `${doc.id} — ${doc.title}` : doc.id;
 }
 
 function normalizePhoneDigits(value?: string) {

@@ -26,7 +26,8 @@ import {
 } from '@/lib/deposit-invoice';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
-import { createJob, getJobOptions } from '@/lib/jobs';
+import { createJob, getJobById, getJobOptions } from '@/lib/jobs';
+import { suggestDocumentTitle } from '@/lib/document-labels';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
@@ -320,6 +321,20 @@ export async function createInvoiceAction(formData: FormData) {
         throw new Error('Add at least one line item before saving.');
     }
 
+    let resolvedTitle = title;
+    if (!resolvedTitle) {
+        let jobName: string | undefined;
+        if (selectedJobId) {
+            try {
+                const job = await getJobById(selectedJobId);
+                jobName = job?.name;
+            } catch {
+                // Ignore — title suggestion can fall back to line items.
+            }
+        }
+        resolvedTitle = suggestDocumentTitle(items, jobName) || '';
+    }
+
     const supportsOptions = type === 'estimate' || type === 'quote';
     const estimatedHours = supportsOptions
         ? parseEstimatedHours(formData.get('estimatedHours'))
@@ -386,7 +401,7 @@ export async function createInvoiceAction(formData: FormData) {
 
     const doc: DocumentData = {
         id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,
-        ...(title ? { title } : {}),
+        ...(resolvedTitle ? { title: resolvedTitle } : {}),
         number,
         type,
         date,

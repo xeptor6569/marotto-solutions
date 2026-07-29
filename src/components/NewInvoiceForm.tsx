@@ -98,7 +98,10 @@ export default function NewDocumentForm({
     const documentFormMode: DocumentFormMode = formMode === 'full' ? 'full' : 'guided';
     const isEditing = Boolean(initialData);
     const seededJobId = seed?.jobId || initialData?.jobId || initialData?.customer?.jobId || '';
-    const seededClientId = seed?.clientId || initialData?.customer?.clientId || '';
+    const seededClientId = seed?.clientId
+        || jobs.find((j) => j.id === seed?.jobId)?.clientId
+        || initialData?.customer?.clientId
+        || '';
 
     const [lineItems, setLineItems] = useState<LineItem[]>([
         ...(initialData?.lineItems?.length
@@ -125,8 +128,24 @@ export default function NewDocumentForm({
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
     const [paymentError, setPaymentError] = useState('');
     const [showMoreActions, setShowMoreActions] = useState(false);
+    const seededClient = clients.find((c) => {
+        if (seed?.jobId) {
+            const job = jobs.find((j) => j.id === seed.jobId);
+            if (job?.clientId) return c.id === job.clientId;
+        }
+        return seed?.clientId ? c.id === seed.clientId : false;
+    });
     const [customerPhone, setCustomerPhone] = useState(() =>
-        formatPhoneInput(initialData?.customer?.phone || ''),
+        formatPhoneInput(initialData?.customer?.phone || seededClient?.phone || ''),
+    );
+    const [customerName, setCustomerName] = useState(
+        initialData?.customer?.name || seededClient?.name || '',
+    );
+    const [customerEmail, setCustomerEmail] = useState(
+        initialData?.customer?.email || seededClient?.email || '',
+    );
+    const [customerAddress, setCustomerAddress] = useState(
+        initialData?.customer?.address || seededClient?.address || '',
     );
     const [docTitle, setDocTitle] = useState(initialData?.title || '');
     const [notes, setNotes] = useState(initialData?.notes || '');
@@ -148,32 +167,28 @@ export default function NewDocumentForm({
     const jobLocked = Boolean(seed?.jobId);
     const stepIndex = STEPS.findIndex((s) => s.id === step);
 
+    const fillCustomerFromClient = (client: ClientOption | undefined) => {
+        if (!client) return;
+        setCustomerName(client.name || '');
+        setCustomerEmail(client.email || '');
+        setCustomerPhone(formatPhoneInput(client.phone || ''));
+        setCustomerAddress(client.address || '');
+    };
+
     useEffect(() => {
         if (!seed?.clientId && !seed?.jobId) return;
-        if (seed.jobId) {
-            const selectedJob = jobs.find((job) => job.id === seed.jobId);
-            if (selectedJob?.clientId) {
-                const client = clients.find((c) => c.id === selectedJob.clientId);
-                if (client) {
-                    setSelectedClientId(client.id);
-                    queueMicrotask(() => {
-                        setCustomerInputValue('customerName', client.name || '');
-                        setCustomerInputValue('customerEmail', client.email || '');
-                        setCustomerPhone(formatPhoneInput(client.phone || ''));
-                        setCustomerInputValue('customerAddress', client.address || '');
-                    });
-                }
-            }
-        } else if (seed.clientId) {
-            const client = clients.find((c) => c.id === seed.clientId);
-            if (client) {
-                queueMicrotask(() => {
-                    setCustomerInputValue('customerName', client.name || '');
-                    setCustomerInputValue('customerEmail', client.email || '');
-                    setCustomerPhone(formatPhoneInput(client.phone || ''));
-                    setCustomerInputValue('customerAddress', client.address || '');
-                });
-            }
+
+        const job = seed.jobId ? jobs.find((j) => j.id === seed.jobId) : undefined;
+        const clientId = job?.clientId || seed.clientId || '';
+        if (!clientId) return;
+
+        const client = clients.find((c) => c.id === clientId);
+        if (!client) return;
+
+        setSelectedClientId(client.id);
+        fillCustomerFromClient(client);
+        if (!initialData?.title && job?.name?.trim()) {
+            setDocTitle((current) => (current.trim() ? current : job.name.trim()));
         }
         // Only apply seed once on mount
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -217,20 +232,10 @@ export default function NewDocumentForm({
         }
     }, [balanceDue, paymentAmount]);
 
-    const setCustomerInputValue = (name: string, value: string) => {
-        const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
-        if (input) input.value = value;
-    };
-
     const handleClientChange = (id: string) => {
         setSelectedClientId(id);
         if (!id) return;
-        const selected = clients.find((client) => client.id === id);
-        if (!selected) return;
-        setCustomerInputValue('customerName', selected.name || '');
-        setCustomerInputValue('customerEmail', selected.email || '');
-        setCustomerPhone(formatPhoneInput(selected.phone || ''));
-        setCustomerInputValue('customerAddress', selected.address || '');
+        fillCustomerFromClient(clients.find((client) => client.id === id));
     };
 
     const applyJobDefaults = (jobId: string) => {
@@ -240,6 +245,10 @@ export default function NewDocumentForm({
         if (!selectedJob) return;
         if (selectedJob.clientId) {
             handleClientChange(selectedJob.clientId);
+        }
+        // Suggest a list label from the job when the document title is still empty.
+        if (selectedJob.name?.trim()) {
+            setDocTitle((current) => (current.trim() ? current : selectedJob.name.trim()));
         }
     };
 
@@ -499,11 +508,23 @@ export default function NewDocumentForm({
                             ) : null}
                             <Box>
                                 <Text as="label" size="2">Name</Text>
-                                <TextField.Root name="customerName" placeholder="Client Name" defaultValue={initialData?.customer?.name} required />
+                                <TextField.Root
+                                    name="customerName"
+                                    placeholder="Client Name"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    required
+                                />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Email</Text>
-                                <TextField.Root name="customerEmail" type="email" placeholder="client@example.com" defaultValue={initialData?.customer?.email} />
+                                <TextField.Root
+                                    name="customerEmail"
+                                    type="email"
+                                    placeholder="client@example.com"
+                                    value={customerEmail}
+                                    onChange={(e) => setCustomerEmail(e.target.value)}
+                                />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Phone</Text>
@@ -519,7 +540,12 @@ export default function NewDocumentForm({
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Address</Text>
-                                <TextArea name="customerAddress" placeholder="Street, City, Zip" defaultValue={initialData?.customer?.address} />
+                                <TextArea
+                                    name="customerAddress"
+                                    placeholder="Street, City, Zip"
+                                    value={customerAddress}
+                                    onChange={(e) => setCustomerAddress(e.target.value)}
+                                />
                             </Box>
                         </Flex>
                     </Card>
@@ -540,8 +566,11 @@ export default function NewDocumentForm({
                                         name="title"
                                         value={docTitle}
                                         onChange={(e) => setDocTitle(e.target.value)}
-                                        placeholder="Short label for lists"
+                                        placeholder="e.g. Weekly lawn mowing — shown in lists"
                                     />
+                                    <Text as="div" size="1" color="gray" mt="1">
+                                        Helps identify this document on the dashboard. If blank, the first line item is used.
+                                    </Text>
                                 </Box>
                                 <Box>
                                     <Text as="label" size="2">Date</Text>

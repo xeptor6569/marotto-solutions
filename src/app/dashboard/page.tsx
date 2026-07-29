@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getDocuments } from "@/lib/data";
 import { getContracts } from "@/lib/contracts";
 import { requireAdminPage } from "@/lib/require-admin-session";
+import { documentListLabel, documentListSubLabel } from "@/lib/document-labels";
 
 export default async function Home() {
   await requireAdminPage("/dashboard");
@@ -122,8 +123,10 @@ export default async function Home() {
                 <Flex key={inv.id} justify="between" align="center" asChild>
                   <Link href={`/invoices/${inv.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                     <Box>
-                      <Text size="2" weight="bold">#{inv.number} - {inv.customer.name}</Text>
-                      {inv.title ? <Box><Text size="1">{inv.title}</Text></Box> : null}
+                      <Text size="2" weight="bold">{documentListLabel(inv)}</Text>
+                      {documentListSubLabel(inv) ? (
+                        <Box><Text size="1" color="gray">{documentListSubLabel(inv)}</Text></Box>
+                      ) : null}
                       <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
                     </Box>
                     <Badge color={inv.status === 'paid' ? 'green' : 'orange'}>{inv.status}</Badge>
@@ -145,8 +148,10 @@ export default async function Home() {
                 <Flex key={est.id} justify="between" align="center" asChild>
                   <Link href={`/estimates/${est.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                     <Box>
-                      <Text size="2" weight="bold">#{est.number} - {est.customer.name}</Text>
-                      {est.title ? <Box><Text size="1">{est.title}</Text></Box> : null}
+                      <Text size="2" weight="bold">{documentListLabel(est)}</Text>
+                      {documentListSubLabel(est) ? (
+                        <Box><Text size="1" color="gray">{documentListSubLabel(est)}</Text></Box>
+                      ) : null}
                       <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
                     </Box>
                     <Badge color="blue">{est.status}</Badge>
@@ -167,8 +172,10 @@ export default async function Home() {
                 <Flex key={q.id} justify="between" align="center" asChild>
                   <Link href={`/quotes/${q.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                     <Box>
-                      <Text size="2" weight="bold">#{q.number} - {q.customer.name}</Text>
-                      {q.title ? <Box><Text size="1">{q.title}</Text></Box> : null}
+                      <Text size="2" weight="bold">{documentListLabel(q)}</Text>
+                      {documentListSubLabel(q) ? (
+                        <Box><Text size="1" color="gray">{documentListSubLabel(q)}</Text></Box>
+                      ) : null}
                       <Box><Text size="1" color="gray">{new Date(q.date).toLocaleDateString()}</Text></Box>
                     </Box>
                     <Badge color="blue">{q.status}</Badge>
@@ -189,7 +196,10 @@ export default async function Home() {
                 <Flex key={r.id} justify="between" align="center" asChild>
                   <Link href={`/receipts/${r.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', width: '100%', justifyContent: 'space-between' }}>
                     <Box>
-                      <Text size="2" weight="bold">#{r.id}</Text>
+                      <Text size="2" weight="bold">{documentListLabel(r)}</Text>
+                      {documentListSubLabel(r) ? (
+                        <Box><Text size="1" color="gray">{documentListSubLabel(r)}</Text></Box>
+                      ) : null}
                       <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
                     </Box>
                     <Badge color="green">${r.total}</Badge>

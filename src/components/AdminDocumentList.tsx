@@ -11,7 +11,7 @@ import DeleteLeadButton from "@/components/DeleteLeadButton";
 import EmptyState from "@/components/EmptyState";
 import { convertDocumentsAction, duplicateDocumentsAction, sendDocumentsAction } from "@/app/admin/document-bulk-actions";
 import { convertTargets } from "@/lib/convert-document";
-import { DOC_LABEL } from "@/lib/document-labels";
+import { DOC_LABEL, documentListLabel } from "@/lib/document-labels";
 import { hasPendingApprovalLines } from "@/lib/pending-client-approval";
 import { WORKFLOW_STATUSES, workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
 
@@ -107,6 +107,7 @@ export default function AdminDocumentList({
             const matchesQuery = !q
                 || doc.id.toLowerCase().includes(q)
                 || String(doc.number).includes(q)
+                || (doc.title || "").toLowerCase().includes(q)
                 || (doc.customer.name || "").toLowerCase().includes(q)
                 || (doc.customer.email || "").toLowerCase().includes(q)
                 || (doc.notes || "").toLowerCase().includes(q);
@@ -433,8 +434,7 @@ export default function AdminDocumentList({
                                             ) : null}
                                             <Box style={{ minWidth: 0 }}>
                                                 <Text size="1" color="gray" weight="bold">{numberLabel}</Text>
-                                                <Text as="div" weight="bold" size="3">#{doc.number}</Text>
-                                                {doc.title ? <Text as="div" size="2" color="gray">{doc.title}</Text> : null}
+                                                <Text as="div" weight="bold" size="3">{documentListLabel(doc)}</Text>
                                                 <Text as="div" size="1" color="gray">{doc.id}</Text>
                                             </Box>
                                         </Flex>
@@ -538,8 +538,7 @@ export default function AdminDocumentList({
                                                 </Table.Cell>
                                             ) : null}
                                             <Table.Cell>
-                                                <Text weight="bold">#{doc.number}</Text>
-                                                {doc.title ? <Text as="div" size="1">{doc.title}</Text> : null}
+                                                <Text weight="bold">{documentListLabel(doc)}</Text>
                                                 <Text as="div" size="1" color="gray">{doc.id}</Text>
                                             </Table.Cell>
                                             <Table.Cell>
