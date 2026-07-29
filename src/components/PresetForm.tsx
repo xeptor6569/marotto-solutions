@@ -135,7 +135,7 @@ export default function PresetForm({
                             />
                         </Box>
                         <Box>
-                            <Text as="label" size="2" weight="medium" mb="2" as="div">
+                            <Text as="div" size="2" weight="medium" mb="2">
                                 Applicable document types
                             </Text>
                             <Text size="1" color="gray" mb="2" as="p">
