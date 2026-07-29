@@ -7,7 +7,7 @@ import { requireAdminPage } from "@/lib/require-admin-session";
 export default async function NewEstimatePage() {
     await requireAdminPage('/estimates/new');
     const nextNumber = await getNextNumber('estimate');
-    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
 
     return (
         <Container size="3" p="5">
@@ -17,6 +17,7 @@ export default async function NewEstimatePage() {
                 clients={clients}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
+                presets={presets}
                 formMode={documentFormMode}
             />
         </Container>

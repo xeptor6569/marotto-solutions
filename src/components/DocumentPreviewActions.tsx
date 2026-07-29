@@ -16,6 +16,7 @@ export default function DocumentPreviewActions({
     primaryShare,
     overflowDeposit,
     overflowConvert,
+    overflowSavePreset,
     overflowPrint,
 }: {
     editHref?: string;
@@ -27,10 +28,11 @@ export default function DocumentPreviewActions({
     primaryShare: ReactNode;
     overflowDeposit?: ReactNode;
     overflowConvert?: ReactNode;
+    overflowSavePreset?: ReactNode;
     overflowPrint: ReactNode;
 }) {
     const [sheetOpen, setSheetOpen] = useState(false);
-    const hasOverflow = Boolean(overflowDeposit || overflowConvert || canDelete);
+    const hasOverflow = Boolean(overflowDeposit || overflowConvert || overflowSavePreset || canDelete);
 
     return (
         <>
@@ -61,6 +63,11 @@ export default function DocumentPreviewActions({
                                 {overflowConvert ? (
                                     <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
                                         <Box p="1">{overflowConvert}</Box>
+                                    </DropdownMenu.Item>
+                                ) : null}
+                                {overflowSavePreset ? (
+                                    <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
+                                        <Box p="1">{overflowSavePreset}</Box>
                                     </DropdownMenu.Item>
                                 ) : null}
                                 <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
@@ -128,6 +135,7 @@ export default function DocumentPreviewActions({
                     <Flex direction="column" gap="2" mt="3">
                         {overflowDeposit}
                         {overflowConvert}
+                        {overflowSavePreset}
                         {overflowPrint}
                         {canDelete ? (
                             <DeleteDocumentButton

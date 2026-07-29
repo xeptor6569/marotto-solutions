@@ -8,6 +8,7 @@ import type { WorkflowStatus } from '@/lib/types';
 import { WORKFLOW_STATUSES, workflowStatusLabel, workflowStatusColor } from '@/lib/workflow-status';
 import { updateWorkflowStatusAction } from '@/app/actions';
 import WorkflowStatusSelect from '@/components/WorkflowStatusSelect';
+import { documentListLabel } from '@/lib/document-labels';
 
 interface WorkflowBoardProps {
     docs: DocumentData[];
@@ -89,14 +90,9 @@ export default function WorkflowBoard({ docs, type }: WorkflowBoardProps) {
                                                             href={`${base}/${doc.id}`}
                                                             style={{ textDecoration: 'none', color: 'inherit' }}
                                                         >
-                                                            #{doc.number}
+                                                            {documentListLabel(doc)}
                                                         </Link>
                                                     </Text>
-                                                    {doc.title ? (
-                                                        <Text size="1" color="gray" as="div" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            {doc.title}
-                                                        </Text>
-                                                    ) : null}
                                                 </Box>
                                                 <Badge color={badgeColor(doc.status) as 'gray' | 'orange' | 'blue' | 'green'} size="1" style={{ flexShrink: 0 }}>
                                                     {doc.status}

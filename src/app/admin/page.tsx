@@ -9,6 +9,7 @@ import { getClients } from "@/app/admin/clients/actions";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import { formatInTimeZone } from "date-fns-tz";
 import CreateMenu from "@/components/CreateMenu";
+import { documentListLabel, documentListSubLabel } from "@/lib/document-labels";
 
 export default async function AdminDashboard() {
     const invoices = await getDocuments('invoice');
@@ -167,8 +168,10 @@ export default async function AdminDashboard() {
                                         py="1"
                                     >
                                         <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>#{inv.number} — {inv.customer.name}</Text>
-                                            {inv.title ? <Box><Text size="1">{inv.title}</Text></Box> : null}
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(inv)}</Text>
+                                            {documentListSubLabel(inv) ? (
+                                                <Box><Text size="1" color="gray">{documentListSubLabel(inv)}</Text></Box>
+                                            ) : null}
                                             <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
                                         </Box>
                                         <Badge color={inv.status === 'paid' ? 'green' : 'orange'} style={{ flexShrink: 0 }}>{inv.status}</Badge>
@@ -205,8 +208,10 @@ export default async function AdminDashboard() {
                                         py="1"
                                     >
                                         <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>#{est.number} — {est.customer.name}</Text>
-                                            {est.title ? <Box><Text size="1">{est.title}</Text></Box> : null}
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(est)}</Text>
+                                            {documentListSubLabel(est) ? (
+                                                <Box><Text size="1" color="gray">{documentListSubLabel(est)}</Text></Box>
+                                            ) : null}
                                             <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
                                         </Box>
                                         <Badge color="blue" style={{ flexShrink: 0 }}>{est.status}</Badge>
@@ -243,8 +248,10 @@ export default async function AdminDashboard() {
                                         py="1"
                                     >
                                         <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>#{q.number} — {q.customer.name}</Text>
-                                            {q.title ? <Box><Text size="1">{q.title}</Text></Box> : null}
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(q)}</Text>
+                                            {documentListSubLabel(q) ? (
+                                                <Box><Text size="1" color="gray">{documentListSubLabel(q)}</Text></Box>
+                                            ) : null}
                                             <Box><Text size="1" color="gray">{new Date(q.date).toLocaleDateString()}</Text></Box>
                                         </Box>
                                         <Badge color="blue" style={{ flexShrink: 0 }}>{q.status}</Badge>
@@ -281,7 +288,10 @@ export default async function AdminDashboard() {
                                         py="1"
                                     >
                                         <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold">{r.id}</Text>
+                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(r)}</Text>
+                                            {documentListSubLabel(r) ? (
+                                                <Box><Text size="1" color="gray">{documentListSubLabel(r)}</Text></Box>
+                                            ) : null}
                                             <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
                                         </Box>
                                         <Badge color="green" style={{ flexShrink: 0 }}>${r.total.toFixed(2)}</Badge>

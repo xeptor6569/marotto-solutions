@@ -14,7 +14,7 @@ export default async function NewReceiptPage({
     const params = (await searchParams) || {};
     const { seed, redirectTo } = parseDocumentRouteSeed(params);
     const nextNumber = await getNextNumber("receipt");
-    const { clients, jobs, paymentMethods, documentFormMode } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
     const backHref = redirectTo || "/admin/receipts";
 
     return (
@@ -26,6 +26,7 @@ export default async function NewReceiptPage({
                 clients={clients}
                 jobs={jobs}
                 paymentMethods={paymentMethods}
+                presets={presets}
                 formMode={documentFormMode}
                 seed={seed}
                 redirectTo={redirectTo}

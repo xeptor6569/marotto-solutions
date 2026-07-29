@@ -20,6 +20,7 @@ import {
     DocumentData,
     DocumentFormMode,
     DocumentPackage,
+    DocumentPreset,
     LineItem,
     PaymentEntry,
     PaymentKind,
@@ -39,6 +40,10 @@ import {
     validateRecordPayment,
 } from '@/lib/document-save';
 import { documentDisplayTotal } from '@/lib/document-options';
+import {
+    applyPresetLineItems,
+    presetMatchesDocumentType,
+} from '@/lib/preset-utils';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import MarkdownContent from '@/components/MarkdownContent';
 import DocumentLineItemEditor, {
@@ -46,6 +51,7 @@ import DocumentLineItemEditor, {
     recalcLineItem,
 } from '@/components/DocumentLineItemEditor';
 import DocumentOptionsEditor from '@/components/DocumentOptionsEditor';
+import SaveAsPresetButton from '@/components/SaveAsPresetButton';
 
 const nativeSelectStyle = {
     width: '100%',
@@ -73,6 +79,7 @@ export default function NewDocumentForm({
     clients = [],
     jobs = [],
     paymentMethods = [],
+    presets = [],
     seed,
     formMode = DEFAULT_DOCUMENT_FORM_MODE,
 }: {
@@ -83,13 +90,18 @@ export default function NewDocumentForm({
     clients?: ClientOption[];
     jobs?: JobOption[];
     paymentMethods?: PaymentMethodOption[];
+    presets?: DocumentPreset[];
     seed?: DocumentFormSeed;
     /** From Settings → Documents. guided = step flow; full = all sections. */
     formMode?: DocumentFormMode;
 }) {
     const documentFormMode: DocumentFormMode = formMode === 'full' ? 'full' : 'guided';
+    const isEditing = Boolean(initialData);
     const seededJobId = seed?.jobId || initialData?.jobId || initialData?.customer?.jobId || '';
-    const seededClientId = seed?.clientId || initialData?.customer?.clientId || '';
+    const seededClientId = seed?.clientId
+        || jobs.find((j) => j.id === seed?.jobId)?.clientId
+        || initialData?.customer?.clientId
+        || '';
 
     const [lineItems, setLineItems] = useState<LineItem[]>([
         ...(initialData?.lineItems?.length
@@ -116,11 +128,30 @@ export default function NewDocumentForm({
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
     const [paymentError, setPaymentError] = useState('');
     const [showMoreActions, setShowMoreActions] = useState(false);
+    const seededClient = clients.find((c) => {
+        if (seed?.jobId) {
+            const job = jobs.find((j) => j.id === seed.jobId);
+            if (job?.clientId) return c.id === job.clientId;
+        }
+        return seed?.clientId ? c.id === seed.clientId : false;
+    });
     const [customerPhone, setCustomerPhone] = useState(() =>
-        formatPhoneInput(initialData?.customer?.phone || ''),
+        formatPhoneInput(initialData?.customer?.phone || seededClient?.phone || ''),
     );
+    const [customerName, setCustomerName] = useState(
+        initialData?.customer?.name || seededClient?.name || '',
+    );
+    const [customerEmail, setCustomerEmail] = useState(
+        initialData?.customer?.email || seededClient?.email || '',
+    );
+    const [customerAddress, setCustomerAddress] = useState(
+        initialData?.customer?.address || seededClient?.address || '',
+    );
+    const [docTitle, setDocTitle] = useState(initialData?.title || '');
     const [notes, setNotes] = useState(initialData?.notes || '');
+    const [selectedPresetId, setSelectedPresetId] = useState('');
     const [step, setStep] = useState<FormStep>('customer');
+    const applicablePresets = presets.filter((preset) => presetMatchesDocumentType(preset, type));
 
     const [warrantyEnabled, setWarrantyEnabled] = useState<boolean>(initialData?.warranty?.enabled ?? false);
     const [warrantyTitle, setWarrantyTitle] = useState(initialData?.warranty?.title || '');
@@ -136,32 +167,28 @@ export default function NewDocumentForm({
     const jobLocked = Boolean(seed?.jobId);
     const stepIndex = STEPS.findIndex((s) => s.id === step);
 
+    const fillCustomerFromClient = (client: ClientOption | undefined) => {
+        if (!client) return;
+        setCustomerName(client.name || '');
+        setCustomerEmail(client.email || '');
+        setCustomerPhone(formatPhoneInput(client.phone || ''));
+        setCustomerAddress(client.address || '');
+    };
+
     useEffect(() => {
         if (!seed?.clientId && !seed?.jobId) return;
-        if (seed.jobId) {
-            const selectedJob = jobs.find((job) => job.id === seed.jobId);
-            if (selectedJob?.clientId) {
-                const client = clients.find((c) => c.id === selectedJob.clientId);
-                if (client) {
-                    setSelectedClientId(client.id);
-                    queueMicrotask(() => {
-                        setCustomerInputValue('customerName', client.name || '');
-                        setCustomerInputValue('customerEmail', client.email || '');
-                        setCustomerPhone(formatPhoneInput(client.phone || ''));
-                        setCustomerInputValue('customerAddress', client.address || '');
-                    });
-                }
-            }
-        } else if (seed.clientId) {
-            const client = clients.find((c) => c.id === seed.clientId);
-            if (client) {
-                queueMicrotask(() => {
-                    setCustomerInputValue('customerName', client.name || '');
-                    setCustomerInputValue('customerEmail', client.email || '');
-                    setCustomerPhone(formatPhoneInput(client.phone || ''));
-                    setCustomerInputValue('customerAddress', client.address || '');
-                });
-            }
+
+        const job = seed.jobId ? jobs.find((j) => j.id === seed.jobId) : undefined;
+        const clientId = job?.clientId || seed.clientId || '';
+        if (!clientId) return;
+
+        const client = clients.find((c) => c.id === clientId);
+        if (!client) return;
+
+        setSelectedClientId(client.id);
+        fillCustomerFromClient(client);
+        if (!initialData?.title && job?.name?.trim()) {
+            setDocTitle((current) => (current.trim() ? current : job.name.trim()));
         }
         // Only apply seed once on mount
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -205,20 +232,10 @@ export default function NewDocumentForm({
         }
     }, [balanceDue, paymentAmount]);
 
-    const setCustomerInputValue = (name: string, value: string) => {
-        const input = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${name}"]`);
-        if (input) input.value = value;
-    };
-
     const handleClientChange = (id: string) => {
         setSelectedClientId(id);
         if (!id) return;
-        const selected = clients.find((client) => client.id === id);
-        if (!selected) return;
-        setCustomerInputValue('customerName', selected.name || '');
-        setCustomerInputValue('customerEmail', selected.email || '');
-        setCustomerPhone(formatPhoneInput(selected.phone || ''));
-        setCustomerInputValue('customerAddress', selected.address || '');
+        fillCustomerFromClient(clients.find((client) => client.id === id));
     };
 
     const applyJobDefaults = (jobId: string) => {
@@ -228,6 +245,10 @@ export default function NewDocumentForm({
         if (!selectedJob) return;
         if (selectedJob.clientId) {
             handleClientChange(selectedJob.clientId);
+        }
+        // Suggest a list label from the job when the document title is still empty.
+        if (selectedJob.name?.trim()) {
+            setDocTitle((current) => (current.trim() ? current : selectedJob.name.trim()));
         }
     };
 
@@ -291,6 +312,20 @@ export default function NewDocumentForm({
         setLineItems(lineItems.map((item) =>
             item.id === id ? recalcLineItem(item, field, value) : item,
         ));
+    };
+
+    const applyPreset = (presetId: string) => {
+        setSelectedPresetId(presetId);
+        if (!presetId) return;
+        const preset = applicablePresets.find((p) => p.id === presetId);
+        if (!preset) return;
+        setLineItems(applyPresetLineItems(preset));
+        if (preset.notes != null && preset.notes !== '') {
+            setNotes(preset.notes);
+        }
+        if (preset.title) {
+            setDocTitle(preset.title);
+        }
     };
 
     const applyPaymentFraction = (fraction: number) => {
@@ -473,11 +508,23 @@ export default function NewDocumentForm({
                             ) : null}
                             <Box>
                                 <Text as="label" size="2">Name</Text>
-                                <TextField.Root name="customerName" placeholder="Client Name" defaultValue={initialData?.customer?.name} required />
+                                <TextField.Root
+                                    name="customerName"
+                                    placeholder="Client Name"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    required
+                                />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Email</Text>
-                                <TextField.Root name="customerEmail" type="email" placeholder="client@example.com" defaultValue={initialData?.customer?.email} />
+                                <TextField.Root
+                                    name="customerEmail"
+                                    type="email"
+                                    placeholder="client@example.com"
+                                    value={customerEmail}
+                                    onChange={(e) => setCustomerEmail(e.target.value)}
+                                />
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Phone</Text>
@@ -493,7 +540,12 @@ export default function NewDocumentForm({
                             </Box>
                             <Box>
                                 <Text as="label" size="2">Address</Text>
-                                <TextArea name="customerAddress" placeholder="Street, City, Zip" defaultValue={initialData?.customer?.address} />
+                                <TextArea
+                                    name="customerAddress"
+                                    placeholder="Street, City, Zip"
+                                    value={customerAddress}
+                                    onChange={(e) => setCustomerAddress(e.target.value)}
+                                />
                             </Box>
                         </Flex>
                     </Card>
@@ -508,6 +560,18 @@ export default function NewDocumentForm({
                         <Card>
                             <Heading size="3" mb="3">Details</Heading>
                             <Flex direction="column" gap="3">
+                                <Box>
+                                    <Text as="label" size="2">Title (optional)</Text>
+                                    <TextField.Root
+                                        name="title"
+                                        value={docTitle}
+                                        onChange={(e) => setDocTitle(e.target.value)}
+                                        placeholder="e.g. Weekly lawn mowing — shown in lists"
+                                    />
+                                    <Text as="div" size="1" color="gray" mt="1">
+                                        Helps identify this document on the dashboard. If blank, the first line item is used.
+                                    </Text>
+                                </Box>
                                 <Box>
                                     <Text as="label" size="2">Date</Text>
                                     <TextField.Root name="date" type="date" defaultValue={initialData?.date?.split('T')[0] || new Date().toISOString().split('T')[0]} required />
@@ -591,7 +655,27 @@ export default function NewDocumentForm({
                     data-step="items"
                 >
                     <Card>
-                        <Heading size="3" mb="3">{showDocumentOptions ? 'Base scope' : 'Items'}</Heading>
+                        <Flex justify="between" align="start" gap="3" wrap="wrap" mb="3">
+                            <Heading size="3">{showDocumentOptions ? 'Base scope' : 'Items'}</Heading>
+                            {!isEditing && applicablePresets.length > 0 ? (
+                                <Box style={{ minWidth: 220, flex: '1 1 220px', maxWidth: 360 }}>
+                                    <Text as="label" size="1" color="gray">Apply preset</Text>
+                                    <select
+                                        value={selectedPresetId}
+                                        onChange={(e) => applyPreset(e.target.value)}
+                                        style={nativeSelectStyle}
+                                        aria-label="Apply document preset"
+                                    >
+                                        <option value="">Choose a preset…</option>
+                                        {applicablePresets.map((preset) => (
+                                            <option key={preset.id} value={preset.id}>
+                                                {preset.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Box>
+                            ) : null}
+                        </Flex>
                         {type === 'quote' ? (
                             <Text size="2" color="gray" mb="3" as="p">
                                 Enter the agreed quantities and unit prices — the document total is the decided price for the customer.
@@ -622,9 +706,19 @@ export default function NewDocumentForm({
                             ))}
                         </Flex>
                         <Flex justify="between" align="center" mt="4" wrap="wrap" gap="2">
-                            <Button type="button" variant="soft" onClick={addLineItem} style={{ minHeight: 44 }}>
-                                <PlusIcon size={16} /> Add Item
-                            </Button>
+                            <Flex gap="2" wrap="wrap">
+                                <Button type="button" variant="soft" onClick={addLineItem} style={{ minHeight: 44 }}>
+                                    <PlusIcon size={16} /> Add Item
+                                </Button>
+                                <SaveAsPresetButton
+                                    mode="inline"
+                                    defaultName={docTitle || undefined}
+                                    documentType={type}
+                                    title={docTitle}
+                                    notes={notes}
+                                    lineItems={lineItems}
+                                />
+                            </Flex>
                             <Box style={{ textAlign: 'right' }}>
                                 {discountSavings > 0 ? (
                                     <>

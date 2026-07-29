@@ -130,7 +130,10 @@ export default function BackupPage() {
                                         Restore complete: {result.stats.clients} clients, {result.stats.jobs} jobs,
                                         {result.stats.contracts} contracts, {result.stats.documents} documents,
                                         {result.stats.calendarEvents} events, {result.stats.attachmentsRestored} attachments
-                                        {result.stats.settingsRestored ? ', settings restored' : ''}.
+                                        {result.stats.settingsRestored ? ', settings restored' : ''}
+                                        {result.stats.presetsRestored
+                                            ? `, ${result.stats.presetsRestored} presets`
+                                            : ''}.
                                     </Callout.Text>
                                 ) : (
                                     <Callout.Text>{result.error || 'Restore failed.'}</Callout.Text>

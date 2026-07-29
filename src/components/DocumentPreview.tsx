@@ -44,6 +44,7 @@ import ShareButton from "@/components/ShareButton";
 import EmailDocumentButton from "@/components/EmailDocumentButton";
 import CreateDepositInvoiceButton from "@/components/CreateDepositInvoiceButton";
 import ConvertDocumentButton from "@/components/ConvertDocumentButton";
+import SaveAsPresetButton from "@/components/SaveAsPresetButton";
 import BackButton from "@/components/BackButton";
 import DocumentPreviewActions from "@/components/DocumentPreviewActions";
 import DocumentOptionSelectionForm from "@/components/DocumentOptionSelectionForm";
@@ -116,7 +117,7 @@ function getStatusColor(status: DocumentData["status"]) {
 }
 
 function getDisplayName(doc: DocumentData) {
-    return doc.title ? `${doc.id} - ${doc.title}` : doc.id;
+    return doc.title ? `${doc.id} — ${doc.title}` : doc.id;
 }
 
 function normalizePhoneDigits(value?: string) {
@@ -345,6 +346,15 @@ export default async function DocumentPreview({
                                     sourceDocumentId={doc.id}
                                     sourceType={doc.type}
                                     hasPendingApproval={pendingLines}
+                                />
+                            ) : undefined
+                        }
+                        overflowSavePreset={
+                            doc.type !== "lead" ? (
+                                <SaveAsPresetButton
+                                    mode="document"
+                                    documentId={doc.id}
+                                    defaultName={doc.title || undefined}
                                 />
                             ) : undefined
                         }

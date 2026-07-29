@@ -8,6 +8,7 @@ import * as tar from 'tar';
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { getDocuments, saveNewDocument } from '@/lib/data';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
+import { listPresets, replaceAllPresets } from '@/lib/presets';
 import { readAttachmentBinary } from '@/lib/job-attachments';
 import type { DocumentData, DocumentType } from '@/lib/types';
 
@@ -121,6 +122,15 @@ export async function collectBackupData(): Promise<string> {
         await fs.writeFile(path.join(cfgDir, 'settings.json'), JSON.stringify(configForExport, null, 2));
     }
 
+    try {
+        const presetsPath = path.join(LOCAL_DATA_DIR, 'config', 'presets.json');
+        const presetsContent = await fs.readFile(presetsPath, 'utf-8');
+        await fs.writeFile(path.join(cfgDir, 'presets.json'), presetsContent);
+    } catch {
+        const presets = await listPresets();
+        await fs.writeFile(path.join(cfgDir, 'presets.json'), JSON.stringify({ presets }, null, 2));
+    }
+
     const manifest: BackupManifest = {
         version: BACKUP_VERSION,
         timestamp: new Date().toISOString(),
@@ -209,6 +219,7 @@ export interface RestoreStats {
     documents: number;
     attachmentsRestored: number;
     settingsRestored: boolean;
+    presetsRestored: number;
 }
 
 export async function clearExistingData(): Promise<void> {
@@ -251,6 +262,7 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
         documents: 0,
         attachmentsRestored: 0,
         settingsRestored: false,
+        presetsRestored: 0,
     };
 
     await clearExistingData();
@@ -363,6 +375,12 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
         const settingsContent = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
         await saveAppConfig(settingsContent);
         stats.settingsRestored = true;
+    } catch { }
+
+    const presetsPath = path.join(backupDir, 'config', 'presets.json');
+    try {
+        const presetsContent = JSON.parse(await fs.readFile(presetsPath, 'utf-8'));
+        stats.presetsRestored = await replaceAllPresets(presetsContent);
     } catch { }
 
     return stats;

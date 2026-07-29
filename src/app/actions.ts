@@ -26,7 +26,8 @@ import {
 } from '@/lib/deposit-invoice';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
-import { createJob, getJobOptions } from '@/lib/jobs';
+import { createJob, getJobById, getJobOptions } from '@/lib/jobs';
+import { suggestDocumentTitle } from '@/lib/document-labels';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
@@ -274,6 +275,7 @@ export async function createInvoiceAction(formData: FormData) {
     const date = formData.get('date') as string;
     const dueDate = formData.get('dueDate') as string;
     const notes = (formData.get('notes') as string) || '';
+    const title = ((formData.get('title') as string) || '').trim();
     const type = (formData.get('type') as string) as DocumentType || 'invoice';
     const currentStatus = parseFormStatus(formData.get('currentStatus') as string | null, 'draft');
     const formStatus = parseFormStatus(formData.get('status') as string | null, currentStatus);
@@ -317,6 +319,20 @@ export async function createInvoiceAction(formData: FormData) {
     const items = parseLineItemsFromFormData(formData);
     if (items.length === 0) {
         throw new Error('Add at least one line item before saving.');
+    }
+
+    let resolvedTitle = title;
+    if (!resolvedTitle) {
+        let jobName: string | undefined;
+        if (selectedJobId) {
+            try {
+                const job = await getJobById(selectedJobId);
+                jobName = job?.name;
+            } catch {
+                // Ignore — title suggestion can fall back to line items.
+            }
+        }
+        resolvedTitle = suggestDocumentTitle(items, jobName) || '';
     }
 
     const supportsOptions = type === 'estimate' || type === 'quote';
@@ -385,6 +401,7 @@ export async function createInvoiceAction(formData: FormData) {
 
     const doc: DocumentData = {
         id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,
+        ...(resolvedTitle ? { title: resolvedTitle } : {}),
         number,
         type,
         date,
