@@ -86,6 +86,7 @@ model Job {
   client      Client?         @relation(fields: [clientId], references: [id], onDelete: SetNull)
   attachments JobAttachment[]
   timeLogs    JobTimeLog[]
+  helperPayouts HelperPayout[]
   contracts   Contract[]
   events      CalendarEvent[]
   createdAt   DateTime        @default(now())
@@ -124,6 +125,42 @@ model JobTimeLog {
 
   @@index([jobId])
   @@index([loggedAt])
+}
+
+/** Field helper / laborer paid out of pocket (not a customer-facing document). */
+model Helper {
+  id        String         @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  notes     String?
+  /** False when no longer working with you; keeps payout history. */
+  active    Boolean        @default(true)
+  payouts   HelperPayout[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([active])
+  @@index([name])
+}
+
+/** Record of money paid to a helper (cash/check/etc.) for your books. */
+model HelperPayout {
+  id        String   @id @default(uuid())
+  helperId  String
+  jobId     String?
+  amount    Float
+  /** Date the payout was made. */
+  paidAt    DateTime @default(now())
+  method    String?
+  notes     String?
+  createdAt DateTime @default(now())
+  helper    Helper   @relation(fields: [helperId], references: [id], onDelete: Cascade)
+  job       Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([helperId])
+  @@index([jobId])
+  @@index([paidAt])
 }
 
 // Recurring service contract (e.g. on-call IT, monthly retainer).

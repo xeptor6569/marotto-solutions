@@ -5,21 +5,26 @@ import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
 import JobAttachmentsPanel from '@/components/JobAttachmentsPanel';
 import JobTimePanel from '@/components/JobTimePanel';
+import HelperPayoutPanel from '@/components/HelperPayoutPanel';
 import CreateMenu from '@/components/CreateMenu';
 import DeleteDocumentButton from '@/components/DeleteDocumentButton';
 import { getDocumentsByJobId, getJobById } from '@/lib/jobs';
 import { listJobAttachments } from '@/lib/job-attachments';
 import { listJobTimeLogs } from '@/lib/job-time-logs';
+import { listPayoutsForJob } from '@/lib/helper-payouts';
+import { getHelperOptions } from '@/lib/helpers';
 import { aggregateJobEstimatedHours, formatHours } from '@/lib/job-estimated-hours';
 import { getClientOptions } from '@/lib/clients';
 
 export default async function AdminJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const [job, groupedDocs, attachments, timeLogs, clients] = await Promise.all([
+    const [job, groupedDocs, attachments, timeLogs, payouts, helpers, clients] = await Promise.all([
         getJobById(id),
         getDocumentsByJobId(id),
         listJobAttachments(id),
         listJobTimeLogs(id),
+        listPayoutsForJob(id),
+        getHelperOptions({ includeInactive: true }),
         getClientOptions(),
     ]);
     if (!job) {
@@ -81,6 +86,13 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                     jobId={job.id}
                     estimated={estimated}
                     timeLogs={timeLogs}
+                />
+
+                <HelperPayoutPanel
+                    mode="job"
+                    jobId={job.id}
+                    helpers={helpers}
+                    payouts={payouts}
                 />
 
                 <JobAttachmentsPanel jobId={job.id} attachments={attachments} />

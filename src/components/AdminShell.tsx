@@ -18,6 +18,7 @@ import {
     Users,
     Archive,
     Bookmark,
+    HardHat,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
@@ -35,6 +36,7 @@ const desktopNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
     { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
+    { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
     { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
     { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
     { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
@@ -70,6 +72,12 @@ function MoreMenu() {
             <DropdownMenu.Content align="end">
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/calendar">Calendar</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
+                    <Link href="/admin/clients">Clients</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
+                    <Link href="/admin/helpers">Helpers</Link>
                 </DropdownMenu.Item>
                 <DropdownMenu.Item asChild>
                     <Link href="/admin/estimates">Estimates</Link>
