@@ -25,6 +25,8 @@ export interface BackupManifest {
     webdavConfigured: boolean;
     counts: {
         clients: number;
+        helpers: number;
+        helperPayouts: number;
         jobs: number;
         contracts: number;
         calendarEvents: number;
@@ -56,7 +58,21 @@ export async function collectBackupData(): Promise<string> {
     await fs.mkdir(dbDir, { recursive: true });
     await fs.mkdir(cfgDir, { recursive: true });
 
-    const counts: Record<string, number> = {};
+    const counts: Record<string, number> = {
+        clients: 0,
+        helpers: 0,
+        helperPayouts: 0,
+        jobs: 0,
+        contracts: 0,
+        calendarEvents: 0,
+        jobAttachments: 0,
+        documentCounters: 0,
+        invoices: 0,
+        estimates: 0,
+        quotes: 0,
+        receipts: 0,
+        leads: 0,
+    };
 
     if (isDatabaseConfigured()) {
         const counters = await prisma.documentCounter.findMany();
@@ -66,6 +82,14 @@ export async function collectBackupData(): Promise<string> {
         const clients = await prisma.client.findMany();
         counts.clients = clients.length;
         await fs.writeFile(path.join(dbDir, 'clients.json'), JSON.stringify(clients, null, 2));
+
+        const helpers = await prisma.helper.findMany();
+        counts.helpers = helpers.length;
+        await fs.writeFile(path.join(dbDir, 'helpers.json'), JSON.stringify(helpers, null, 2));
+
+        const helperPayouts = await prisma.helperPayout.findMany();
+        counts.helperPayouts = helperPayouts.length;
+        await fs.writeFile(path.join(dbDir, 'helperPayouts.json'), JSON.stringify(helperPayouts, null, 2));
 
         const jobs = await prisma.job.findMany();
         counts.jobs = jobs.length;
@@ -210,6 +234,8 @@ export async function validateBackup(backupDir: string): Promise<ValidationResul
 
 export interface RestoreStats {
     clients: number;
+    helpers: number;
+    helperPayouts: number;
     jobs: number;
     contracts: number;
     contractLines: number;
@@ -225,10 +251,13 @@ export interface RestoreStats {
 export async function clearExistingData(): Promise<void> {
     if (!isDatabaseConfigured()) return;
 
+    await prisma.helperPayout.deleteMany();
+    await prisma.helper.deleteMany();
     await prisma.contractLine.deleteMany();
     await prisma.contract.deleteMany();
     await prisma.calendarEvent.deleteMany();
     await prisma.jobAttachment.deleteMany();
+    await prisma.jobTimeLog.deleteMany();
     await prisma.job.deleteMany();
     await prisma.client.deleteMany();
     await prisma.documentCounter.deleteMany();
@@ -253,6 +282,8 @@ export async function clearExistingData(): Promise<void> {
 export async function restoreFromBackup(backupDir: string): Promise<RestoreStats> {
     const stats: RestoreStats = {
         clients: 0,
+        helpers: 0,
+        helperPayouts: 0,
         jobs: 0,
         contracts: 0,
         contractLines: 0,
@@ -286,12 +317,30 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
             }
         } catch { }
 
+        const helpersPath = path.join(backupDir, 'db', 'helpers.json');
+        try {
+            const helpers = JSON.parse(await fs.readFile(helpersPath, 'utf-8'));
+            for (const row of helpers) {
+                await prisma.helper.upsert({ where: { id: row.id }, update: row, create: row });
+                stats.helpers++;
+            }
+        } catch { }
+
         const jobsPath = path.join(backupDir, 'db', 'jobs.json');
         try {
             const jobs = JSON.parse(await fs.readFile(jobsPath, 'utf-8'));
             for (const row of jobs) {
                 await prisma.job.upsert({ where: { id: row.id }, update: row, create: row });
                 stats.jobs++;
+            }
+        } catch { }
+
+        const helperPayoutsPath = path.join(backupDir, 'db', 'helperPayouts.json');
+        try {
+            const helperPayouts = JSON.parse(await fs.readFile(helperPayoutsPath, 'utf-8'));
+            for (const row of helperPayouts) {
+                await prisma.helperPayout.upsert({ where: { id: row.id }, update: row, create: row });
+                stats.helperPayouts++;
             }
         } catch { }
 

@@ -12,6 +12,8 @@ export interface RestoreResult {
     error?: string;
     stats?: {
         clients: number;
+        helpers: number;
+        helperPayouts: number;
         jobs: number;
         contracts: number;
         contractLines: number;

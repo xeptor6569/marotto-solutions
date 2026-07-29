@@ -127,12 +127,17 @@ export default function BackupPage() {
                                 </Callout.Icon>
                                 {result.success && result.stats ? (
                                     <Callout.Text>
-                                        Restore complete: {result.stats.clients} clients, {result.stats.jobs} jobs,
+                                        Restore complete: {result.stats.clients} clients,
+                                        {result.stats.helpers ? ` ${result.stats.helpers} helpers,` : ''}
+                                        {result.stats.jobs} jobs,
                                         {result.stats.contracts} contracts, {result.stats.documents} documents,
                                         {result.stats.calendarEvents} events, {result.stats.attachmentsRestored} attachments
                                         {result.stats.settingsRestored ? ', settings restored' : ''}
                                         {result.stats.presetsRestored
                                             ? `, ${result.stats.presetsRestored} presets`
+                                            : ''}
+                                        {result.stats.helperPayouts
+                                            ? `, ${result.stats.helperPayouts} helper payouts`
                                             : ''}.
                                     </Callout.Text>
                                 ) : (
