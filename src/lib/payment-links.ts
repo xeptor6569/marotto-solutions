@@ -18,6 +18,29 @@ function firstPathSegment(pathname: string): string {
     return pathname.replace(/^\/+/, '').split('/')[0] || '';
 }
 
+/** Hosts we will 302-redirect to from /api/pay/redirect (open-redirect safe). */
+export const PAYMENT_REDIRECT_ALLOWED_HOSTS = new Set([
+    'paypal.me',
+    'www.paypal.com',
+    'paypal.com',
+    'cash.app',
+    'www.cash.app',
+    'cash.me',
+    'www.cash.me',
+    'venmo.com',
+    'www.venmo.com',
+]);
+
+export function isAllowedPaymentRedirectUrl(raw: string): boolean {
+    try {
+        const url = new URL(raw);
+        if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+        return PAYMENT_REDIRECT_ALLOWED_HOSTS.has(url.hostname.toLowerCase());
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Resolve a PayPal.Me username from a handle or pasted paypal.me / paypal.com URL.
  * Amount/currency path segments (and query strings) are ignored.
@@ -80,15 +103,12 @@ export function extractCashTag(raw: string): string | null {
 }
 
 /**
- * Build a tap-to-pay href for payment methods that support deep links.
+ * External deep link for a payment method (paypal.me / cash.app / venmo.com / …).
  *
- * Zelle has no public universal payment URL — recipients must open their bank
- * app and enter the enrolled email/phone manually. Do not emit tel: or mailto:
- * links for Zelle (those open the dialer / mail client instead of paying).
- *
- * PayPal: use paypal.me/{user}/{amount} without a currency suffix — appending
- * USD/EUR causes the native app to drop the amount and open the profile only.
- * Cash App: use cash.app/$cashtag/{amount} so the pay sheet is prefilled.
+ * PayPal native apps often ignore amount on universal links and open a bare
+ * profile. Cash App is similarly unreliable when opened via target=_blank UL.
+ * Prefer {@link paymentClickHref} for the actual button href so PayPal/Cash App
+ * go through a same-origin redirect and stay in the browser with amount filled.
  */
 export function paymentLinkForMethod(
     key: PaymentMethodKey,
@@ -117,9 +137,8 @@ export function paymentLinkForMethod(
         }
         case 'cashApp': {
             const cashTag = extractCashTag(raw);
-            return cashTag
-                ? `https://cash.app/$${encodeURIComponent(cashTag)}/${money}`
-                : null;
+            // Path amount form is the documented Cash App pay sheet deep link.
+            return cashTag ? `https://cash.app/$${encodeURIComponent(cashTag)}/${money}` : null;
         }
         case 'zelle': {
             // Optional custom HTTPS landing page only — never tel:/mailto:.
@@ -131,6 +150,22 @@ export function paymentLinkForMethod(
         default:
             return null;
     }
+}
+
+/**
+ * Methods whose native apps mishandle amount-bearing universal links.
+ * Route these through /api/pay/redirect so iOS/Android open the web checkout
+ * (with amount) instead of a bare profile / home screen.
+ */
+export function paymentMethodNeedsBrowserHandoff(key: PaymentMethodKey): boolean {
+    return key === 'paypal' || key === 'cashApp';
+}
+
+/** Href used by the Pay button (may be a same-origin redirect wrapper). */
+export function paymentClickHref(key: PaymentMethodKey, externalHref: string): string {
+    if (!paymentMethodNeedsBrowserHandoff(key)) return externalHref;
+    if (!isAllowedPaymentRedirectUrl(externalHref)) return externalHref;
+    return `/api/pay/redirect?u=${encodeURIComponent(externalHref)}`;
 }
 
 /** Methods without tap-to-pay deep links; show instructional copy instead. */

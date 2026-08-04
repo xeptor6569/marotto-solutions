@@ -22,6 +22,7 @@ import { getAppConfig } from "@/lib/config";
 import { ensureDocumentShareToken } from "@/lib/data";
 import { DOC_LABEL } from "@/lib/document-labels";
 import { paymentLinkForMethod, paymentMethodUsesManualDetails } from "@/lib/payment-links";
+import PaymentDeepLinkButton from "@/components/PaymentDeepLinkButton";
 import {
     agreedScopeLineTotal,
     hasPendingApprovalLines,
@@ -545,11 +546,11 @@ export default async function DocumentPreview({
                                                             </Text>
                                                         ) : null}
                                                         {payLink ? (
-                                                            <Button asChild size="2" className="no-print">
-                                                                <a href={payLink} target="_blank" rel="noreferrer">
-                                                                    Pay ${invoiceAmountDue.toFixed(2)}
-                                                                </a>
-                                                            </Button>
+                                                            <PaymentDeepLinkButton
+                                                                methodKey={key}
+                                                                externalHref={payLink}
+                                                                amount={invoiceAmountDue}
+                                                            />
                                                         ) : (
                                                             <Text as="div" size="1" color="gray" className="no-print">
                                                                 {paymentMethodUsesManualDetails(key)
