@@ -38,29 +38,33 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "APP_PORT=${{ secrets.APP_PORT }}" >> .env
-          echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}" >> .env
-          # Auth.js v5 prefers AUTH_URL / AUTH_SECRET / AUTH_TRUST_HOST in production.
-          echo "AUTH_URL=${{ vars.NEXTAUTH_URL }}" >> .env
-          echo "AUTH_TRUST_HOST=true" >> .env
-          if [ -n "${{ secrets.NEXTAUTH_SECRET }}" ]; then
-            echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
-            echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env
-          fi
-          if [ -n "${{ secrets.EMAIL_SERVER }}" ]; then
-            echo "EMAIL_SERVER=${{ secrets.EMAIL_SERVER }}" >> .env
-          fi
-          if [ -n "${{ secrets.EMAIL_FROM }}" ]; then
-            echo "EMAIL_FROM=${{ secrets.EMAIL_FROM }}" >> .env
-          fi
-          if [ -n "${{ vars.NEXT_TELEMETRY_DISABLED }}" ]; then
-            echo "NEXT_TELEMETRY_DISABLED=${{ vars.NEXT_TELEMETRY_DISABLED }}" >> .env
-          fi
-          # Optional: use repo secret DATABASE_URL for managed Postgres (RDS, etc.).
-          # If unset, docker-compose.yml defaults to the bundled postgres service.
-          if [ -n "${{ secrets.DATABASE_URL }}" ]; then
-            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
-          fi
+          # Overwrite (do not append) so self-hosted runner workspaces do not
+          # accumulate duplicate keys across deploys.
+          {
+            echo "APP_PORT=${{ secrets.APP_PORT }}"
+            echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}"
+            # Auth.js v5 prefers AUTH_URL / AUTH_SECRET / AUTH_TRUST_HOST in production.
+            echo "AUTH_URL=${{ vars.NEXTAUTH_URL }}"
+            echo "AUTH_TRUST_HOST=true"
+            if [ -n "${{ secrets.NEXTAUTH_SECRET }}" ]; then
+              echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+              echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+            fi
+            if [ -n "${{ secrets.EMAIL_SERVER }}" ]; then
+              echo "EMAIL_SERVER=${{ secrets.EMAIL_SERVER }}"
+            fi
+            if [ -n "${{ secrets.EMAIL_FROM }}" ]; then
+              echo "EMAIL_FROM=${{ secrets.EMAIL_FROM }}"
+            fi
+            if [ -n "${{ vars.NEXT_TELEMETRY_DISABLED }}" ]; then
+              echo "NEXT_TELEMETRY_DISABLED=${{ vars.NEXT_TELEMETRY_DISABLED }}"
+            fi
+            # Optional: use repo secret DATABASE_URL for managed Postgres (RDS, etc.).
+            # If unset, docker-compose.yml defaults to the bundled postgres service.
+            if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+              echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
+            fi
+          } > .env
 
       - name: Start Postgres
         run: docker compose up -d postgres
@@ -107,6 +111,32 @@ jobs:
 
       - name: Build and start application
         run: docker compose up -d --build --remove-orphans
+
+      - name: Verify application is healthy
+        env:
+          APP_PORT: ${{ secrets.APP_PORT }}
+        run: |
+          set -euo pipefail
+          echo "Waiting for application on port ${APP_PORT}…"
+          for i in $(seq 1 36); do
+            status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' marotto-solutions 2>/dev/null || echo missing)"
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${APP_PORT}/" || true)"
+            echo "Attempt $i/36: container=$status http=$code"
+            if [ "$code" = "200" ] || [ "$code" = "307" ] || [ "$code" = "302" ]; then
+              echo "Application is healthy"
+              exit 0
+            fi
+            if [ "$status" = "exited" ] || [ "$status" = "dead" ] || [ "$status" = "missing" ]; then
+              echo "::error::Container is $status"
+              docker logs --tail 100 marotto-solutions || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Application failed health check"
+          docker ps -a --filter name=marotto-solutions || true
+          docker logs --tail 200 marotto-solutions || true
+          exit 1
 
       - name: Prune unused images
         run: docker image prune -f

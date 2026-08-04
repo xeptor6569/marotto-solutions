@@ -15,9 +15,24 @@ services:
       - EMAIL_SERVER=${EMAIL_SERVER}
       - EMAIL_FROM=${EMAIL_FROM}
       - CRON_SECRET=${CRON_SECRET}
+    # Only persist app data. Do NOT bind-mount ./public — on the self-hosted
+    # Actions runner that path is the job workspace and can disappear after the
+    # deploy finishes, which makes Cloudflare return 502 while the container
+    # is still "running". Icons/static assets come from the image build.
     volumes:
-      - ./public:/app/public
       - marotto_data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
     depends_on:
       postgres:
         condition: service_healthy
