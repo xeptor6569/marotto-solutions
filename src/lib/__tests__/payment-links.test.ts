@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+    extractCashTag,
+    extractPaypalMeUser,
     normalizeHandle,
     normalizePhoneDigits,
     paymentLinkForMethod,
@@ -34,28 +36,61 @@ describe('normalize helpers', () => {
         expect(normalizePhoneDigits('(570) 332-9262')).toBe('5703329262');
     });
 
-    it('strips leading @ from handles', () => {
+    it('strips leading @ and $ from handles', () => {
         expect(normalizeHandle('@@marotto')).toBe('marotto');
+        expect(normalizeHandle('$cam')).toBe('cam');
+    });
+});
+
+describe('extractPaypalMeUser', () => {
+    it('accepts handles and paypal.me / paypal.com URLs', () => {
+        expect(extractPaypalMeUser('marotto')).toBe('marotto');
+        expect(extractPaypalMeUser('https://paypal.me/marotto')).toBe('marotto');
+        expect(extractPaypalMeUser('https://www.paypal.com/paypalme/marotto/50.00')).toBe('marotto');
+        expect(extractPaypalMeUser('paypal.me/marotto/25USD')).toBe('marotto');
+    });
+});
+
+describe('extractCashTag', () => {
+    it('accepts cashtags and cash.app URLs', () => {
+        expect(extractCashTag('cam')).toBe('cam');
+        expect(extractCashTag('$cam')).toBe('cam');
+        expect(extractCashTag('https://cash.app/$cam/12.50')).toBe('cam');
+        expect(extractCashTag('https://cash.app/qr/$cam/10')).toBe('cam');
     });
 });
 
 describe('paymentLinkForMethod', () => {
-    it('builds paypal.me links and preserves https urls', () => {
+    it('builds paypal.me links with amount, including when a full URL is saved', () => {
         expect(paymentLinkForMethod('paypal', method({ value: 'marotto' }), 100, 'INV-1')).toBe(
-            'https://www.paypal.com/paypalme/marotto/100.00',
+            'https://paypal.me/marotto/100.00',
         );
         expect(
-            paymentLinkForMethod('paypal', method({ value: 'https://paypal.me/x' }), 10, 'INV-1'),
-        ).toBe('https://paypal.me/x');
+            paymentLinkForMethod('paypal', method({ value: 'https://paypal.me/x' }), 10.5, 'INV-1'),
+        ).toBe('https://paypal.me/x/10.50');
+        expect(
+            paymentLinkForMethod(
+                'paypal',
+                method({ value: 'https://www.paypal.com/paypalme/x/999' }),
+                42,
+                'INV-1',
+            ),
+        ).toBe('https://paypal.me/x/42.00');
     });
 
-    it('builds venmo and cash app deep links', () => {
+    it('builds venmo and cash app deep links with amount', () => {
         expect(paymentLinkForMethod('venmo', method({ value: '@cam' }), 25.5, 'INV-9')).toBe(
             'https://venmo.com/cam?txn=pay&amount=25.50&note=Invoice%20INV-9',
         );
         expect(paymentLinkForMethod('cashApp', method({ value: 'cam' }), 10, 'INV-1')).toBe(
-            'https://cash.app/$cam',
+            'https://cash.app/$cam/10.00',
         );
+        expect(paymentLinkForMethod('cashApp', method({ value: '$cam' }), 12.5, 'INV-1')).toBe(
+            'https://cash.app/$cam/12.50',
+        );
+        expect(
+            paymentLinkForMethod('cashApp', method({ value: 'https://cash.app/$cam' }), 7, 'INV-1'),
+        ).toBe('https://cash.app/$cam/7.00');
     });
 
     it('does not open the dialer or mail client for Zelle phone/email', () => {
