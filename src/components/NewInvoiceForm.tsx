@@ -979,7 +979,7 @@ export default function NewDocumentForm({
                 .document-form-section-nav {
                     display: block;
                     position: sticky;
-                    top: calc(64px + env(safe-area-inset-top, 0px));
+                    top: calc(var(--admin-topbar-h, 64px) + env(safe-area-inset-top, 0px));
                     z-index: 30;
                     padding: 8px 0;
                     background: color-mix(in srgb, var(--color-background) 92%, transparent);
@@ -1037,7 +1037,7 @@ export default function NewDocumentForm({
                     position: fixed;
                     left: 0;
                     right: 0;
-                    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+                    bottom: var(--admin-bottom-nav-h, env(safe-area-inset-bottom, 0px));
                     z-index: 45;
                     padding: 10px 16px;
                     background: linear-gradient(to top, var(--color-background) 85%, transparent);
