@@ -15,13 +15,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Marotto Solutions",
+  title: {
+    default: "Marotto Solutions",
+    template: "%s · Marotto",
+  },
   description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
-  applicationName: "Marotto Solutions",
+  // Used by some install flows / OS search; keep short so Spotlight matches early.
+  applicationName: "Marotto",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Marotto",
+  },
+  formatDetection: {
+    telephone: false,
   },
   icons: {
     icon: [
