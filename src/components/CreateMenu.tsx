@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Button, DropdownMenu } from '@radix-ui/themes';
 import { ChevronDown, CirclePlus } from 'lucide-react';
@@ -22,6 +23,8 @@ export default function CreateMenu({
     clientId,
     redirectTo,
     documentsOnly = false,
+    trigger,
+    side = 'bottom',
 }: {
     size?: '1' | '2' | '3' | '4';
     jobId?: string;
@@ -29,19 +32,24 @@ export default function CreateMenu({
     redirectTo?: string;
     /** When true, only show document/contract create links (for job hub). */
     documentsOnly?: boolean;
+    /** Replaces the default button, e.g. the compact slot in the mobile bottom nav. */
+    trigger?: ReactNode;
+    side?: 'top' | 'bottom';
 }) {
     const seed = { jobId, clientId, redirectTo };
 
     return (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-                <Button variant="solid" size={size} style={{ minHeight: 44 }}>
-                    <CirclePlus size={14} aria-hidden />
-                    {documentsOnly ? 'Create document' : 'Create'}
-                    <ChevronDown size={14} aria-hidden />
-                </Button>
+                {trigger ?? (
+                    <Button variant="solid" size={size} style={{ minHeight: 44 }}>
+                        <CirclePlus size={14} aria-hidden />
+                        {documentsOnly ? 'Create document' : 'Create'}
+                        <ChevronDown size={14} aria-hidden />
+                    </Button>
+                )}
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
+            <DropdownMenu.Content align="end" side={side} sideOffset={8}>
                 {!documentsOnly ? (
                     <>
                         <DropdownMenu.Item asChild>

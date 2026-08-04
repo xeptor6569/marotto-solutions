@@ -1,16 +1,20 @@
 'use client';
 
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Badge, Box, Button, DropdownMenu, Flex, IconButton, Separator, Text } from '@radix-ui/themes';
+import { Badge, Box, Button, DropdownMenu, Flex, Separator, Text } from '@radix-ui/themes';
 import {
     Briefcase,
+    CalendarDays,
     FileText,
     Gauge,
     Handshake,
+    Inbox,
     ListChecks,
     LogOut,
     MoreHorizontal,
+    Plus,
     ReceiptText,
     Repeat,
     Settings,
@@ -37,6 +41,8 @@ const desktopNavItems: NavItem[] = [
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
     { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
     { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
+    { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
+    { href: '/admin/leads', label: 'Leads', shortLabel: 'Leads', icon: Inbox },
     { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
     { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
     { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
@@ -48,71 +54,80 @@ const mobileNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
     { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
-    { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
+    { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Invoices', icon: FileText },
+];
+
+const moreMenuItems: NavItem[] = [
+    { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
+    { href: '/admin/leads', label: 'Leads', shortLabel: 'Leads', icon: Inbox },
+    { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
+    { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
+    { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
+    { href: '/admin/contracts', label: 'Contracts', shortLabel: 'Ctr', icon: Repeat },
+    { href: '/admin/receipts', label: 'Receipts', shortLabel: 'Rcpt', icon: ReceiptText },
+];
+
+const moreToolItems: NavItem[] = [
+    { href: '/admin/presets', label: 'Presets', shortLabel: 'Presets', icon: Bookmark },
+    { href: '/admin/import', label: 'Import', shortLabel: 'Import', icon: Upload },
+    { href: '/admin/backup', label: 'Backup', shortLabel: 'Backup', icon: Archive },
+    { href: '/admin/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
 ];
 
 function isActivePath(pathname: string, item: NavItem): boolean {
+    // The dashboard lives at the root of every admin path, so it only matches exactly.
+    if (item.href === '/admin' && !item.matchPrefixes?.length) return pathname === '/admin';
     const prefixes = [item.href, ...(item.matchPrefixes || [])];
     return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
-function MoreMenu() {
+function NavSlotIcon({ icon: Icon }: { icon: LucideIcon }) {
+    return (
+        <span className="admin-shell-nav-icon" aria-hidden>
+            <Icon size={18} />
+        </span>
+    );
+}
+
+function MoreMenu({ pathname, userEmail }: { pathname: string; userEmail: string }) {
+    const sections = [moreMenuItems, moreToolItems];
+    const active = sections.some((items) => items.some((item) => isActivePath(pathname, item)));
+
     return (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-                <IconButton
-                    variant="soft"
-                    size="3"
+                <button
+                    type="button"
+                    className={`admin-shell-nav-item${active ? ' is-active' : ''}`}
                     aria-label="More admin navigation"
-                    className="admin-shell-nav-hit"
                 >
-                    <MoreHorizontal size={18} />
-                </IconButton>
+                    <NavSlotIcon icon={MoreHorizontal} />
+                    <span>More</span>
+                </button>
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end">
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/calendar">Calendar</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/clients">Clients</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/helpers">Helpers</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/estimates">Estimates</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/quotes">Quotes</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/contracts">Contracts</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/presets">Presets</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/receipts">Receipts</Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator />
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/import">
-                        <Upload size={14} />
-                        Import
-                    </Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/backup">
-                        <Archive size={14} />
-                        Backup
-                    </Link>
-                </DropdownMenu.Item>
-                <DropdownMenu.Item asChild>
-                    <Link href="/admin/settings">
-                        <Settings size={14} />
-                        Settings
-                    </Link>
-                </DropdownMenu.Item>
+            <DropdownMenu.Content align="end" side="top" sideOffset={8}>
+                {userEmail ? (
+                    <>
+                        <DropdownMenu.Label>{userEmail}</DropdownMenu.Label>
+                        <DropdownMenu.Separator />
+                    </>
+                ) : null}
+                {sections.map((items, index) => (
+                    <Fragment key={items[0]?.href ?? index}>
+                        {index > 0 ? <DropdownMenu.Separator /> : null}
+                        {items.map((item) => (
+                            <DropdownMenu.Item key={item.href} asChild>
+                                <Link
+                                    href={item.href}
+                                    aria-current={isActivePath(pathname, item) ? 'page' : undefined}
+                                >
+                                    <item.icon size={14} aria-hidden />
+                                    {item.label}
+                                </Link>
+                            </DropdownMenu.Item>
+                        ))}
+                    </Fragment>
+                ))}
                 <DropdownMenu.Separator />
                 <form action={signOutFromAdmin}>
                     <DropdownMenu.Item color="red" asChild>
@@ -135,6 +150,8 @@ export default function AdminShell({
     userEmail: string;
 }) {
     const pathname = usePathname();
+    const activeTitle =
+        [...desktopNavItems, ...moreToolItems].find((item) => isActivePath(pathname, item))?.label ?? 'Admin';
 
     return (
         <Box>
@@ -157,7 +174,7 @@ export default function AdminShell({
                                         variant={active ? 'solid' : 'ghost'}
                                         style={{ justifyContent: 'flex-start' }}
                                     >
-                                        <Link href={item.href}>
+                                        <Link href={item.href} aria-current={active ? 'page' : undefined}>
                                             <item.icon size={16} />
                                             {item.label}
                                         </Link>
@@ -198,10 +215,19 @@ export default function AdminShell({
 
                 <Flex direction="column" style={{ minWidth: 0, flex: 1 }}>
                     <Box className="admin-shell-topbar no-print">
-                        <Flex align="center" justify="between" gap="2" px={{ initial: '3', sm: '5' }} py="3">
+                        <Flex
+                            align="center"
+                            justify="between"
+                            gap="2"
+                            px={{ initial: '3', sm: '5' }}
+                            py="2"
+                            className="admin-shell-topbar-inner"
+                        >
                             <Flex direction="column" gap="0">
-                                <Text size="3" weight="bold">Admin</Text>
-                                <Text size="1" color="gray">Fast access across all documents</Text>
+                                <Text size="3" weight="bold">{activeTitle}</Text>
+                                <Text size="1" color="gray" className="admin-shell-topbar-subtitle">
+                                    Fast access across all documents
+                                </Text>
                             </Flex>
                             <Flex align="center" gap="2" className="admin-shell-topbar-desktop-only">
                                 <CreateMenu />
@@ -218,34 +244,42 @@ export default function AdminShell({
                 </Flex>
             </Flex>
 
-            <Box className="admin-shell-bottom-nav no-print">
-                <Flex align="center" justify="between" gap="1">
+            <Box className="admin-shell-bottom-nav no-print" role="navigation" aria-label="Admin">
+                <Flex align="stretch" gap="1">
                     {mobileNavItems.map((item) => {
                         const active = isActivePath(pathname, item);
                         return (
-                            <Button
+                            <Link
                                 key={item.href}
-                                asChild
-                                size="2"
-                                variant={active ? 'solid' : 'ghost'}
-                                className="admin-shell-nav-hit"
-                                style={{ minWidth: 0, flex: 1, justifyContent: 'center' }}
+                                href={item.href}
+                                className={`admin-shell-nav-item${active ? ' is-active' : ''}`}
+                                aria-current={active ? 'page' : undefined}
                             >
-                                <Link href={item.href}>
-                                    <item.icon size={18} />
-                                    {item.shortLabel}
-                                </Link>
-                            </Button>
+                                <NavSlotIcon icon={item.icon} />
+                                <span>{item.shortLabel}</span>
+                            </Link>
                         );
                     })}
-                    <Flex align="center" gap="1">
-                        <CreateMenu size="2" />
-                        <MoreMenu />
-                    </Flex>
+                    <CreateMenu
+                        side="top"
+                        trigger={
+                            <button type="button" className="admin-shell-nav-item is-create" aria-label="Create">
+                                <span className="admin-shell-nav-icon" aria-hidden>
+                                    <Plus size={18} />
+                                </span>
+                                <span>Create</span>
+                            </button>
+                        }
+                    />
+                    <MoreMenu pathname={pathname} userEmail={userEmail} />
                 </Flex>
             </Box>
 
             <style>{`
+                :root {
+                    --admin-topbar-h: 52px;
+                    --admin-bottom-nav-h: calc(64px + env(safe-area-inset-bottom, 0px));
+                }
                 .admin-shell-sidebar {
                     display: none;
                     width: 250px;
@@ -254,6 +288,7 @@ export default function AdminShell({
                     position: sticky;
                     top: 0;
                     height: 100dvh;
+                    overflow-y: auto;
                 }
                 .admin-shell-topbar {
                     position: sticky;
@@ -264,8 +299,14 @@ export default function AdminShell({
                     backdrop-filter: blur(10px);
                     border-bottom: 1px solid var(--gray-6);
                 }
+                .admin-shell-topbar-inner {
+                    min-height: var(--admin-topbar-h);
+                }
+                .admin-shell-topbar-subtitle {
+                    display: none;
+                }
                 .admin-shell-content {
-                    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+                    padding-bottom: calc(var(--admin-bottom-nav-h) + 16px);
                 }
                 .admin-shell-bottom-nav {
                     position: fixed;
@@ -276,15 +317,76 @@ export default function AdminShell({
                     border-top: 1px solid var(--gray-6);
                     background: color-mix(in srgb, var(--color-panel-solid) 94%, transparent);
                     backdrop-filter: blur(10px);
-                    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+                    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
                 }
-                .admin-shell-nav-hit {
-                    min-height: 44px;
+                .admin-shell-nav-item {
+                    flex: 1 1 0;
+                    min-width: 0;
+                    min-height: 52px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 3px;
+                    padding: 4px 2px;
+                    border: none;
+                    border-radius: 10px;
+                    background: transparent;
+                    color: var(--gray-11);
+                    font-family: inherit;
+                    font-size: 10px;
+                    font-weight: 500;
+                    line-height: 1.1;
+                    letter-spacing: 0.01em;
+                    text-decoration: none;
+                    cursor: pointer;
+                    -webkit-tap-highlight-color: transparent;
+                }
+                .admin-shell-nav-item > span:last-child {
+                    max-width: 100%;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+                .admin-shell-nav-item:active {
+                    background: var(--gray-a3);
+                }
+                .admin-shell-nav-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 36px;
+                    height: 26px;
+                    border-radius: 999px;
+                    transition: background-color 120ms ease, color 120ms ease;
+                }
+                .admin-shell-nav-item.is-active {
+                    color: var(--accent-11);
+                }
+                .admin-shell-nav-item.is-active .admin-shell-nav-icon {
+                    background: var(--accent-a4);
+                }
+                .admin-shell-nav-item.is-create .admin-shell-nav-icon {
+                    background: var(--accent-9);
+                    color: var(--accent-contrast);
+                }
+                .admin-shell-nav-item:focus-visible {
+                    outline: 2px solid var(--accent-8);
+                    outline-offset: 2px;
                 }
                 .admin-shell-topbar-desktop-only {
                     display: none !important;
                 }
+                /* Menu content is portaled, so the current-page cue is styled globally */
+                .rt-BaseMenuItem[aria-current='page'] {
+                    color: var(--accent-11);
+                    font-weight: 600;
+                }
                 @media (min-width: 960px) {
+                    :root {
+                        --admin-topbar-h: 64px;
+                        --admin-bottom-nav-h: 0px;
+                    }
                     .admin-shell-sidebar {
                         display: block;
                     }
@@ -293,6 +395,9 @@ export default function AdminShell({
                     }
                     .admin-shell-content {
                         padding-bottom: 0;
+                    }
+                    .admin-shell-topbar-subtitle {
+                        display: block;
                     }
                     .admin-shell-topbar-desktop-only {
                         display: inline-flex !important;
