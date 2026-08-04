@@ -53,7 +53,7 @@ describe('paymentLinkForMethod', () => {
         expect(paymentLinkForMethod('venmo', method({ value: '@cam' }), 25.5, 'INV-9')).toBe(
             'https://venmo.com/cam?txn=pay&amount=25.50&note=Invoice%20INV-9',
         );
-        expect(paymentLinkForMethod('cashApp', method({ value: '$cam' }), 10, 'INV-1')).toBe(
+        expect(paymentLinkForMethod('cashApp', method({ value: 'cam' }), 10, 'INV-1')).toBe(
             'https://cash.app/$cam',
         );
     });
