@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
     extractCashTag,
     extractPaypalMeUser,
+    isAllowedPaymentRedirectUrl,
     normalizeHandle,
     normalizePhoneDigits,
+    paymentClickHref,
     paymentLinkForMethod,
+    paymentMethodNeedsBrowserHandoff,
     paymentMethodUsesManualDetails,
     toMoneyAmount,
 } from '../payment-links';
@@ -111,6 +114,31 @@ describe('paymentLinkForMethod', () => {
         expect(paymentLinkForMethod('stripe', method({ value: 'https://pay.stripe.com/x' }), 1, 'a')).toBe(
             'https://pay.stripe.com/x',
         );
+    });
+});
+
+describe('paymentClickHref / browser handoff', () => {
+    it('wraps PayPal and Cash App through the same-origin redirect', () => {
+        expect(paymentMethodNeedsBrowserHandoff('paypal')).toBe(true);
+        expect(paymentMethodNeedsBrowserHandoff('cashApp')).toBe(true);
+        expect(paymentMethodNeedsBrowserHandoff('venmo')).toBe(false);
+
+        expect(paymentClickHref('paypal', 'https://paypal.me/x/10.00')).toBe(
+            `/api/pay/redirect?u=${encodeURIComponent('https://paypal.me/x/10.00')}`,
+        );
+        expect(paymentClickHref('cashApp', 'https://cash.app/$cam/12.50')).toBe(
+            `/api/pay/redirect?u=${encodeURIComponent('https://cash.app/$cam/12.50')}`,
+        );
+        expect(paymentClickHref('venmo', 'https://venmo.com/cam?txn=pay&amount=1.00')).toBe(
+            'https://venmo.com/cam?txn=pay&amount=1.00',
+        );
+    });
+
+    it('allowlists payment hosts only', () => {
+        expect(isAllowedPaymentRedirectUrl('https://paypal.me/x/1')).toBe(true);
+        expect(isAllowedPaymentRedirectUrl('https://cash.app/$x/1')).toBe(true);
+        expect(isAllowedPaymentRedirectUrl('https://evil.example/phish')).toBe(false);
+        expect(isAllowedPaymentRedirectUrl('javascript:alert(1)')).toBe(false);
     });
 });
 
