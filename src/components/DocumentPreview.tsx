@@ -21,6 +21,7 @@ import {
 import { getAppConfig } from "@/lib/config";
 import { ensureDocumentShareToken } from "@/lib/data";
 import { DOC_LABEL } from "@/lib/document-labels";
+import { paymentLinkForMethod, paymentMethodUsesManualDetails } from "@/lib/payment-links";
 import {
     agreedScopeLineTotal,
     hasPendingApprovalLines,
@@ -118,64 +119,6 @@ function getStatusColor(status: DocumentData["status"]) {
 
 function getDisplayName(doc: DocumentData) {
     return doc.title ? `${doc.id} — ${doc.title}` : doc.id;
-}
-
-function normalizePhoneDigits(value?: string) {
-    return (value || "").replace(/\D/g, "");
-}
-
-function normalizeHandle(value?: string) {
-    return (value || "").trim().replace(/^@+/, "");
-}
-
-function toMoneyAmount(amount: number) {
-    const safeAmount = Number.isFinite(amount) ? Math.max(0, amount) : 0;
-    return safeAmount.toFixed(2);
-}
-
-function paymentLinkForMethod(
-    key: PaymentMethodKey,
-    method: PaymentMethodEntry,
-    amount: number,
-    invoiceId: string,
-) {
-    if (method.comingSoon) return null;
-    const raw = (method.value || "").trim();
-    const encodedAmount = encodeURIComponent(toMoneyAmount(amount));
-    const encodedNote = encodeURIComponent(`Invoice ${invoiceId}`);
-
-    switch (key) {
-        case "paypal": {
-            if (!raw) return null;
-            if (/^https?:\/\//i.test(raw)) return raw;
-            const paypalUser = normalizeHandle(raw);
-            return paypalUser
-                ? `https://www.paypal.com/paypalme/${encodeURIComponent(paypalUser)}/${encodedAmount}`
-                : null;
-        }
-        case "venmo": {
-            const venmoUser = normalizeHandle(raw);
-            return venmoUser
-                ? `https://venmo.com/${encodeURIComponent(venmoUser)}?txn=pay&amount=${encodedAmount}&note=${encodedNote}`
-                : null;
-        }
-        case "cashApp": {
-            const cashTag = normalizeHandle(raw);
-            return cashTag
-                ? `https://cash.app/$${encodeURIComponent(cashTag)}`
-                : null;
-        }
-        case "zelle": {
-            if (!raw) return null;
-            if (raw.includes("@")) return `mailto:${raw}?subject=${encodedNote}`;
-            const digits = normalizePhoneDigits(raw);
-            return digits ? `tel:${digits}` : null;
-        }
-        case "stripe":
-            return /^https?:\/\//i.test(raw) ? raw : null;
-        default:
-            return null;
-    }
 }
 
 function buildInvoicePaymentMethods(
@@ -609,8 +552,10 @@ export default async function DocumentPreview({
                                                             </Button>
                                                         ) : (
                                                             <Text as="div" size="1" color="gray" className="no-print">
-                                                                {isCheck || key === "cash" || key === "applePay"
-                                                                    ? "Use details above to pay with this method."
+                                                                {paymentMethodUsesManualDetails(key)
+                                                                    ? key === "zelle"
+                                                                        ? "Send this amount via Zelle in your bank app using the details above."
+                                                                        : "Use details above to pay with this method."
                                                                     : "Add a valid link/handle in settings to enable tap-to-pay."}
                                                             </Text>
                                                         )}
