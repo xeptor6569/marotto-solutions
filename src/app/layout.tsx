@@ -15,12 +15,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Keep the default <title> short — iOS Add-to-Home-Screen / Spotlight often
+  // indexes the document title even when apple-mobile-web-app-title is set.
   title: {
-    default: "Marotto Solutions",
+    default: "Marotto",
     template: "%s · Marotto",
   },
   description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
-  // Used by some install flows / OS search; keep short so Spotlight matches early.
   applicationName: "Marotto",
   appleWebApp: {
     capable: true,

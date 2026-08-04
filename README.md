@@ -20,7 +20,7 @@ This README is intended to be an operational handbook you can come back to when 
 - auth with email magic link or email/password
 - full admin workspace at `/admin`
 - shared navigation shell across admin pages for desktop and mobile/PWA usage
-- installable admin PWA (`src/app/manifest.ts`) named **Marotto** for short home-screen / Spotlight search (re-add to Home Screen after name changes)
+- installable admin PWA (`src/app/manifest.ts`) named **Marotto** for short home-screen / Spotlight search (re-add to Home Screen after name changes; install from `/admin` and confirm the Add dialog name is exactly `Marotto`)
 
 ### Core business workflows
 

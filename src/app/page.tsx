@@ -4,6 +4,14 @@ import { ArrowRight, Hammer, Monitor, Cpu, Code, Phone, MapPin, Wrench, Users, Z
 import QuoteForm from "./components/QuoteForm";
 import { testimonials } from "@/lib/testimonials";
 import { Quote } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+    title: {
+        absolute: "Marotto Solutions",
+    },
+    description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
+};
 
 const SERVICE_AREA = "Pittston, PA and surrounding areas";
 const PHONE = "(570) 332-9262";
