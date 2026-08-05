@@ -73,7 +73,7 @@ export default function SettingsForm({ config }: { config: Partial<AppConfig> })
                     <Text as="label" size="2" weight="bold">Nextcloud WebDAV URL</Text>
                     <TextField.Root
                         name="webdavUrl"
-                        defaultValue={config.webdavUrl || "https://cloud.example.com/remote.php/dav/files/USER/"}
+                        defaultValue={config.webdavUrl || ""}
                         placeholder="https://cloud.example.com/remote.php/dav/files/myname/"
                     />
                 </Box>
