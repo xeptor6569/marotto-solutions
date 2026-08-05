@@ -3,12 +3,13 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Badge, Box, Button, Callout, Card, Checkbox, Dialog, Flex, Table, Text, TextArea, TextField } from "@radix-ui/themes";
+import { Badge, Box, Button, Callout, Card, Checkbox, Dialog, Flex, Select, Table, Text, TextArea, TextField } from "@radix-ui/themes";
 import { ArrowRightLeft, CheckCircle, Copy, Edit, Search, Send, X, XCircle } from "lucide-react";
 import type { DocumentData, DocumentType, WorkflowStatus } from "@/lib/types";
 import LeadEditDialog from "@/components/LeadEditDialog";
 import DeleteLeadButton from "@/components/DeleteLeadButton";
 import EmptyState from "@/components/EmptyState";
+import FilterChips, { type FilterChipOption } from "@/components/FilterChips";
 import { convertDocumentsAction, duplicateDocumentsAction, sendDocumentsAction } from "@/app/admin/document-bulk-actions";
 import { convertTargets } from "@/lib/convert-document";
 import { DOC_LABEL, documentListLabel } from "@/lib/document-labels";
@@ -59,9 +60,32 @@ function typePluralLabel(type: AdminDocumentListType): string {
 
 const STATUS_ORDER: DocumentData["status"][] = ["draft", "sent", "paid", "void"];
 
+const UNDATED = "undated";
+
+type SortKey = "newest" | "oldest" | "total-desc" | "total-asc";
+
+const SORT_LABELS: Record<SortKey, string> = {
+    newest: "Newest first",
+    oldest: "Oldest first",
+    "total-desc": "Highest total",
+    "total-asc": "Lowest total",
+};
+
 function statusFilterLabel(status: "all" | DocumentData["status"]): string {
     if (status === "all") return "All";
     return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function documentTime(doc: DocumentData): number {
+    const time = new Date(doc.date).getTime();
+    return Number.isNaN(time) ? 0 : time;
+}
+
+/** Year bucket used by the period filter; documents with an unreadable date fall into "undated". */
+function documentYear(doc: DocumentData): string {
+    const parsed = new Date(doc.date);
+    if (Number.isNaN(parsed.getTime())) return UNDATED;
+    return String(parsed.getFullYear());
 }
 
 export default function AdminDocumentList({
@@ -75,6 +99,8 @@ export default function AdminDocumentList({
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState<"all" | DocumentData["status"]>("all");
     const [workflowFilter, setWorkflowFilter] = useState<"all" | WorkflowStatus>("all");
+    const [period, setPeriod] = useState("all");
+    const [sort, setSort] = useState<SortKey>("newest");
     const showWorkflow = type === "estimate" || type === "quote";
     const base = adminBase(type);
     const isLead = type === "lead";
@@ -102,8 +128,8 @@ export default function AdminDocumentList({
     const clearSelection = () => setSelectedIds(new Set());
 
     const filteredDocs = useMemo(() => {
-        return docs.filter((doc) => {
-            const q = query.trim().toLowerCase();
+        const q = query.trim().toLowerCase();
+        const matched = docs.filter((doc) => {
             const matchesQuery = !q
                 || doc.id.toLowerCase().includes(q)
                 || String(doc.number).includes(q)
@@ -115,17 +141,78 @@ export default function AdminDocumentList({
             const matchesWorkflow = workflowFilter === "all"
                 || doc.workflowStatus === workflowFilter
                 || (workflowFilter === "backlog" && !doc.workflowStatus);
-            return matchesQuery && matchesStatus && matchesWorkflow;
+            const matchesPeriod = period === "all" || documentYear(doc) === period;
+            return matchesQuery && matchesStatus && matchesWorkflow && matchesPeriod;
         });
-    }, [docs, query, status, workflowFilter]);
+
+        return matched.sort((a, b) => {
+            if (sort === "oldest") return documentTime(a) - documentTime(b) || a.number - b.number;
+            if (sort === "total-desc") return b.total - a.total;
+            if (sort === "total-asc") return a.total - b.total;
+            return documentTime(b) - documentTime(a) || b.number - a.number;
+        });
+    }, [docs, query, status, workflowFilter, period, sort]);
 
     const numberLabel = docNumberLabel(type);
     const plural = typePluralLabel(type);
 
-    const statusOptions = useMemo<("all" | DocumentData["status"])[]>(() => {
-        const present = new Set(docs.map((doc) => doc.status));
-        return ["all", ...STATUS_ORDER.filter((s) => present.has(s))];
+    const statusOptions = useMemo<FilterChipOption<"all" | DocumentData["status"]>[]>(() => {
+        const counts = new Map<DocumentData["status"], number>();
+        for (const doc of docs) counts.set(doc.status, (counts.get(doc.status) || 0) + 1);
+        return [
+            { value: "all" as const, label: statusFilterLabel("all"), count: docs.length },
+            ...STATUS_ORDER.filter((s) => counts.has(s)).map((s) => ({
+                value: s,
+                label: statusFilterLabel(s),
+                count: counts.get(s),
+            })),
+        ];
     }, [docs]);
+
+    const workflowOptions = useMemo<FilterChipOption<"all" | WorkflowStatus>[]>(() => {
+        const counts = new Map<WorkflowStatus, number>();
+        for (const doc of docs) {
+            const value = doc.workflowStatus ?? "backlog";
+            counts.set(value, (counts.get(value) || 0) + 1);
+        }
+        return [
+            { value: "all" as const, label: "All", count: docs.length },
+            ...WORKFLOW_STATUSES.map((s) => ({
+                value: s,
+                label: workflowStatusLabel(s),
+                count: counts.get(s) || 0,
+            })),
+        ];
+    }, [docs]);
+
+    // Older documents are hard to reach in a long list, so offer a jump-to-year filter.
+    const periodOptions = useMemo<FilterChipOption<string>[]>(() => {
+        const counts = new Map<string, number>();
+        for (const doc of docs) {
+            const year = documentYear(doc);
+            counts.set(year, (counts.get(year) || 0) + 1);
+        }
+        const years = Array.from(counts.keys())
+            .filter((year) => year !== UNDATED)
+            .sort((a, b) => Number(b) - Number(a));
+        const options: FilterChipOption<string>[] = [
+            { value: "all", label: "All time", count: docs.length },
+            ...years.map((year) => ({ value: year, label: year, count: counts.get(year) })),
+        ];
+        if (counts.has(UNDATED)) {
+            options.push({ value: UNDATED, label: "No date", count: counts.get(UNDATED) });
+        }
+        return options;
+    }, [docs]);
+
+    const filtersActive = query.trim() !== "" || status !== "all" || workflowFilter !== "all" || period !== "all";
+
+    const clearFilters = () => {
+        setQuery("");
+        setStatus("all");
+        setWorkflowFilter("all");
+        setPeriod("all");
+    };
 
     const allVisibleSelected = filteredDocs.length > 0 && filteredDocs.every((d) => selectedIds.has(d.id));
     const someVisibleSelected = filteredDocs.some((d) => selectedIds.has(d.id));
@@ -244,71 +331,43 @@ export default function AdminDocumentList({
                         </TextField.Root>
                     </Box>
 
-                    <Box style={{ width: "100%", maxWidth: "100%" }}>
-                        <Text as="label" size="2">Status</Text>
-                        <Box
-                            mt="1"
-                            style={{
-                                overflowX: "auto",
-                                WebkitOverflowScrolling: "touch",
-                                marginLeft: -2,
-                                paddingBottom: 4,
-                            }}
-                        >
-                            <Flex gap="2" wrap="nowrap" pb="1" style={{ width: "max-content", maxWidth: "100%" }}>
-                                {statusOptions.map((s) => (
-                                    <Button
-                                        key={s}
-                                        size="1"
-                                        variant={status === s ? "solid" : "soft"}
-                                        onClick={() => setStatus(s)}
-                                        style={{ flexShrink: 0 }}
-                                    >
-                                        {statusFilterLabel(s)}
-                                    </Button>
-                                ))}
-                            </Flex>
+                    <Box style={{ minWidth: 160 }}>
+                        <Text as="label" size="2">Sort</Text>
+                        <Box mt="1">
+                            <Select.Root value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+                                <Select.Trigger aria-label="Sort documents" style={{ width: "100%" }} />
+                                <Select.Content>
+                                    {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                                        <Select.Item key={key} value={key}>{SORT_LABELS[key]}</Select.Item>
+                                    ))}
+                                </Select.Content>
+                            </Select.Root>
                         </Box>
                     </Box>
 
+                    <FilterChips label="Status" options={statusOptions} value={status} onChange={setStatus} />
+
                     {showWorkflow ? (
-                        <Box style={{ width: "100%", maxWidth: "100%" }}>
-                            <Text as="label" size="2">Workflow</Text>
-                            <Box
-                                mt="1"
-                                style={{
-                                    overflowX: "auto",
-                                    WebkitOverflowScrolling: "touch",
-                                    marginLeft: -2,
-                                    paddingBottom: 4,
-                                }}
-                            >
-                                <Flex gap="2" wrap="nowrap" pb="1" style={{ width: "max-content", maxWidth: "100%" }}>
-                                    <Button
-                                        size="1"
-                                        variant={workflowFilter === "all" ? "solid" : "soft"}
-                                        onClick={() => setWorkflowFilter("all")}
-                                        style={{ flexShrink: 0 }}
-                                    >
-                                        All
-                                    </Button>
-                                    {WORKFLOW_STATUSES.map((s) => (
-                                        <Button
-                                            key={s}
-                                            size="1"
-                                            variant={workflowFilter === s ? "solid" : "soft"}
-                                            onClick={() => setWorkflowFilter(s)}
-                                            style={{ flexShrink: 0 }}
-                                        >
-                                            {workflowStatusLabel(s)}
-                                        </Button>
-                                    ))}
-                                </Flex>
-                            </Box>
-                        </Box>
+                        <FilterChips
+                            label="Workflow"
+                            options={workflowOptions}
+                            value={workflowFilter}
+                            onChange={setWorkflowFilter}
+                        />
                     ) : null}
+
+                    <FilterChips label="Period" options={periodOptions} value={period} onChange={setPeriod} />
                 </Flex>
             </Card>
+
+            <Flex align="center" justify="between" gap="3" wrap="wrap">
+                <Text size="2" color="gray">
+                    Showing {filteredDocs.length} of {docs.length} {docs.length === 1 ? plural.slice(0, -1) : plural}
+                </Text>
+                {filtersActive ? (
+                    <Button size="1" variant="ghost" color="gray" onClick={clearFilters}>Clear filters</Button>
+                ) : null}
+            </Flex>
 
             {feedback ? (
                 <Callout.Root color={feedback.success ? "green" : "red"}>
@@ -413,7 +472,15 @@ export default function AdminDocumentList({
             </Dialog.Root>
 
             {filteredDocs.length === 0 ? (
-                <EmptyState title={`No ${plural} match your filters.`} />
+                <EmptyState
+                    title={docs.length === 0 ? `No ${plural} yet.` : `No ${plural} match your filters.`}
+                    description={docs.length === 0
+                        ? undefined
+                        : "Older documents stay in this list — try clearing the search, status, or period filters."}
+                    action={docs.length === 0 || !filtersActive
+                        ? undefined
+                        : <Button size="2" variant="soft" onClick={clearFilters}>Clear filters</Button>}
+                />
             ) : (
                 <>
                     {/* Mobile: stacked cards */}
