@@ -79,8 +79,11 @@ export function resolveStripeCheckoutAmount(input: StripeCheckoutAmountInput): S
             return { amount: 0, kind: 'partial', error: 'Invalid payment mode.' };
     }
 
-    // Never charge more than what remains.
-    amount = roundMoney(Math.min(amount, balanceDue));
+    // Percent / equal-split are derived from invoice total, so cap at remaining balance.
+    // Explicit dollar amounts must not silently exceed the balance — validate instead.
+    if (input.mode === 'percent' || input.mode === 'split') {
+        amount = roundMoney(Math.min(amount, balanceDue));
+    }
 
     const validationError = validateRecordPayment(amount, balanceDue);
     if (validationError) {

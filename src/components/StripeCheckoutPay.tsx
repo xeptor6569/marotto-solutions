@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { Badge, Box, Button, Flex, Text, TextField } from '@radix-ui/themes';
 import { CreditCard } from 'lucide-react';
 import {
@@ -17,6 +17,8 @@ type Props = {
     note?: string;
 };
 
+type PartialMode = Exclude<StripeCheckoutMode, 'full'>;
+
 export default function StripeCheckoutPay({
     shareToken,
     invoiceId,
@@ -25,26 +27,22 @@ export default function StripeCheckoutPay({
     label = 'Stripe',
     note,
 }: Props) {
-    const [mode, setMode] = useState<StripeCheckoutMode>('full');
     const [showPartial, setShowPartial] = useState(false);
-    const [amount, setAmount] = useState(balanceDue > 0 ? balanceDue.toFixed(2) : '');
+    const [partialMode, setPartialMode] = useState<PartialMode>('percent');
+    const [amount, setAmount] = useState(() => (balanceDue > 0 ? balanceDue.toFixed(2) : ''));
     const [percent, setPercent] = useState('50');
     const [splitCount, setSplitCount] = useState('2');
     const [error, setError] = useState('');
     const [isPending, startTransition] = useTransition();
 
-    useEffect(() => {
-        if (!showPartial) {
-            setMode('full');
-            setAmount(balanceDue > 0 ? balanceDue.toFixed(2) : '');
-        }
-    }, [balanceDue, showPartial]);
+    const activeMode: StripeCheckoutMode = showPartial ? partialMode : 'full';
+    const amountForResolve = showPartial ? Number(amount) : balanceDue;
 
     const preview = resolveStripeCheckoutAmount({
-        mode: showPartial ? mode : 'full',
+        mode: activeMode,
         invoiceTotal,
         balanceDue,
-        amount: Number(amount),
+        amount: amountForResolve,
         percent: Number(percent),
         splitCount: Number(splitCount),
     });
@@ -53,10 +51,10 @@ export default function StripeCheckoutPay({
     const startCheckout = () => {
         setError('');
         const resolved = resolveStripeCheckoutAmount({
-            mode: showPartial ? mode : 'full',
+            mode: activeMode,
             invoiceTotal,
             balanceDue,
-            amount: Number(amount),
+            amount: amountForResolve,
             percent: Number(percent),
             splitCount: Number(splitCount),
         });
@@ -72,8 +70,8 @@ export default function StripeCheckoutPay({
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         shareToken,
-                        mode: showPartial ? mode : 'full',
-                        amount: Number(amount),
+                        mode: activeMode,
+                        amount: amountForResolve,
                         percent: Number(percent),
                         splitCount: Number(splitCount),
                     }),
@@ -156,30 +154,30 @@ export default function StripeCheckoutPay({
                         <Button
                             type="button"
                             size="1"
-                            variant={mode === 'amount' ? 'solid' : 'soft'}
-                            onClick={() => setMode('amount')}
+                            variant={partialMode === 'amount' ? 'solid' : 'soft'}
+                            onClick={() => setPartialMode('amount')}
                         >
                             Amount
                         </Button>
                         <Button
                             type="button"
                             size="1"
-                            variant={mode === 'percent' ? 'solid' : 'soft'}
-                            onClick={() => setMode('percent')}
+                            variant={partialMode === 'percent' ? 'solid' : 'soft'}
+                            onClick={() => setPartialMode('percent')}
                         >
                             Percentage
                         </Button>
                         <Button
                             type="button"
                             size="1"
-                            variant={mode === 'split' ? 'solid' : 'soft'}
-                            onClick={() => setMode('split')}
+                            variant={partialMode === 'split' ? 'solid' : 'soft'}
+                            onClick={() => setPartialMode('split')}
                         >
                             Equal payments
                         </Button>
                     </Flex>
 
-                    {mode === 'amount' ? (
+                    {partialMode === 'amount' ? (
                         <Box>
                             <Text as="label" size="1" color="gray">Amount ($)</Text>
                             <TextField.Root
@@ -193,7 +191,7 @@ export default function StripeCheckoutPay({
                         </Box>
                     ) : null}
 
-                    {mode === 'percent' ? (
+                    {partialMode === 'percent' ? (
                         <Box>
                             <Flex gap="2" wrap="wrap" mb="2">
                                 <Button type="button" size="1" variant="soft" onClick={() => setPercent('25')}>
@@ -218,7 +216,7 @@ export default function StripeCheckoutPay({
                         </Box>
                     ) : null}
 
-                    {mode === 'split' ? (
+                    {partialMode === 'split' ? (
                         <Box>
                             <Text as="label" size="1" color="gray">
                                 Split invoice total into N equal payments
@@ -257,8 +255,9 @@ export default function StripeCheckoutPay({
                     variant="ghost"
                     onClick={() => {
                         setShowPartial(true);
-                        setMode('percent');
+                        setPartialMode('percent');
                         setPercent('50');
+                        setAmount(balanceDue > 0 ? balanceDue.toFixed(2) : '');
                         setError('');
                     }}
                 >
