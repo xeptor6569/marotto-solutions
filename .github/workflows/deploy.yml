@@ -111,8 +111,30 @@ jobs:
             exit 1
           fi
           echo "Migrating database…"
-          # Clear a failed duplicate "init" migration if a previous deploy left the DB in P3018 state.
-          "$prisma" migrate resolve --rolled-back 20260509180000_init || true
+          # 20260509180000_init is a no-op placeholder; its original DDL now lives in
+          # 20260101000000_init_auth_and_client. Restructuring the history left a failed
+          # duplicate row for that name in _prisma_migrations, and a failed row makes
+          # migrate deploy refuse to apply anything else (P3009). Delete the row, but only
+          # when the same migration is also recorded as applied, so a database where it
+          # genuinely has not run yet is left alone for migrate deploy to handle.
+          "$prisma" db execute --url "$DATABASE_URL" --stdin <<'SQL'
+          DO $do$
+          BEGIN
+            IF to_regclass('_prisma_migrations') IS NULL THEN
+              RETURN;
+            END IF;
+            DELETE FROM "_prisma_migrations" dup
+            WHERE dup.migration_name = '20260509180000_init'
+              AND dup.finished_at IS NULL
+              AND EXISTS (
+                SELECT 1
+                FROM "_prisma_migrations" applied
+                WHERE applied.migration_name = dup.migration_name
+                  AND applied.finished_at IS NOT NULL
+              );
+          END
+          $do$;
+          SQL
           # The CLI has died with SIGSEGV on this runner before it even opened a
           # connection, which aborts an otherwise healthy deploy. Retry before failing.
           for attempt in 1 2 3; do
