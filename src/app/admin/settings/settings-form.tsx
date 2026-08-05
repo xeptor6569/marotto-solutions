@@ -20,7 +20,10 @@ const paymentMethodFields: Record<PaymentMethodKey, { valueLabel: string; noteLa
     paypal: { valueLabel: 'PayPal Link / Handle', noteLabel: 'PayPal Note' },
     venmo: { valueLabel: 'Venmo Handle', noteLabel: 'Venmo Note' },
     applePay: { valueLabel: 'Apple Pay Number / Email', noteLabel: 'Apple Pay Note' },
-    stripe: { valueLabel: 'Stripe Link', noteLabel: 'Stripe Note' },
+    stripe: {
+        valueLabel: 'Fallback Stripe Link (optional)',
+        noteLabel: 'Stripe Note',
+    },
 };
 
 function initialMethodOrder(config: Partial<AppConfig>): PaymentMethodKey[] {
@@ -211,10 +214,21 @@ export default function SettingsForm({ config }: { config: Partial<AppConfig> })
                                     </Flex>
                                     <Box>
                                         <Text as="label" size="2" weight="bold">{valueLabel}</Text>
+                                        {key === 'stripe' ? (
+                                            <Text size="1" color="gray" as="p" mb="1">
+                                                Preferred: set <code>STRIPE_SECRET_KEY</code> and <code>STRIPE_WEBHOOK_SECRET</code> in the server env for Checkout + auto-recorded payments. Optional pasteable Payment Link is only a fallback when Checkout is not configured.
+                                            </Text>
+                                        ) : null}
                                         <TextField.Root
                                             name={`billing.${key}.value`}
                                             defaultValue={method?.value || ""}
-                                            placeholder={key === 'check' ? config.billing?.checkPayableTo || "Marotto Solutions" : ""}
+                                            placeholder={
+                                                key === 'check'
+                                                    ? config.billing?.checkPayableTo || "Marotto Solutions"
+                                                    : key === 'stripe'
+                                                      ? "https://buy.stripe.com/... (fallback only)"
+                                                      : ""
+                                            }
                                         />
                                     </Box>
                                     <Box>

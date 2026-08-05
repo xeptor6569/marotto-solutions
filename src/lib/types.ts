@@ -78,6 +78,10 @@ export interface PaymentEntry {
     notes?: string;
     kind: PaymentKind;
     receiptId?: string;
+    /** Stripe Checkout Session id — used for webhook idempotency. */
+    stripeSessionId?: string;
+    /** Stripe PaymentIntent id when available from Checkout. */
+    stripePaymentIntentId?: string;
 }
 
 export interface DocumentData {

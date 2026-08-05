@@ -22,6 +22,8 @@ import { getAppConfig } from "@/lib/config";
 import { ensureDocumentShareToken } from "@/lib/data";
 import { DOC_LABEL } from "@/lib/document-labels";
 import { paymentLinkForMethod, paymentMethodUsesManualDetails } from "@/lib/payment-links";
+import { isStripeConfigured } from "@/lib/stripe";
+import StripeCheckoutPay from "@/components/StripeCheckoutPay";
 import {
     agreedScopeLineTotal,
     hasPendingApprovalLines,
@@ -121,6 +123,10 @@ function getDisplayName(doc: DocumentData) {
     return doc.title ? `${doc.id} — ${doc.title}` : doc.id;
 }
 
+function overridesNote(doc: DocumentData): string | undefined {
+    return doc.paymentOverrides?.stripeNote || undefined;
+}
+
 function buildInvoicePaymentMethods(
     config: Partial<AppConfig>,
     doc: DocumentData,
@@ -147,12 +153,27 @@ function buildInvoicePaymentMethods(
         else entries.push(["stripe", overridden]);
     }
 
+    // When Stripe Checkout API is configured, surface Stripe even without a pasted link.
+    if (isStripeConfigured()) {
+        const stripeIdx = entries.findIndex(([key]) => key === "stripe");
+        if (stripeIdx >= 0) {
+            entries[stripeIdx] = [
+                "stripe",
+                { ...entries[stripeIdx][1], comingSoon: false },
+            ];
+        }
+    }
+
     entries.sort((a, b) => (a[1].position ?? 0) - (b[1].position ?? 0));
     entries = entries.filter(([, method]) => method.enabled);
 
     if (overrides?.customizeMethods && Array.isArray(overrides.enabledMethods)) {
         const allow = new Set(overrides.enabledMethods);
-        entries = entries.filter(([key]) => allow.has(key) || (key === "stripe" && !!overrides.stripeLink));
+        entries = entries.filter(
+            ([key]) =>
+                allow.has(key) ||
+                (key === "stripe" && (!!overrides.stripeLink || isStripeConfigured())),
+        );
     }
 
     return entries;
@@ -187,6 +208,7 @@ export default async function DocumentPreview({
     backHref = "/admin",
     editHref,
     publicMode = false,
+    stripeReturn,
 }: {
     doc: DocumentData;
     showBackButton?: boolean;
@@ -194,15 +216,20 @@ export default async function DocumentPreview({
     editHref?: string;
     /** Client-facing share view: print only, no admin actions. */
     publicMode?: boolean;
+    /** Stripe Checkout return status from `/d/{token}?stripe=…`. */
+    stripeReturn?: "success" | "cancelled" | null;
 }) {
     const session = publicMode ? null : await auth();
     const config = await getAppConfig();
+    const stripeCheckoutEnabled = isStripeConfigured();
     const docTitle = DOC_LABEL[doc.type] ?? "Document";
     const billToLabel = doc.type === "receipt" ? "Received From" : "Bill To";
     let sharePath = "/";
+    let publicShareToken = doc.shareToken || "";
     if (!publicMode && doc.type !== "lead") {
         const ensured = await ensureDocumentShareToken(doc);
         sharePath = buildSharePath(ensured.shareToken);
+        publicShareToken = ensured.shareToken;
     }
     const shareTitle = `${docTitle} ${doc.id}`;
     const activePaymentMethods = doc.type === "invoice"
@@ -249,6 +276,40 @@ export default async function DocumentPreview({
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
+            {publicMode && stripeReturn === "success" ? (
+                <Box
+                    className="no-print"
+                    mb="4"
+                    p="3"
+                    style={{
+                        background: "#ecfdf5",
+                        border: "1px solid #a7f3d0",
+                        borderRadius: 8,
+                        color: "#065f46",
+                    }}
+                >
+                    <Text as="div" size="2" weight="bold">Payment submitted</Text>
+                    <Text as="div" size="2">
+                        Thanks — Stripe confirmed your payment. This invoice will update to paid once processing finishes (usually within a few seconds). Refresh if the balance still looks unpaid.
+                    </Text>
+                </Box>
+            ) : null}
+            {publicMode && stripeReturn === "cancelled" ? (
+                <Box
+                    className="no-print"
+                    mb="4"
+                    p="3"
+                    style={{
+                        background: "#fffbeb",
+                        border: "1px solid #fde68a",
+                        borderRadius: 8,
+                        color: "#92400e",
+                    }}
+                >
+                    <Text as="div" size="2" weight="bold">Checkout cancelled</Text>
+                    <Text as="div" size="2">No charge was made. You can try Stripe again whenever you are ready.</Text>
+                </Box>
+            ) : null}
             <Flex justify="between" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
                 {!publicMode && showBackButton ? <BackButton href={resolvedBackHref} /> : <Box />}
                 {!publicMode ? (
@@ -505,6 +566,27 @@ export default async function DocumentPreview({
                                         }}
                                     >
                                         {activePaymentMethods.map(([key, method]) => {
+                                            const useStripeCheckout =
+                                                key === "stripe" &&
+                                                stripeCheckoutEnabled &&
+                                                Boolean(publicShareToken) &&
+                                                doc.type === "invoice";
+
+                                            if (useStripeCheckout) {
+                                                return (
+                                                    <Card key={key} variant="surface" style={{ padding: 12 }}>
+                                                        <StripeCheckoutPay
+                                                            shareToken={publicShareToken}
+                                                            invoiceId={doc.id}
+                                                            invoiceTotal={doc.total}
+                                                            balanceDue={invoiceAmountDue}
+                                                            label={method.label || "Stripe"}
+                                                            note={method.note || overridesNote(doc)}
+                                                        />
+                                                    </Card>
+                                                );
+                                            }
+
                                             const isCheck = key === "check";
                                             const detailParts: string[] = [];
                                             if (method.value) detailParts.push(method.value);

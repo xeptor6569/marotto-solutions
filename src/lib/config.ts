@@ -22,7 +22,14 @@ export function getDefaultBillingConfig(): BillingConfig {
             paypal: { enabled: true, label: 'PayPal', value: '', note: '', position: 4 },
             venmo: { enabled: true, label: 'Venmo', value: '', note: '', position: 5 },
             applePay: { enabled: true, label: 'Apple Pay', value: '', note: '', position: 6 },
-            stripe: { enabled: true, label: 'Stripe', value: '', note: '', comingSoon: true, position: 7 },
+            stripe: {
+                enabled: true,
+                label: 'Stripe',
+                value: '',
+                note: 'Pay securely by card. Set STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET to enable Checkout.',
+                comingSoon: false,
+                position: 7,
+            },
         },
     };
 }

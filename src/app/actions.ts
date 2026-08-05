@@ -41,6 +41,7 @@ import {
     resolveDocumentStatus,
     validateRecordPayment,
 } from '@/lib/document-save';
+import { recordInvoicePayment } from '@/lib/invoice-payments';
 import {
     requireAdminAction,
     requireAdminActionOrRedirect,
@@ -432,70 +433,28 @@ export async function createInvoiceAction(formData: FormData) {
 
     let createdReceiptId: string | null = null;
 
-    if (type === 'invoice' && intent === 'record_payment' && paymentAmount > 0) {
-        const paymentEntry: PaymentEntry = {
-            id: crypto.randomUUID(),
-            amount: paymentAmount,
-            date: new Date(paymentDate).toISOString(),
-            method: paymentMethod || undefined,
-            notes: paymentNotes || undefined,
-            kind: getPaymentKind(formData.get('paymentKind') as string | null),
-        };
-        const payments = [...(doc.payments || []), paymentEntry];
-        const paidAmount = payments.reduce((acc, payment) => acc + payment.amount, 0);
-        const balanceDue = Math.max(0, doc.total - paidAmount);
-        doc.payments = payments;
-        doc.paidAmount = paidAmount;
-        doc.balanceDue = balanceDue;
-        doc.status = balanceDue <= 0 ? 'paid' : (doc.status === 'draft' ? 'sent' : doc.status);
-    } else {
-        doc.balanceDue = Math.max(0, doc.total - (doc.paidAmount || 0));
-        doc.status = resolveDocumentStatus({
-            type,
-            intent,
-            formStatus,
-            balanceDue: doc.balanceDue,
-            paidAmount: doc.paidAmount || 0,
-        });
-    }
+    doc.balanceDue = Math.max(0, doc.total - (doc.paidAmount || 0));
+    doc.status = resolveDocumentStatus({
+        type,
+        intent,
+        formStatus,
+        balanceDue: doc.balanceDue,
+        paidAmount: doc.paidAmount || 0,
+    });
 
     try {
-        await saveNewDocument(doc);
         if (type === 'invoice' && intent === 'record_payment' && paymentAmount > 0) {
-            const latestPayment = doc.payments?.[doc.payments.length - 1];
-            if (latestPayment) {
-                const receiptNumber = await getNextNumber('receipt');
-                const receiptId = `RCT-${String(receiptNumber).padStart(4, '0')}`;
-                const receipt: DocumentData = {
-                    id: receiptId,
-                    number: receiptNumber,
-                    type: 'receipt',
-                    date: latestPayment.date,
-                    customer: doc.customer,
-                    jobId: doc.jobId,
-                    lineItems: [
-                        {
-                            id: crypto.randomUUID(),
-                            description: `Payment received for invoice ${doc.id}`,
-                            details: latestPayment.kind === 'down_payment' ? 'Down payment' : latestPayment.kind === 'final' ? 'Final payment' : 'Partial payment',
-                            quantity: 1,
-                            unitPrice: latestPayment.amount,
-                            total: latestPayment.amount,
-                        },
-                    ],
-                    subtotal: latestPayment.amount,
-                    total: latestPayment.amount,
-                    notes: latestPayment.notes || `Payment method: ${latestPayment.method || 'N/A'}`,
-                    status: 'paid',
-                    tags: ['payment-receipt', doc.id],
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                };
-                await saveNewDocument(receipt);
-                latestPayment.receiptId = receiptId;
-                createdReceiptId = receiptId;
-                await saveNewDocument(doc);
-            }
+            const result = await recordInvoicePayment({
+                invoice: doc,
+                amount: paymentAmount,
+                date: paymentDate,
+                method: paymentMethod || undefined,
+                notes: paymentNotes || undefined,
+                kind: getPaymentKind(formData.get('paymentKind') as string | null),
+            });
+            createdReceiptId = result.receipt?.id ?? null;
+        } else {
+            await saveNewDocument(doc);
         }
     } catch (e: unknown) {
         console.error("Failed to save invoice", e);

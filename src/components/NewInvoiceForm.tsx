@@ -857,7 +857,7 @@ export default function NewDocumentForm({
                                 <Box style={{ borderTop: '1px solid var(--gray-a5)', paddingTop: 12 }}>
                                     <Text as="label" size="2" weight="bold">Stripe payment link (this invoice)</Text>
                                     <Text size="1" color="gray" as="p" mt="1" mb="2">
-                                        Overrides the general Stripe link from Settings. Paste a Stripe Checkout/Payment Link.
+                                        Optional fallback only. When <code>STRIPE_SECRET_KEY</code> is set, clients pay via Stripe Checkout for the invoice balance (with deposit/partial options). A pasted link overrides the global fallback link if Checkout is not configured.
                                     </Text>
                                     <TextField.Root
                                         name="invoiceStripeLink"
