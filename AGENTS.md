@@ -14,13 +14,16 @@ Run order for verification: **lint → test → build**.
 
 ## Setup
 
-1. `cp .env.example .env` — fill `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, SMTP
+1. `cp env.example .env` — fill `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, SMTP
 2. `docker compose up -d postgres` — Postgres on host port **5433** (not 5432)
 3. `npm run prisma:migrate:dev`
 4. `npm run dev`
-5. Create admin user: `node scripts/seed-admin.js` (email: `admin@cameronmarotto.com`)
+5. Create the first admin via the in-app wizard at `/setup`, or scripted:
+   `ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=... node scripts/seed-admin.js`
 
 **Port alignment:** `APP_PORT` must match `NEXTAUTH_URL` port or auth redirects break.
+
+**Build note:** `next build` requires `EMAIL_SERVER` to be set (Auth.js nodemailer provider is constructed at build time). Any syntactically valid value works, e.g. `EMAIL_SERVER=smtp://localhost:1025 npm run build`.
 
 ## Architecture
 
@@ -32,9 +35,19 @@ Single Next.js 16 app (App Router, React 19, React Compiler enabled). Not a mono
 |---|---|---|
 | Auth, Clients, Jobs, Contracts, CalendarEvents, DocumentCounter | PostgreSQL via Prisma | `prisma/schema.prisma`, `src/lib/prisma.ts` |
 | Invoices, Estimates, Quotes, Receipts, Leads | JSON files (local `data/` or remote WebDAV) | `src/lib/data.ts`, `src/lib/webdav.ts` |
-| App settings | `data/config/settings.json` | `src/lib/config.ts` |
+| App settings (incl. business profile, branding, public site) | `data/config/settings.json` | `src/lib/config.ts` |
+| Uploaded logo | `data/branding/` (served via `/api/branding/logo`) | `src/app/admin/settings/actions.ts` |
 
 This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebDAV), not Prisma. DB records are only the models in the Prisma schema.
+
+### White-label branding
+
+The app is fully white-label: business identity, theme, letterhead, and public-site content are configuration, never hardcoded strings.
+
+- `src/lib/branding.ts` is the single accessor (`getBranding()`); components read brand values through it or receive them as props from a server component that did
+- `src/lib/theme-presets.ts` — theme presets + Radix color validation; per-visitor light/dark lives in an `appearance` cookie (`src/lib/appearance.ts`), SSR-applied as a class on `<html>` with `Theme appearance="inherit"`
+- `src/lib/legacy-defaults.ts` — migration-only: a settings file without a `business` section (pre-white-label install) is seeded with the original Marotto values at read time; fresh installs get neutral defaults
+- Printable documents pin a nested `<Theme appearance="light">` — paper is always light regardless of screen theme; document colors flow from `--doc-*` CSS vars
 
 ### Path alias
 
@@ -42,15 +55,21 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 
 ### Key source map
 
-- `src/app/actions.ts` — core server actions for documents and settings
+- `src/app/actions.ts` — core server actions for documents
+- `src/app/admin/settings/actions.ts` — sectioned settings saves (business, appearance/logo, public site, billing, documents, storage)
+- `src/components/settings/` — tabbed settings UI (shared by `/admin/settings`; `/settings` redirects there)
 - `src/app/admin/layout.tsx` — admin shell wrapper
-- `src/components/AdminShell.tsx` — shared admin nav (sidebar + mobile bottom bar)
+- `src/components/AdminShell.tsx` — shared admin nav (grouped sidebar + mobile bottom bar)
 - `src/components/NewInvoiceForm.tsx` — shared document editor for all doc types
 - `src/components/DocumentPreview.tsx` — preview/print layer
-- `src/lib/types.ts` — shared TypeScript types (`DocumentData`, line items, etc.)
+- `src/lib/types.ts` — shared TypeScript types (`DocumentData`, `BusinessConfig`, etc.)
+- `src/lib/branding.ts` — resolved business/branding/public-site accessor
 - `src/lib/contracts.ts` — recurring contract CRUD and scheduler logic
-- `src/lib/calendar.ts` — calendar event logic, recurrence math
+- `src/lib/calendar.ts` — calendar event logic, recurrence math (host-timezone independent)
 - `src/lib/auth.ts` — NextAuth v5 beta setup
+- `src/lib/health.ts` — diagnostics shared by `/api/health` and `/admin/system`
+- `src/lib/help-content.ts` — in-app manual content (`/admin/help`)
+- `src/app/setup/` — first-run wizard (only while zero users exist)
 
 ### Cron endpoints
 
@@ -68,10 +87,9 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 
 ## Testing
 
-- Vitest in node environment, `@/` alias resolved
-- Tests live in `src/lib/__tests__/` — currently `calendar.test.ts`, `stripe-checkout.test.ts`
-- No test DB setup required; calendar tests cover recurrence/timezone math; Stripe amount helpers are pure unit tests
-- When adding tests that touch Prisma, you need a running Postgres
+- Vitest in node environment, `@/` alias resolved, `TZ=UTC` pinned in `vitest.config.ts`
+- Tests live in `src/lib/__tests__/` — calendar recurrence/timezone math, Stripe amount helpers, payment links, quote intake, config merge/migration (`config.test.ts`), branding resolution (`branding.test.ts`)
+- No test DB setup required; when adding tests that touch Prisma, you need a running Postgres
 
 ## Prisma notes
 
@@ -107,9 +125,9 @@ Second isolated stack at `dev.marottosolutions.com`. Full guide: `docs/dev-envir
 ## Gotchas
 
 - Document numbers use atomic `DocumentCounter` table (in DB) when `DATABASE_URL` is set, otherwise fall back to filesystem scanning — don't assume one path
-- Settings legacy fallback reads `config/settings.json` if `data/config/settings.json` missing
-- `.env*` is gitignored; `.env.example` is the template (dev uses `env.dev.example`, deliberately not a dotfile so it can be committed)
-- `npm run lint` and `npm test` both fail on `main` today (pre-existing lint errors; the calendar DST test is host-timezone dependent and passes on the deploy runner) — don't read a failure there as caused by your change without checking the base commit
+- Settings legacy fallback reads `config/settings.json` if `data/config/settings.json` missing; a settings file without a `business` section is seeded with legacy Marotto branding at read time (see `src/lib/legacy-defaults.ts`)
+- `.env*` is gitignored; `env.example` is the template (dev uses `env.dev.example`) — deliberately not dotfiles so they can be committed
+- `npm run lint` and `npm test` are expected to pass; treat any failure as a regression
 - `next-auth` is v5 beta — API may differ from v4 docs
 - Admin and non-admin routes overlap for some doc types (e.g. `/invoices/*` and `/admin/invoices/*`); use admin routes for operational workflows
 - Document `warranty` and `paymentOverrides` fields live on `DocumentData` in `src/lib/types.ts`, not in the DB
