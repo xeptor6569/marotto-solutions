@@ -1,10 +1,11 @@
 'use client';
 
-import { Container, Card, Heading, Text, Flex, TextField, Button, Callout } from '@radix-ui/themes';
+import { Box, Container, Card, Heading, Text, Flex, TextField, Button, Callout } from '@radix-ui/themes';
 import { Mail, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
+import ThemeToggle from '@/components/ThemeToggle';
 
 type AuthMode = 'otp' | 'password';
 
@@ -93,6 +94,9 @@ export default function SignInForm({
 
     return (
         <Container size="1" px="4" style={{ paddingTop: 'clamp(32px, 10dvh, 80px)' }}>
+            <Box style={{ position: 'absolute', top: 16, right: 16 }}>
+                <ThemeToggle size="3" />
+            </Box>
             <Flex direction="column" align="center" gap="6">
                 <Flex direction="column" align="center" gap="3">
                     <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>

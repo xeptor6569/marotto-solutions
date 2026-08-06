@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Container, Flex, Table } from '@radix-ui/themes';
+import { Badge, Box, Card, Container, Flex, Table, Theme } from '@radix-ui/themes';
 import BackButton from '@/components/BackButton';
 import PrintButton from '@/components/PrintButton';
 import ShareButton from '@/components/ShareButton';
@@ -56,6 +56,8 @@ export default async function ContractPreview({
                 </Flex>
             </Flex>
 
+            {/* Contracts print as light paper regardless of the visitor theme. */}
+            <Theme appearance="light" asChild>
             <Card
                 size="2"
                 className="doc-card print-document"
@@ -235,6 +237,7 @@ export default async function ContractPreview({
                     </Box>
                 </div>
             </Card>
+            </Theme>
         </Container>
     );
 }

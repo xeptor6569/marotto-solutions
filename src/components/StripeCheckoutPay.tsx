@@ -103,14 +103,14 @@ export default function StripeCheckoutPay({
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: '#eef2ff',
-                            color: '#1e3a5f',
+                            background: 'color-mix(in srgb, var(--doc-accent, #1e3a5f) 10%, white)',
+                            color: 'var(--doc-accent, #1e3a5f)',
                             flexShrink: 0,
                         }}
                     >
                         <CreditCard size={16} />
                     </Box>
-                    <Text as="div" size="2" weight="bold" style={{ color: '#111827' }}>
+                    <Text as="div" size="2" weight="bold" style={{ color: 'var(--doc-ink, #111827)' }}>
                         {label}
                     </Text>
                     <Badge color="green" size="1">Paid</Badge>
@@ -131,20 +131,20 @@ export default function StripeCheckoutPay({
                             display: 'inline-flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            background: '#eef2ff',
-                            color: '#1e3a5f',
+                            background: 'color-mix(in srgb, var(--doc-accent, #1e3a5f) 10%, white)',
+                            color: 'var(--doc-accent, #1e3a5f)',
                             flexShrink: 0,
                         }}
                     >
                         <CreditCard size={16} />
                     </Box>
-                    <Text as="div" size="2" weight="bold" style={{ color: '#111827' }}>
+                    <Text as="div" size="2" weight="bold" style={{ color: 'var(--doc-ink, #111827)' }}>
                         {label}
                     </Text>
                 </Flex>
             </Flex>
 
-            <Text as="div" size="1" style={{ color: '#374151', lineHeight: 1.35 }}>
+            <Text as="div" size="1" style={{ color: 'var(--doc-muted, #374151)', lineHeight: 1.35 }}>
                 Secure card payment for invoice {invoiceId}. Default is the full balance due.
             </Text>
 
@@ -284,7 +284,7 @@ export default function StripeCheckoutPay({
             ) : null}
 
             {note ? (
-                <Text as="div" size="1" style={{ color: '#6b7280', lineHeight: 1.35, whiteSpace: 'pre-line' }}>
+                <Text as="div" size="1" style={{ color: 'var(--doc-muted, #6b7280)', lineHeight: 1.35, whiteSpace: 'pre-line' }}>
                     {note}
                 </Text>
             ) : null}

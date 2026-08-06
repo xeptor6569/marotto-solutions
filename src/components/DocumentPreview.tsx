@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Container, Flex, Table, Text } from "@radix-ui/themes";
+import { Badge, Box, Card, Container, Flex, Table, Text, Theme } from "@radix-ui/themes";
 import Link from "next/link";
 import type {
     AppConfig,
@@ -285,10 +285,10 @@ export default async function DocumentPreview({
                     mb="4"
                     p="3"
                     style={{
-                        background: "#ecfdf5",
-                        border: "1px solid #a7f3d0",
+                        background: "var(--green-3)",
+                        border: "1px solid var(--green-6)",
                         borderRadius: 8,
-                        color: "#065f46",
+                        color: "var(--green-11)",
                     }}
                 >
                     <Text as="div" size="2" weight="bold">Payment submitted</Text>
@@ -303,10 +303,10 @@ export default async function DocumentPreview({
                     mb="4"
                     p="3"
                     style={{
-                        background: "#fffbeb",
-                        border: "1px solid #fde68a",
+                        background: "var(--amber-3)",
+                        border: "1px solid var(--amber-6)",
                         borderRadius: 8,
-                        color: "#92400e",
+                        color: "var(--amber-11)",
                     }}
                 >
                     <Text as="div" size="2" weight="bold">Checkout cancelled</Text>
@@ -377,6 +377,10 @@ export default async function DocumentPreview({
                 )}
             </Flex>
 
+            {/* Printable documents are always light-on-white "paper", so the
+                Radix tokens inside are pinned to light regardless of the
+                visitor's theme. */}
+            <Theme appearance="light" asChild>
             <Card
                 size="2"
                 className="doc-card print-document"
@@ -456,7 +460,7 @@ export default async function DocumentPreview({
                                 {publicMode ? (
                                     linkedJob?.name || jobId
                                 ) : (
-                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "#1e3a5f" }}>
+                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "var(--doc-accent)" }}>
                                         {linkedJob?.name || jobId}
                                     </Link>
                                 )}
@@ -484,7 +488,7 @@ export default async function DocumentPreview({
                                         <Box
                                             key={pkg.id}
                                             style={{
-                                                border: selected ? "2px solid #1e3a5f" : "1px solid var(--gray-a5)",
+                                                border: selected ? "2px solid var(--doc-accent)" : "1px solid var(--gray-a5)",
                                                 borderRadius: 10,
                                                 padding: 12,
                                             }}
@@ -528,7 +532,7 @@ export default async function DocumentPreview({
                                                     <Box
                                                         key={choice.id}
                                                         style={{
-                                                            border: selected ? "2px solid #1e3a5f" : "1px dashed var(--gray-a5)",
+                                                            border: selected ? "2px solid var(--doc-accent)" : "1px dashed var(--gray-a5)",
                                                             borderRadius: 10,
                                                             padding: 12,
                                                         }}
@@ -630,21 +634,21 @@ export default async function DocumentPreview({
                                                                         display: "inline-flex",
                                                                         alignItems: "center",
                                                                         justifyContent: "center",
-                                                                        background: "#eef2ff",
-                                                                        color: "#1e3a5f",
+                                                                        background: "color-mix(in srgb, var(--doc-accent) 10%, white)",
+                                                                        color: "var(--doc-accent)",
                                                                         flexShrink: 0,
                                                                     }}
                                                                 >
                                                                     {paymentMethodIcon(key)}
                                                                 </Box>
-                                                                <Text as="div" size="2" weight="bold" style={{ color: "#111827" }}>
+                                                                <Text as="div" size="2" weight="bold" style={{ color: "var(--doc-ink)" }}>
                                                                     {method.label}
                                                                 </Text>
                                                             </Flex>
                                                             {method.comingSoon ? <Badge color="gray" size="1">Coming soon</Badge> : null}
                                                         </Flex>
                                                         {primary ? (
-                                                            <Text as="div" size="1" style={{ color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>
+                                                            <Text as="div" size="1" style={{ color: "var(--doc-muted)", lineHeight: 1.35, wordBreak: "break-word" }}>
                                                                 {primary}
                                                             </Text>
                                                         ) : null}
@@ -668,7 +672,7 @@ export default async function DocumentPreview({
                                                         <Text
                                                             as="div"
                                                             size="1"
-                                                            style={{ color: "#6b7280", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
+                                                            style={{ color: "var(--doc-muted)", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
                                                         >
                                                             {method.note}
                                                         </Text>
@@ -836,6 +840,7 @@ export default async function DocumentPreview({
                     </div>
                 </div>
             </Card>
+            </Theme>
         </Container>
     );
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Box, Button, Flex, Heading } from '@radix-ui/themes';
 import { Phone } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 import type { ResolvedBranding, ResolvedBusiness } from '@/lib/branding';
 
 export default function PublicHeader({
@@ -31,6 +32,7 @@ export default function PublicHeader({
                     </Flex>
                 </Link>
                 <Flex gap="3" align="center" flexShrink="0">
+                    <ThemeToggle />
                     {business.phoneHref ? (
                         <Button variant="ghost" size="2" asChild>
                             <a href={business.phoneHref} aria-label={`Call ${business.name} at ${business.phoneDisplay}`}>

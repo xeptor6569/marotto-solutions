@@ -27,6 +27,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
 import CreateMenu from '@/components/CreateMenu';
+import ThemeToggle from '@/components/ThemeToggle';
 
 type NavItem = {
     href: string;
@@ -243,11 +244,14 @@ export default function AdminShell({
                                     Fast access across all documents
                                 </Text>
                             </Flex>
-                            <Flex align="center" gap="2" className="admin-shell-topbar-desktop-only">
-                                <CreateMenu />
-                                <Button asChild size="2" variant="soft">
-                                    <Link href="/admin/settings"><Settings size={14} /> Settings</Link>
-                                </Button>
+                            <Flex align="center" gap="3">
+                                <ThemeToggle />
+                                <Flex align="center" gap="2" className="admin-shell-topbar-desktop-only">
+                                    <CreateMenu />
+                                    <Button asChild size="2" variant="soft">
+                                        <Link href="/admin/settings"><Settings size={14} /> Settings</Link>
+                                    </Button>
+                                </Flex>
                             </Flex>
                         </Flex>
                     </Box>
