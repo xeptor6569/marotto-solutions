@@ -5,35 +5,81 @@ import QuoteForm from "./components/QuoteForm";
 import { testimonials } from "@/lib/testimonials";
 import { Quote } from "lucide-react";
 import type { Metadata } from "next";
+import {
+    BUSINESS_NAME,
+    getSiteUrl,
+    marketingServices,
+    PHONE_DISPLAY,
+    PHONE_HREF,
+    SERVICE_AREA,
+} from "@/lib/marketing";
 
 export const metadata: Metadata = {
     title: {
-        absolute: "Marotto Solutions",
+        absolute: "Marotto Solutions | Contracting & IT Services",
     },
     description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
+    alternates: {
+        canonical: '/',
+    },
 };
 
-const SERVICE_AREA = "Pittston, PA and surrounding areas";
-const PHONE = "(570) 332-9262";
-const PHONE_HREF = "tel:5703329262";
+const serviceHrefByFormValue = new Map(
+    marketingServices.map((service) => [service.formValue, `/services/${service.slug}`]),
+);
 
-export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string; error?: string }> }) {
-    const { submitted, error } = await searchParams;
+export default async function Home({ searchParams }: { searchParams: Promise<{ submitted?: string; error?: string; service?: string }> }) {
+    const { submitted, error, service } = await searchParams;
+    const siteUrl = getSiteUrl();
+    const localBusinessJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': ['LocalBusiness', 'ProfessionalService'],
+        name: BUSINESS_NAME,
+        url: siteUrl,
+        telephone: PHONE_DISPLAY,
+        description: metadata.description,
+        areaServed: [
+            { '@type': 'City', name: 'Pittston, Pennsylvania' },
+            { '@type': 'City', name: 'Wilkes-Barre, Pennsylvania' },
+            { '@type': 'AdministrativeArea', name: 'Northeast Pennsylvania' },
+        ],
+        hasOfferCatalog: {
+            '@type': 'OfferCatalog',
+            name: 'Services',
+            itemListElement: marketingServices.map((item) => ({
+                '@type': 'Offer',
+                itemOffered: {
+                    '@type': 'Service',
+                    name: item.shortTitle,
+                    description: item.description,
+                    url: `${siteUrl}/services/${item.slug}`,
+                },
+            })),
+        },
+    };
 
     return (
         <Box>
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd).replace(/</g, '\\u003c') }}
+            />
             {/* Navigation / Header */}
             <Flex px="5" py="4" justify="between" align="center" style={{ borderBottom: '1px solid var(--gray-5)' }}>
                 <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
                     <Heading size="5">Marotto Solutions</Heading>
                 </Link>
-                <Flex gap="4" align="center" display={{ initial: 'none', sm: 'flex' }}>
+                <Flex gap="3" align="center">
                     <Button variant="ghost" size="2" asChild>
-                        <a href={PHONE_HREF}><Phone size={14} /> {PHONE}</a>
+                        <a href={PHONE_HREF} aria-label={`Call ${BUSINESS_NAME} at ${PHONE_DISPLAY}`}>
+                            <Phone size={14} /> Call
+                        </a>
                     </Button>
-                    <Button size="2" asChild>
-                        <Link href="#quote">Get a Quote</Link>
-                    </Button>
+                    <Box display={{ initial: 'none', sm: 'block' }}>
+                        <Button size="2" asChild>
+                            <Link href="#quote">Get a Quote</Link>
+                        </Button>
+                    </Box>
                 </Flex>
             </Flex>
 
@@ -59,7 +105,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                 <Link href="#services">View Services</Link>
                             </Button>
                             <Button size="4" variant="outline" asChild>
-                                <a href={PHONE_HREF}><Phone size={16} /> Call Us</a>
+                                <a href={PHONE_HREF}><Phone size={16} /> Call {PHONE_DISPLAY}</a>
                             </Button>
                         </Flex>
                     </Flex>
@@ -129,6 +175,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                 <Text size="2" color="gray">
                                     Drywall &amp; painting &bull; Flooring &bull; Kitchen &amp; bath updates &bull; Deck &amp; fence work
                                 </Text>
+                                <Link href={serviceHrefByFormValue.get('general')!} style={{ marginTop: 8 }}>
+                                    Learn about general contracting
+                                </Link>
                             </Flex>
                         </Card>
 
@@ -145,6 +194,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                 <Text size="2" color="gray">
                                     Ethernet &amp; cable runs &bull; Patch panels &bull; WiFi mesh setup &bull; Firewall configuration &bull; Troubleshooting
                                 </Text>
+                                <Link href={serviceHrefByFormValue.get('it')!} style={{ marginTop: 8 }}>
+                                    Learn about IT &amp; networking
+                                </Link>
                             </Flex>
                         </Card>
 
@@ -161,6 +213,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                 <Text size="2" color="gray">
                                     Gaming rigs &bull; Workstations &bull; Home servers &bull; Quiet/compact builds
                                 </Text>
+                                <Link href={serviceHrefByFormValue.get('pc')!} style={{ marginTop: 8 }}>
+                                    Learn about custom PC builds
+                                </Link>
                             </Flex>
                         </Card>
 
@@ -177,6 +232,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                 <Text size="2" color="gray">
                                     Small business tools &bull; Workflow automation &bull; Data processing scripts &bull; Web applications
                                 </Text>
+                                <Link href={serviceHrefByFormValue.get('programming')!} style={{ marginTop: 8 }}>
+                                    Learn about programming &amp; automation
+                                </Link>
                             </Flex>
                         </Card>
                     </Grid>
@@ -219,7 +277,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                             </Text>
                             <Flex direction="column" gap="3" mt="5">
                                 <Button size="3" variant="outline" asChild>
-                                    <a href={PHONE_HREF}><Phone size={16} /> Call Us: {PHONE}</a>
+                                    <a href={PHONE_HREF}><Phone size={16} /> Call Us: {PHONE_DISPLAY}</a>
                                 </Button>
                                 <Flex gap="2" align="center">
                                     <MapPin size={14} style={{ color: 'var(--gray-8)' }} />
@@ -244,7 +302,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                         <Heading size="5" color="red">Something went wrong</Heading>
                                         <Text align="center">
                                             {error === 'missing'
-                                                ? 'Please fill in your name, email, and project details.'
+                                                ? 'Please fill in your name, email, phone number, and project details.'
                                                 : 'We could not save your request. Please try again or email us directly.'}
                                         </Text>
                                         <Button variant="outline" asChild>
@@ -253,7 +311,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                                     </Flex>
                                 </Card>
                             ) : (
-                                <QuoteForm />
+                                <QuoteForm defaultService={service} />
                             )}
                         </Box>
                     </Grid>
@@ -268,7 +326,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                         <Flex gap="5" align="center" wrap="wrap" justify="center">
                             <Flex gap="2" align="center">
                                 <Phone size={14} style={{ color: 'var(--gray-8)' }} />
-                                <Text size="2" color="gray"><a href={PHONE_HREF} style={{ color: 'inherit', textDecoration: 'none' }}>{PHONE}</a></Text>
+                                <Text size="2" color="gray"><a href={PHONE_HREF} style={{ color: 'inherit', textDecoration: 'none' }}>{PHONE_DISPLAY}</a></Text>
                             </Flex>
                             <Flex gap="2" align="center">
                                 <MapPin size={14} style={{ color: 'var(--gray-8)' }} />

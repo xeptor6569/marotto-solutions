@@ -770,15 +770,16 @@ export async function deleteAdminDocumentAction(input: {
 export async function submitQuoteRequest(formData: FormData) {
     const name = ((formData.get('name') as string) || '').trim();
     const email = ((formData.get('email') as string) || '').trim();
+    const phone = ((formData.get('phone') as string) || '').trim();
     const service = ((formData.get('service') as string) || 'general').trim();
     const details = ((formData.get('details') as string) || '').trim();
     const date = ((formData.get('date') as string) || '').trim();
 
-    if (!name || !email || !details) {
+    if (!name || !email || !phone || !details) {
         redirect('/?error=missing');
     }
 
-    const input = { name, email, service, details, date };
+    const input = { name, email, phone, service, details, date };
 
     let clientId: string | undefined;
     if (isDatabaseConfigured()) {

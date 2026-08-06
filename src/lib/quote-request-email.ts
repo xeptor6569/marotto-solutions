@@ -38,6 +38,7 @@ export async function sendQuoteRequestAdminEmail(
         '',
         `Name: ${input.name.trim()}`,
         `Email: ${input.email.trim()}`,
+        `Phone: ${input.phone.trim()}`,
         `Service: ${service}`,
         input.date?.trim() ? `Preferred schedule: ${input.date.trim()}` : '',
         '',
@@ -56,6 +57,7 @@ export async function sendQuoteRequestAdminEmail(
   <table style="margin: 0 0 16px; border-collapse: collapse;">
     <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Name</td><td>${escapeHtml(input.name.trim())}</td></tr>
     <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Email</td><td><a href="mailto:${escapeHtml(input.email.trim())}">${escapeHtml(input.email.trim())}</a></td></tr>
+    <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Phone</td><td><a href="tel:${escapeHtml(input.phone.trim())}">${escapeHtml(input.phone.trim())}</a></td></tr>
     <tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Service</td><td>${escapeHtml(service)}</td></tr>
     ${input.date?.trim() ? `<tr><td style="padding: 4px 12px 4px 0; color: #6b7280;">Schedule</td><td>${escapeHtml(input.date.trim())}</td></tr>` : ''}
   </table>
