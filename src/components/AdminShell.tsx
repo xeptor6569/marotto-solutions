@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Badge, Box, Button, DropdownMenu, Flex, Separator, Text } from '@radix-ui/themes';
 import {
+    Activity,
     Briefcase,
     CalendarDays,
     FileText,
@@ -93,6 +94,7 @@ const moreToolItems: NavItem[] = [
     { href: '/admin/presets', label: 'Presets', shortLabel: 'Presets', icon: Bookmark },
     { href: '/admin/import', label: 'Import', shortLabel: 'Import', icon: Upload },
     { href: '/admin/backup', label: 'Backup', shortLabel: 'Backup', icon: Archive },
+    { href: '/admin/system', label: 'System', shortLabel: 'System', icon: Activity },
     { href: '/admin/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
 ];
 
