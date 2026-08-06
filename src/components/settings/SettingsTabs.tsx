@@ -9,13 +9,7 @@ import DocumentsSettingsForm from './DocumentsSettingsForm';
 import StorageSettingsForm from './StorageSettingsForm';
 import type { AppConfig } from '@/lib/types';
 
-export type SettingsTabId = 'business' | 'appearance' | 'site' | 'billing' | 'documents' | 'storage';
-
-const VALID_TABS: SettingsTabId[] = ['business', 'appearance', 'site', 'billing', 'documents', 'storage'];
-
-export function parseSettingsTab(raw: string | undefined): SettingsTabId {
-    return VALID_TABS.includes(raw as SettingsTabId) ? (raw as SettingsTabId) : 'business';
-}
+import type { SettingsTabId } from '@/lib/settings-tabs';
 
 export default function SettingsTabs({
     config,

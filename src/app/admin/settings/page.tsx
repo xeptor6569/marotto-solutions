@@ -2,7 +2,8 @@ import { Container, Flex, Heading, Text, Box } from "@radix-ui/themes";
 import { getAppConfig } from "@/lib/config";
 import { resolveBrandingFromConfig } from "@/lib/branding";
 import HelpLink from "@/components/HelpLink";
-import SettingsTabs, { parseSettingsTab } from "@/components/settings/SettingsTabs";
+import SettingsTabs from "@/components/settings/SettingsTabs";
+import { parseSettingsTab } from "@/lib/settings-tabs";
 
 export default async function SettingsPage({
     searchParams,

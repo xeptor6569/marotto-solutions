@@ -2,7 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from 'react';
 import { DropdownMenu, IconButton } from '@radix-ui/themes';
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { Monitor, Moon, Sun, SunMoon } from 'lucide-react';
 import type { ThemeAppearance } from '@/lib/types';
 
 /**
@@ -59,7 +59,8 @@ export default function ThemeToggle({ size = '2' }: { size?: '1' | '2' | '3' }) 
         for (const listener of listeners) listener();
     };
 
-    const Icon = pref === 'system' ? Monitor : pref === 'dark' ? Moon : Sun;
+    // SunMoon in system mode: reads as "theme" at a glance (a monitor icon does not).
+    const Icon = pref === 'system' ? SunMoon : pref === 'dark' ? Moon : Sun;
 
     return (
         <DropdownMenu.Root>
