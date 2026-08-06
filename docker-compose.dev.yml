@@ -1,0 +1,98 @@
+# Dev-only overlay for the dev.marottosolutions.com instance.
+#
+# Always apply it alongside the base file, never on its own:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+#
+# Isolation from prod comes from env (see env.dev.example): COMPOSE_PROJECT_NAME
+# prefixes the volumes, STACK_NAME renames the containers, and APP_PORT /
+# POSTGRES_PORT move the published ports off the prod ones.
+#
+# Debug UIs bind to 127.0.0.1 so they are never reachable from the internet.
+# Reach them over an SSH tunnel, or front them with Cloudflare Access.
+services:
+  web:
+    build:
+      args:
+        APP_ENV: dev
+    environment:
+      - APP_ENV=dev
+      - APP_COMMIT_SHA=${APP_COMMIT_SHA:-}
+      # Every outbound message is captured by the mailpit sink below, so a dev
+      # run can never reach a real client even with restored production data.
+      - EMAIL_SERVER=${EMAIL_SERVER:-smtp://mailpit:1025}
+      - EMAIL_FROM=${EMAIL_FROM:-dev@marottosolutions.com}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Opt-in on dev: the scheduler would otherwise generate contract invoices and
+  # send reminder mail on every dev deploy. Start it deliberately with
+  # `--profile cron` when you actually want to exercise the cron endpoints.
+  cron:
+    profiles:
+      - cron
+
+  # SMTP sink. Nothing leaves the host; read captured mail in the web UI.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: ${STACK_NAME:-marotto-dev}-mailpit
+    restart: always
+    environment:
+      - MP_MAX_MESSAGES=5000
+      - MP_SMTP_AUTH_ACCEPT_ANY=1
+      - MP_SMTP_AUTH_ALLOW_INSECURE=1
+    ports:
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+    volumes:
+      - mailpit_data:/data
+
+  # Browse and edit the dev database without shelling into Postgres.
+  adminer:
+    image: adminer:latest
+    container_name: ${STACK_NAME:-marotto-dev}-adminer
+    restart: always
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8083}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Schema-aware record editor. Needs the repo (and its node_modules) mounted
+  # because the standalone runtime image ships without the Prisma CLI.
+  # Start with: docker compose ... --profile tools up -d prisma-studio
+  #
+  # Debian-based on purpose: the mounted node_modules holds Prisma query engines
+  # built for the runner's libc, so an Alpine (musl) image would fail to load them.
+  prisma-studio:
+    image: node:20-slim
+    container_name: ${STACK_NAME:-marotto-dev}-prisma-studio
+    profiles:
+      - tools
+    restart: unless-stopped
+    working_dir: /repo
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://marotto:marotto_password@postgres:5432/marotto_db}
+    command: >
+      sh -c "./node_modules/.bin/prisma studio --port 5555 --hostname 0.0.0.0 --browser none"
+    volumes:
+      - .:/repo
+    ports:
+      - "127.0.0.1:${PRISMA_STUDIO_PORT:-5555}:5555"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  mailpit_data:

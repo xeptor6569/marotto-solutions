@@ -256,6 +256,13 @@ Use `.env.example` as your source template.
 - `STRIPE_SECRET_KEY` — Stripe secret key (`sk_live_…` / `sk_test_…`)
 - `STRIPE_WEBHOOK_SECRET` — webhook signing secret (`whsec_…`) for `POST /api/stripe/webhook`
 
+### Instance identity
+
+- `APP_ENV` (`production` | `dev` | `local`) — marks a non-production instance
+- `STACK_NAME` — prefix for container names (default `marotto`)
+- `POSTGRES_PORT` — published Postgres port (default `5433`)
+- `APP_COMMIT_SHA` (optional) — build SHA reported by `/api/health`
+
 ### Port alignment rule
 
 If `APP_PORT` changes, keep `NEXTAUTH_URL` aligned to avoid auth callback and redirect issues.
@@ -316,6 +323,43 @@ Default compose behavior:
 - internal app port `3000`
 - postgres host `5433`
 - persistent data via volumes
+
+Container names and the published Postgres port are driven by `STACK_NAME` and
+`POSTGRES_PORT`, whose defaults are the values above. This is what allows a
+second instance to run on the same host without colliding.
+
+## Dev Instance
+
+A separate stack at `dev.marottosolutions.com` for testing branches against
+real-shaped data. See [docs/dev-environment.md](docs/dev-environment.md) for the
+full guide.
+
+```bash
+cp env.dev.example .env
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+```
+
+It gets its own database, document volume, and secrets, and runs on ports
+`3082` / `5434`. Outbound email is captured by a mailpit sink rather than
+delivered, so a dev instance can never contact a real client.
+
+Push to `develop` to deploy it, or run the **Deploy to Dev** workflow manually
+with a `ref` input to put any branch on the dev subdomain.
+
+### Non-production behavior
+
+Set `APP_ENV=dev` (rather than `NODE_ENV`, since dev runs a production build):
+
+- a `DEV` badge renders in the bottom-left corner
+- `robots.txt` becomes `Disallow: /`
+- browser source maps are emitted for readable stack traces
+- a live Stripe key is rejected
+
+### Health and diagnostics
+
+`GET /api/health` returns `{ ok, env, commit, time }` to anyone, and adds
+database reachability, the active document store, the numbering strategy, the
+Stripe mode, and the redacted SMTP target for admin sessions.
 
 ## Admin Workflow Playbook (How-To)
 

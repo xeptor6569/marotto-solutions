@@ -1,11 +1,21 @@
 services:
   web:
-    build: .
-    container_name: marotto-solutions
+    build:
+      context: .
+      args:
+        # APP_ENV must reach the build, not just the runtime, because source-map
+        # emission is decided in next.config.ts at build time.
+        APP_ENV: ${APP_ENV:-production}
+        APP_COMMIT_SHA: ${APP_COMMIT_SHA:-}
+    # Container names are global to the Docker daemon, so they must be
+    # per-stack for a dev instance to run alongside prod on the same host.
+    # Defaults reproduce the original prod names.
+    container_name: ${STACK_NAME:-marotto}-solutions
     restart: always
     ports:
       - "${APP_PORT:-3081}:3000"
     environment:
+      - APP_ENV=${APP_ENV:-production}
       - DATABASE_URL=${DATABASE_URL:-postgresql://marotto:marotto_password@postgres:5432/marotto_db}
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:${APP_PORT:-3081}}
       - AUTH_URL=${NEXTAUTH_URL:-http://localhost:${APP_PORT:-3081}}
@@ -41,7 +51,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: marotto-postgres
+    container_name: ${STACK_NAME:-marotto}-postgres
     restart: always
     environment:
       - POSTGRES_USER=marotto
@@ -50,7 +60,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U marotto -d marotto_db"]
       interval: 5s
@@ -63,7 +73,7 @@ services:
   # if you'd rather drive the scheduler from an external cron service.
   cron:
     image: alpine:3.20
-    container_name: marotto-cron
+    container_name: ${STACK_NAME:-marotto}-cron
     restart: always
     depends_on:
       - web

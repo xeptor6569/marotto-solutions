@@ -86,12 +86,30 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 - App runs as unprivileged `nextjs` user; `data/` dir pre-created with correct ownership
 - `output: "standalone"` in `next.config.ts` for Docker tracing
 - Persistent volumes: `marotto_data` (`/app/data`), `postgres_data`
+- Container names and the Postgres host port come from `STACK_NAME` / `POSTGRES_PORT`; the defaults reproduce the prod values, so plain `docker compose` is unchanged
+
+## Dev instance
+
+Second isolated stack at `dev.marottosolutions.com`. Full guide: `docs/dev-environment.md`.
+
+- Always pass both files: `docker compose -f docker-compose.yml -f docker-compose.dev.yml …`
+- Isolation is env-only (`STACK_NAME=marotto-dev`, `APP_PORT=3082`, `POSTGRES_PORT=5434`, `COMPOSE_PROJECT_NAME=marotto-dev`); there is no separate code path
+- `APP_ENV` (not `NODE_ENV`) marks an instance non-production — dev runs a production build on purpose. See `src/lib/app-env.ts`
+- Non-production effects: DEV banner, `Disallow: /` robots, browser source maps, live Stripe keys rejected
+- All dev email goes to a mailpit sink; nothing reaches real clients
+- Deploy via `.github/workflows/deploy-dev.yml` (`develop` branch, or `workflow_dispatch` with a `ref` input). Shares the `self-hosted-deploy` concurrency group with prod
+- Env template is `env.dev.example` — not a dotfile, because `.env*` is gitignored
+
+## Health endpoint
+
+`GET /api/health` — anonymous returns `{ ok, env, commit, time }`; admin sessions also get database reachability, active document store (WebDAV vs local JSON), numbering strategy, Stripe mode, and the redacted SMTP target. Use it to check which persistence path is live rather than guessing.
 
 ## Gotchas
 
 - Document numbers use atomic `DocumentCounter` table (in DB) when `DATABASE_URL` is set, otherwise fall back to filesystem scanning — don't assume one path
 - Settings legacy fallback reads `config/settings.json` if `data/config/settings.json` missing
-- `.env*` is gitignored; `.env.example` is the template
+- `.env*` is gitignored; `.env.example` is the template (dev uses `env.dev.example`, deliberately not a dotfile so it can be committed)
+- `npm run lint` and `npm test` both fail on `main` today (pre-existing lint errors; the calendar DST test is host-timezone dependent and passes on the deploy runner) — don't read a failure there as caused by your change without checking the base commit
 - `next-auth` is v5 beta — API may differ from v4 docs
 - Admin and non-admin routes overlap for some doc types (e.g. `/invoices/*` and `/admin/invoices/*`); use admin routes for operational workflows
 - Document `warranty` and `paymentOverrides` fields live on `DocumentData` in `src/lib/types.ts`, not in the DB
