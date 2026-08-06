@@ -1,5 +1,5 @@
-import { getAppConfig } from './config';
-import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote } from './webdav';
+import { DEFAULT_WEBDAV_ROOT_PATH, getAppConfig } from './config';
+import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote, normalizeWebdavRootPath } from './webdav';
 import { isDatabaseConfigured, prisma } from './prisma';
 import { withDocumentShareToken } from './share-token';
 import { AppConfig, DocumentData, DocumentType } from './types';
@@ -88,7 +88,7 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
                 config.webdavUsername!,
                 config.webdavPassword,
             );
-            docs = await fetchDocuments(client, type);
+            docs = await fetchDocuments(client, webdavRootPath(config), type);
         } catch (error) {
             console.error(`Error fetching ${type}s from WebDAV:`, error);
             // Fallback to local? Maybe not if configured but failed. 
@@ -145,6 +145,10 @@ function hasWebDAVStorage(config: AppConfig): boolean {
     return Boolean(config.webdavUrl?.trim() && config.webdavUsername?.trim());
 }
 
+function webdavRootPath(config: AppConfig): string {
+    return normalizeWebdavRootPath(config.webdavRootPath, DEFAULT_WEBDAV_ROOT_PATH);
+}
+
 export async function saveNewDocument(doc: DocumentData) {
     const { doc: toSave } = withDocumentShareToken(doc);
     const config = await getAppConfig() as AppConfig;
@@ -157,7 +161,7 @@ export async function saveNewDocument(doc: DocumentData) {
             config.webdavUsername!,
             config.webdavPassword,
         );
-        await saveDocument(client, toSave);
+        await saveDocument(client, webdavRootPath(config), toSave);
     }
 
     // Invalidate cache
@@ -175,7 +179,7 @@ export async function deleteDocument(type: DocumentType, id: string) {
             config.webdavUsername!,
             config.webdavPassword,
         );
-        await deleteDocumentRemote(client, type, id);
+        await deleteDocumentRemote(client, webdavRootPath(config), type, id);
     }
 
     delete cache[type];

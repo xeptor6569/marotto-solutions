@@ -145,9 +145,13 @@ function MoreMenu({ pathname, userEmail }: { pathname: string; userEmail: string
 export default function AdminShell({
     children,
     userEmail,
+    businessName,
+    logoUrl,
 }: {
     children: React.ReactNode;
     userEmail: string;
+    businessName: string;
+    logoUrl?: string | null;
 }) {
     const pathname = usePathname();
     const activeTitle =
@@ -158,10 +162,20 @@ export default function AdminShell({
             <Flex style={{ minHeight: '100dvh' }}>
                 <Box className="admin-shell-sidebar no-print">
                     <Flex direction="column" height="100%" px="3" py="4" gap="4">
-                        <Box>
-                            <Text as="div" size="3" weight="bold">Marotto Solutions</Text>
-                            <Text as="div" size="1" color="gray">Admin</Text>
-                        </Box>
+                        <Flex align="center" gap="2">
+                            {logoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={logoUrl}
+                                    alt=""
+                                    style={{ height: 32, width: 32, objectFit: 'contain', borderRadius: 6 }}
+                                />
+                            ) : null}
+                            <Box style={{ minWidth: 0 }}>
+                                <Text as="div" size="3" weight="bold" truncate>{businessName}</Text>
+                                <Text as="div" size="1" color="gray">Admin</Text>
+                            </Box>
+                        </Flex>
                         <Separator size="4" />
                         <Flex direction="column" gap="1">
                             {desktopNavItems.map((item) => {

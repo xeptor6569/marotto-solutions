@@ -31,6 +31,7 @@ import { suggestDocumentTitle } from '@/lib/document-labels';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
+import { buildServiceLabelMap, getPublicSite } from '@/lib/branding';
 import { upsertProspectFromQuoteRequest } from '@/lib/quote-intake';
 import {
     sendQuoteRequestAdminEmail,
@@ -739,10 +740,11 @@ export async function submitQuoteRequest(formData: FormData) {
     }
 
     const input = { name, email, phone, service, details, date };
+    const serviceLabels = buildServiceLabelMap(await getPublicSite());
 
     let clientId: string | undefined;
     if (isDatabaseConfigured()) {
-        const saved = await upsertProspectFromQuoteRequest(input);
+        const saved = await upsertProspectFromQuoteRequest(input, serviceLabels);
         if (saved.ok) {
             clientId = saved.clientId;
             revalidatePath('/admin/clients');

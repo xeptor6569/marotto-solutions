@@ -229,15 +229,112 @@ export interface BillingConfig {
 /** Layout when creating/editing invoices, estimates, quotes, and receipts. */
 export type DocumentFormMode = 'guided' | 'full';
 
+// ─── Business identity & branding (white-label) ──────────────────────
+
+/**
+ * The business running this installation. Everything here is user-entered in
+ * Settings → Business Profile; nothing brand-specific may be hardcoded in
+ * components.
+ */
+export interface BusinessConfig {
+    /** Brand/display name shown across the app and on documents. */
+    name: string;
+    /** Legal name for contract signature lines; falls back to `name`. */
+    legalName?: string;
+    /** Short tagline shown on the public site hero and metadata. */
+    tagline?: string;
+    /** Human-formatted phone, e.g. "(570) 555-0100". */
+    phoneDisplay?: string;
+    /** E.164 phone used for tel: links, e.g. "+15705550100". */
+    phoneE164?: string;
+    /** Public contact email (also the default outbound From fallback). */
+    email?: string;
+    addressLine1?: string;
+    addressLine2?: string;
+    /** Human-readable service area, e.g. "Springfield and surrounding communities". */
+    serviceArea?: string;
+}
+
+export type ThemeAppearance = 'light' | 'dark' | 'system';
+
+export interface BrandingConfig {
+    /** Named theme preset id (see src/lib/theme-presets.ts) or 'custom'. */
+    themePreset?: string;
+    /** Radix Themes accent color name (used when themePreset is 'custom'). */
+    accentColor?: string;
+    /** Radix Themes gray scale name (used when themePreset is 'custom'). */
+    grayColor?: string;
+    /** Radix Themes radius: none | small | medium | large | full. */
+    radius?: string;
+    /** Default appearance for visitors without a stored preference. */
+    defaultAppearance?: ThemeAppearance;
+    /** Uploaded logo file name under data/branding/, e.g. "logo.png". */
+    logoFileName?: string;
+    /** Render the uploaded logo on printed documents instead of the text letterhead. */
+    showLogoOnDocuments?: boolean;
+    /** Letterhead text lines on printed documents; default derives from the business name. */
+    letterheadLine1?: string;
+    letterheadLine2?: string;
+    /** Accent hex used on printed documents (always light paper), e.g. "#1e3a5f". */
+    documentAccentColor?: string;
+}
+
+/** One service offering shown on the public site and quote form. */
+export interface PublicSiteService {
+    slug: string;
+    /** Value submitted by the quote form's service selector. */
+    formValue: string;
+    title: string;
+    shortTitle: string;
+    description: string;
+    summary: string;
+    highlights: string[];
+    idealFor: string[];
+    /** Icon name for the services grid (see src/lib/site-icons.ts). */
+    icon?: string;
+}
+
+export interface PublicSiteTestimonial {
+    name: string;
+    service: string;
+    quote: string;
+}
+
+/** A "why choose us" selling point on the public homepage. */
+export interface PublicSiteHighlight {
+    title: string;
+    text: string;
+    /** Icon name (see src/lib/site-icons.ts). */
+    icon?: string;
+}
+
+export interface PublicSiteConfig {
+    /** When false, `/` renders a minimal branded card linking to sign-in. */
+    enabled: boolean;
+    heroHeading?: string;
+    heroSubheading?: string;
+    highlights?: PublicSiteHighlight[];
+    seoTitle?: string;
+    seoDescription?: string;
+    seoKeywords?: string[];
+    services?: PublicSiteService[];
+    testimonials?: PublicSiteTestimonial[];
+}
+
 export interface AppConfig {
     webdavUrl: string;
     webdavUsername: string; // Saved in local storage or env
     webdavPassword?: string; // Ideally not saved in plain text if possible, but for self-hosted we might need to.
+    /** Remote folder documents are stored under on the WebDAV server. */
+    webdavRootPath?: string;
     lastInvoiceNumber: number;
     lastEstimateNumber: number;
     lastQuoteNumber: number;
     lastReceiptNumber: number;
     billing?: BillingConfig;
+    business?: BusinessConfig;
+    branding?: BrandingConfig;
+    publicSite?: PublicSiteConfig;
     /** IANA timezone for calendar display and form parsing (default: "America/New_York"). */
     businessTimezone?: string;
     /**

@@ -21,7 +21,9 @@ export async function GET() {
         await createBackupArchiveFile(backupDir, archivePath);
 
         const archiveData = await fs.readFile(archivePath);
-        const tmpBase = backupDir.substring(0, backupDir.lastIndexOf(path.sep + 'marotto-backup-'));
+        // collectBackupData returns <tmpBase>/app-backup-<ts>, so the parent is
+        // the mkdtemp directory that owns everything to clean up.
+        const tmpBase = path.dirname(backupDir);
 
         await fs.rm(tmpBase, { recursive: true, force: true }).catch(() => {});
         await fs.unlink(archivePath).catch(() => {});

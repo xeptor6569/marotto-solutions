@@ -7,6 +7,7 @@ import { prisma } from './prisma';
 import type { Adapter } from 'next-auth/adapters';
 import bcrypt from 'bcryptjs';
 import { EMAIL_OTP_MAX_AGE_SECONDS, generateEmailOtp } from '@/lib/email-otp';
+import { getEmailBrand, resolveFromAddress } from '@/lib/email-branding';
 
 export const authConfig: NextAuthConfig = {
   // Required for self-hosted Docker/production. Without this, Auth.js rejects
@@ -16,20 +17,24 @@ export const authConfig: NextAuthConfig = {
   providers: [
     Nodemailer({
       server: process.env.EMAIL_SERVER || '',
-      from: process.env.EMAIL_FROM || 'noreply@marotto-solutions.com',
+      // Provider config is evaluated at module init (before settings can be
+      // read), so only the env override is available here; the actual send
+      // below re-resolves From with the configured business email fallback.
+      from: resolveFromAddress(),
       maxAge: EMAIL_OTP_MAX_AGE_SECONDS,
       generateVerificationToken: async () => generateEmailOtp(),
       sendVerificationRequest: async ({ identifier: email, token, expires }) => {
         const nodemailer = (await import('nodemailer')).default;
         const transport = nodemailer.createTransport(process.env.EMAIL_SERVER || '');
         const minutes = Math.max(1, Math.round((expires.getTime() - Date.now()) / 60_000));
+        const brand = await getEmailBrand();
 
         await transport.sendMail({
           to: email,
-          from: process.env.EMAIL_FROM,
-          subject: `${token} is your Marotto Solutions sign-in code`,
-          text: text({ token, email, minutes }),
-          html: html({ token, email, minutes }),
+          from: brand.from,
+          subject: `${token} is your ${brand.name} sign-in code`,
+          text: text({ token, email, minutes, businessName: brand.name }),
+          html: html({ token, email, minutes, businessName: brand.name }),
         });
       },
     }),
@@ -107,8 +112,9 @@ export const authConfig: NextAuthConfig = {
 
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 
-function html({ token, email, minutes }: { token: string; email: string; minutes: number }) {
+function html({ token, email, minutes, businessName }: { token: string; email: string; minutes: number; businessName: string }) {
   const escapedEmail = email.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const escapedName = businessName.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const spaced = token.split('').join(' ');
 
   return `
@@ -122,8 +128,8 @@ function html({ token, email, minutes }: { token: string; email: string; minutes
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px;">
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
     <tr>
-      <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-        <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 600;">Marotto Solutions</h1>
+      <td style="padding: 40px 40px 20px; text-align: center; background-color: #1c2024;">
+        <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 600;">${escapedName}</h1>
       </td>
     </tr>
     <tr>
@@ -133,7 +139,7 @@ function html({ token, email, minutes }: { token: string; email: string; minutes
           Hello ${escapedEmail},
         </p>
         <p style="margin: 0 0 24px; color: #666; font-size: 16px; line-height: 1.5;">
-          Enter this code in the Marotto admin app to sign in. It expires in ${minutes} minutes.
+          Enter this code in the admin app to sign in. It expires in ${minutes} minutes.
         </p>
         <p style="margin: 0 0 8px; text-align: center; font-size: 36px; font-weight: 700; letter-spacing: 0.35em; color: #111827; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">
           ${spaced}
@@ -145,7 +151,7 @@ function html({ token, email, minutes }: { token: string; email: string; minutes
     </tr>
     <tr>
       <td style="padding: 20px; background-color: #f8f9fa; text-align: center; color: #999; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} Marotto Solutions. All rights reserved.
+        &copy; ${new Date().getFullYear()} ${escapedName}. All rights reserved.
       </td>
     </tr>
   </table>
@@ -154,6 +160,6 @@ function html({ token, email, minutes }: { token: string; email: string; minutes
 `;
 }
 
-function text({ token, email, minutes }: { token: string; email: string; minutes: number }) {
-  return `Sign in to Marotto Solutions\n\nHello ${email},\n\nYour sign-in code is: ${token}\n\nEnter this code in the admin app. It expires in ${minutes} minutes.\n\nIf you didn't request this code, you can safely ignore this email.\n`;
+function text({ token, email, minutes, businessName }: { token: string; email: string; minutes: number; businessName: string }) {
+  return `Sign in to ${businessName}\n\nHello ${email},\n\nYour sign-in code is: ${token}\n\nEnter this code in the admin app. It expires in ${minutes} minutes.\n\nIf you didn't request this code, you can safely ignore this email.\n`;
 }

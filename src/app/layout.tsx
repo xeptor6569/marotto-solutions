@@ -4,7 +4,7 @@ import "@radix-ui/themes/styles.css";
 import "./globals.css";
 import { Theme } from "@radix-ui/themes";
 import { EnvironmentBanner } from "@/components/EnvironmentBanner";
-import { BUSINESS_NAME, getSiteUrl } from "@/lib/marketing";
+import { getBranding, getSiteUrl } from "@/lib/branding";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,52 +16,51 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
+export async function generateMetadata(): Promise<Metadata> {
+  const { business, publicSite } = await getBranding();
   // Keep the default <title> short — iOS Add-to-Home-Screen / Spotlight often
   // indexes the document title even when apple-mobile-web-app-title is set.
-  title: {
-    default: "Marotto",
-    template: "%s · Marotto",
-  },
-  description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
-  keywords: [
-    "general contractor Pittston PA",
-    "contractor Wilkes-Barre PA",
-    "IT services Pittston PA",
-    "small business networking Wilkes-Barre",
-    "custom PC builds Northeast Pennsylvania",
-  ],
-  openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "/",
-    siteName: BUSINESS_NAME,
-    title: "Marotto Solutions | Contracting & IT Services",
-    description: "Local general contracting, networking, custom PC, and automation services in Pittston, Wilkes-Barre, and Northeast Pennsylvania.",
-  },
-  twitter: {
-    card: "summary",
-    title: "Marotto Solutions | Contracting & IT Services",
-    description: "Local contracting and IT services in Pittston, Wilkes-Barre, and Northeast Pennsylvania.",
-  },
-  applicationName: "Marotto",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Marotto",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  icons: {
-    icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
-};
+  const shortName = business.name.split(/\s+/)[0] || business.name;
+
+  return {
+    metadataBase: new URL(getSiteUrl()),
+    title: {
+      default: shortName,
+      template: `%s · ${shortName}`,
+    },
+    description: publicSite.seoDescription || undefined,
+    keywords: publicSite.seoKeywords.length ? publicSite.seoKeywords : undefined,
+    openGraph: {
+      type: "website",
+      locale: "en_US",
+      url: "/",
+      siteName: business.name,
+      title: publicSite.seoTitle,
+      description: publicSite.seoDescription || undefined,
+    },
+    twitter: {
+      card: "summary",
+      title: publicSite.seoTitle,
+      description: publicSite.seoDescription || undefined,
+    },
+    applicationName: shortName,
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: shortName,
+    },
+    formatDetection: {
+      telephone: false,
+    },
+    icons: {
+      icon: [
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",

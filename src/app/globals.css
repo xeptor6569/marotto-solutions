@@ -20,6 +20,25 @@ body {
   display: none !important;
 }
 
+/* ── Public site helpers ─────────────────────────────────────────────── */
+.public-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--color-background) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--gray-4);
+}
+
+.hover-card {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--gray-a4);
+}
+
 /* Non-production instance marker. Fixed so it survives scrolling, and
    pointer-events: none so it can never intercept a click on the UI beneath. */
 .env-banner {
@@ -99,6 +118,7 @@ html.pdf-export .payment-options {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--doc-ink);
   line-height: 1.15;
   margin: 0;
@@ -108,8 +128,17 @@ html.pdf-export .payment-options {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.22em;
+  text-transform: uppercase;
   color: var(--doc-muted);
   margin-top: 2px;
+}
+
+.print-document .doc-brand-logo {
+  display: block;
+  max-height: 56px;
+  max-width: 220px;
+  width: auto;
+  height: auto;
 }
 
 .print-document .doc-brand-address {

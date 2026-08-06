@@ -19,6 +19,7 @@ import {
     Wallet,
 } from "lucide-react";
 import { getAppConfig } from "@/lib/config";
+import { resolveBrandingFromConfig } from "@/lib/branding";
 import { ensureDocumentShareToken } from "@/lib/data";
 import { DOC_LABEL } from "@/lib/document-labels";
 import { paymentLinkForMethod, paymentMethodUsesManualDetails } from "@/lib/payment-links";
@@ -222,6 +223,7 @@ export default async function DocumentPreview({
 }) {
     const session = publicMode ? null : await auth();
     const config = await getAppConfig();
+    const { business, branding } = resolveBrandingFromConfig(config);
     const stripeCheckoutEnabled = isStripeConfigured();
     const docTitle = DOC_LABEL[doc.type] ?? "Document";
     const billToLabel = doc.type === "receipt" ? "Received From" : "Bill To";
@@ -330,11 +332,12 @@ export default async function DocumentPreview({
                                     canSendViaServer={!!session}
                                     serverEmailConfigured={!!process.env.EMAIL_SERVER}
                                     pendingApprovalSummary={pendingApprovalSummary}
+                                    businessName={business.name}
                                 />
                             ) : null
                         }
                         primaryShare={
-                            <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                            <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} businessName={business.name} />
                         }
                         overflowDeposit={
                             showDepositInvoice ? (
@@ -374,16 +377,34 @@ export default async function DocumentPreview({
                 )}
             </Flex>
 
-            <Card size="2" className="doc-card print-document">
+            <Card
+                size="2"
+                className="doc-card print-document"
+                style={{ '--doc-accent': branding.documentAccentColor } as React.CSSProperties}
+            >
                 <div className="receipt-content">
                     <div className="doc-header">
                         <Box className="doc-brand">
-                            <p className="doc-brand-name">MAROTTO</p>
-                            <div className="doc-brand-sub">SOLUTIONS</div>
+                            {branding.showLogoOnDocuments && branding.logoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={branding.logoUrl}
+                                    alt={business.name}
+                                    className="doc-brand-logo"
+                                />
+                            ) : (
+                                <>
+                                    <p className="doc-brand-name">{branding.letterhead.line1}</p>
+                                    {branding.letterhead.line2 ? (
+                                        <div className="doc-brand-sub">{branding.letterhead.line2}</div>
+                                    ) : null}
+                                </>
+                            )}
                             <div className="doc-brand-address">
-                                <div>28 E Mountain Ridge MHP</div>
-                                <div>Wilkes Barre, PA 18702</div>
-                                <div>(570) 332-9262</div>
+                                {business.addressLine1 ? <div>{business.addressLine1}</div> : null}
+                                {business.addressLine2 ? <div>{business.addressLine2}</div> : null}
+                                {business.phoneDisplay ? <div>{business.phoneDisplay}</div> : null}
+                                {business.email ? <div>{business.email}</div> : null}
                             </div>
                         </Box>
                         <Box className="doc-meta">

@@ -1,6 +1,7 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box, DropdownMenu } from "@radix-ui/themes";
 import { SettingsIcon, ChevronDown, Upload, FileText, ReceiptText, ClipboardList, BadgeCheck, Repeat } from "lucide-react";
 import Link from 'next/link';
+import { getBusiness } from "@/lib/branding";
 import { getDocuments } from "@/lib/data";
 import { getContracts } from "@/lib/contracts";
 import { requireAdminPage } from "@/lib/require-admin-session";
@@ -8,6 +9,7 @@ import { documentListLabel, documentListSubLabel } from "@/lib/document-labels";
 
 export default async function Home() {
   await requireAdminPage("/dashboard");
+  const business = await getBusiness();
 
   const invoices = await getDocuments('invoice');
   const estimates = await getDocuments('estimate');
@@ -25,7 +27,7 @@ export default async function Home() {
       <Flex direction={{ initial: 'column', md: 'row' }} justify="between" align={{ initial: 'start', md: 'center' }} gap="4" mb="5">
         <Box>
           <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <Heading size="8">Marotto Solutions</Heading>
+            <Heading size="8">{business.name}</Heading>
           </Link>
           <Text size="3" color="gray">Quick view of invoices, estimates, quotes, and receipts.</Text>
         </Box>

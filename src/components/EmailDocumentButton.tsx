@@ -16,6 +16,7 @@ function EmailSendFields({
     defaultTo,
     showServerSend,
     pendingApprovalSummary,
+    businessName,
     onClose,
 }: {
     documentId: string;
@@ -25,6 +26,7 @@ function EmailSendFields({
     showServerSend: boolean;
     /** Mirrors server email: extra line when document has line items pending approval. */
     pendingApprovalSummary?: string;
+    businessName?: string;
     onClose: () => void;
 }) {
     const [state, formAction] = useFormState(sendDocumentEmailAction, initialState);
@@ -53,7 +55,9 @@ function EmailSendFields({
     }, [sharePath]);
 
     const mailtoHref = useMemo(() => {
-        const subject = `Marotto Solutions — ${docTitle} ${documentId}`;
+        const subject = businessName
+            ? `${businessName} — ${docTitle} ${documentId}`
+            : `${docTitle} ${documentId}`;
         const body = [
             'Hi,',
             '',
@@ -65,7 +69,7 @@ function EmailSendFields({
         const params = new URLSearchParams({ subject, body });
         const addr = to.trim();
         return addr ? `mailto:${addr}?${params}` : `mailto:?${params}`;
-    }, [docTitle, documentId, pendingApprovalSummary, to, viewUrl]);
+    }, [businessName, docTitle, documentId, pendingApprovalSummary, to, viewUrl]);
 
     return (
         <>
@@ -125,6 +129,7 @@ export default function EmailDocumentButton({
     canSendViaServer,
     serverEmailConfigured,
     pendingApprovalSummary,
+    businessName,
 }: {
     documentId: string;
     sharePath: string;
@@ -133,6 +138,7 @@ export default function EmailDocumentButton({
     canSendViaServer: boolean;
     serverEmailConfigured: boolean;
     pendingApprovalSummary?: string;
+    businessName?: string;
 }) {
     const [open, setOpen] = useState(false);
     const [panelKey, setPanelKey] = useState(0);
@@ -164,6 +170,7 @@ export default function EmailDocumentButton({
                     defaultTo={defaultTo}
                     showServerSend={showServerSend}
                     pendingApprovalSummary={pendingApprovalSummary}
+                    businessName={businessName}
                     onClose={() => setOpen(false)}
                 />
 
