@@ -93,10 +93,15 @@ jobs:
             echo "AUTH_TRUST_HOST=true"
             echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
             echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
-            # Leave EMAIL_SERVER unset to keep the overlay default (the mailpit
-            # sink). Only set the secret when you deliberately want real delivery.
+            # EMAIL_SERVER must always be written, not just at runtime: .env is
+            # inside the Docker build context and the Auth.js nodemailer
+            # provider is constructed during `next build`, which fails outright
+            # without it. Defaults to the mailpit sink, so dev delivers nowhere
+            # unless a real SMTP secret is deliberately set.
             if [ -n "${{ secrets.EMAIL_SERVER }}" ]; then
               echo "EMAIL_SERVER=${{ secrets.EMAIL_SERVER }}"
+            else
+              echo "EMAIL_SERVER=smtp://mailpit:1025"
             fi
             if [ -n "${{ secrets.EMAIL_FROM }}" ]; then
               echo "EMAIL_FROM=${{ secrets.EMAIL_FROM }}"

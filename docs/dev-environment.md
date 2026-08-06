@@ -105,6 +105,12 @@ with restored production data, no client can be contacted.
 
 Sign-in works normally; read the code out of mailpit.
 
+`EMAIL_SERVER` has to be set even though nothing is really being delivered.
+`.env` sits inside the Docker build context and the Auth.js nodemailer provider
+is constructed during `next build`, so an unset `EMAIL_SERVER` fails the build
+instead of just disabling email. `env.dev.example` and the deploy workflow both
+default it to `smtp://mailpit:1025` for that reason.
+
 ### `/api/health`
 
 Anonymous callers get liveness only:
