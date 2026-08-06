@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Box, Button, Card, Container, Flex, Heading, Text } from '@radix-ui/themes';
@@ -22,7 +23,6 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
     if (!topic) notFound();
 
     const { prev, next } = getAdjacentTopics(slug);
-    const Icon = getHelpIcon(topic.icon);
 
     return (
         <Container size="2" p={{ initial: '3', sm: '5' }}>
@@ -44,7 +44,7 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
                             flexShrink: 0,
                         }}
                     >
-                        <Icon size={20} />
+                        {createElement(getHelpIcon(topic.icon), { size: 20 })}
                     </Flex>
                     <Box>
                         <Heading size="7">{topic.title}</Heading>
