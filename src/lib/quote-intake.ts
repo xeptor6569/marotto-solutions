@@ -11,6 +11,7 @@ const SERVICE_LABELS: Record<string, string> = {
 export interface QuoteRequestInput {
     name: string;
     email: string;
+    phone: string;
     service: string;
     details: string;
     date?: string;
@@ -25,6 +26,7 @@ export function formatQuoteIntakeNote(input: QuoteRequestInput): string {
     const lines = [
         `--- Website quote request (${when}) ---`,
         `Service: ${serviceLabel(input.service)}`,
+        `Phone: ${input.phone.trim()}`,
         input.date?.trim() ? `Preferred schedule: ${input.date.trim()}` : null,
         `Details: ${input.details.trim()}`,
     ].filter(Boolean);
@@ -47,8 +49,9 @@ export type UpsertProspectResult =
 export async function upsertProspectFromQuoteRequest(input: QuoteRequestInput): Promise<UpsertProspectResult> {
     const name = input.name.trim();
     const email = input.email.trim().toLowerCase();
-    if (!name || !email) {
-        return { ok: false, error: 'Name and email are required.' };
+    const phone = input.phone.trim();
+    if (!name || !email || !phone) {
+        return { ok: false, error: 'Name, email, and phone are required.' };
     }
 
     const intakeNote = formatQuoteIntakeNote({ ...input, email });
@@ -63,6 +66,7 @@ export async function upsertProspectFromQuoteRequest(input: QuoteRequestInput): 
                 where: { id: existing.id },
                 data: {
                     name: name || existing.name,
+                    phone,
                     notes: appendNotes(existing.notes, intakeNote),
                     isProspect: true,
                 },
@@ -74,6 +78,7 @@ export async function upsertProspectFromQuoteRequest(input: QuoteRequestInput): 
             data: {
                 name,
                 email,
+                phone,
                 notes: intakeNote,
                 isProspect: true,
             },

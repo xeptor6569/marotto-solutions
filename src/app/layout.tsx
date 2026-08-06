@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@radix-ui/themes/styles.css";
 import "./globals.css";
 import { Theme } from "@radix-ui/themes";
+import { BUSINESS_NAME, getSiteUrl } from "@/lib/marketing";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,6 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   // Keep the default <title> short — iOS Add-to-Home-Screen / Spotlight often
   // indexes the document title even when apple-mobile-web-app-title is set.
   title: {
@@ -22,6 +24,26 @@ export const metadata: Metadata = {
     template: "%s · Marotto",
   },
   description: "General contracting and IT services in Pittston, PA — home renovations, networking, custom PC builds, and automation.",
+  keywords: [
+    "general contractor Pittston PA",
+    "contractor Wilkes-Barre PA",
+    "IT services Pittston PA",
+    "small business networking Wilkes-Barre",
+    "custom PC builds Northeast Pennsylvania",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    siteName: BUSINESS_NAME,
+    title: "Marotto Solutions | Contracting & IT Services",
+    description: "Local general contracting, networking, custom PC, and automation services in Pittston, Wilkes-Barre, and Northeast Pennsylvania.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Marotto Solutions | Contracting & IT Services",
+    description: "Local contracting and IT services in Pittston, Wilkes-Barre, and Northeast Pennsylvania.",
+  },
   applicationName: "Marotto",
   appleWebApp: {
     capable: true,

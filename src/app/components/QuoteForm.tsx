@@ -4,6 +4,8 @@ import { Button, Card, Flex, Text, TextArea, TextField, Select } from "@radix-ui
 import { submitQuoteRequest } from "../actions";
 import { useFormStatus } from "react-dom";
 
+const SERVICE_VALUES = ['general', 'it', 'pc', 'programming', 'other'] as const;
+
 function SubmitButton() {
     const { pending } = useFormStatus();
     return (
@@ -13,7 +15,11 @@ function SubmitButton() {
     );
 }
 
-export default function QuoteForm() {
+export default function QuoteForm({ defaultService = 'general' }: { defaultService?: string }) {
+    const selectedService = SERVICE_VALUES.includes(defaultService as (typeof SERVICE_VALUES)[number])
+        ? defaultService
+        : 'general';
+
     return (
         <Card size="3">
             <form action={submitQuoteRequest}>
@@ -27,12 +33,24 @@ export default function QuoteForm() {
 
                     <Flex direction="column" gap="2">
                         <Text as="label" size="2" weight="bold">Email Address</Text>
-                        <TextField.Root name="email" type="email" placeholder="john@example.com" required />
+                        <TextField.Root name="email" type="email" autoComplete="email" placeholder="john@example.com" required />
+                    </Flex>
+
+                    <Flex direction="column" gap="2">
+                        <Text as="label" size="2" weight="bold">Phone Number</Text>
+                        <TextField.Root
+                            name="phone"
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="(570) 555-0123"
+                            required
+                        />
                     </Flex>
 
                     <Flex direction="column" gap="2">
                         <Text as="label" size="2" weight="bold">Service Needed</Text>
-                        <Select.Root name="service" defaultValue="general">
+                        <Select.Root name="service" defaultValue={selectedService}>
                             <Select.Trigger />
                             <Select.Content>
                                 <Select.Item value="general">General Contracting</Select.Item>
@@ -55,6 +73,9 @@ export default function QuoteForm() {
                     </Flex>
 
                     <SubmitButton />
+                    <Text size="1" color="gray">
+                        We use your contact details only to respond to this request.
+                    </Text>
                 </Flex>
             </form>
         </Card>
