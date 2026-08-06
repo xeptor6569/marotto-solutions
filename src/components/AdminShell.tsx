@@ -11,6 +11,7 @@ import {
     FileText,
     Gauge,
     Handshake,
+    LifeBuoy,
     ListChecks,
     LogOut,
     MoreHorizontal,
@@ -95,6 +96,7 @@ const moreToolItems: NavItem[] = [
     { href: '/admin/import', label: 'Import', shortLabel: 'Import', icon: Upload },
     { href: '/admin/backup', label: 'Backup', shortLabel: 'Backup', icon: Archive },
     { href: '/admin/system', label: 'System', shortLabel: 'System', icon: Activity },
+    { href: '/admin/help', label: 'Help', shortLabel: 'Help', icon: LifeBuoy },
     { href: '/admin/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
 ];
 
