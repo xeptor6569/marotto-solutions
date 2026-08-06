@@ -615,6 +615,7 @@ export default function NewDocumentForm({
                                         <TextField.Root
                                             name="estimatedHours"
                                             type="number"
+                                            inputMode="decimal"
                                             min="0"
                                             step="0.25"
                                             placeholder="e.g. 8"
@@ -919,6 +920,7 @@ export default function NewDocumentForm({
                                             <TextField.Root
                                                 name="paymentAmount"
                                                 type="number"
+                                                inputMode="decimal"
                                                 min="0"
                                                 step="0.01"
                                                 value={paymentAmount}

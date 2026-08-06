@@ -10,7 +10,6 @@ import {
     FileText,
     Gauge,
     Handshake,
-    Inbox,
     ListChecks,
     LogOut,
     MoreHorizontal,
@@ -37,30 +36,52 @@ type NavItem = {
     matchPrefixes?: string[];
 };
 
-const desktopNavItems: NavItem[] = [
-    { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
-    { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
-    { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
-    { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
-    { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
-    { href: '/admin/leads', label: 'Leads', shortLabel: 'Leads', icon: Inbox },
-    { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
-    { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
-    { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
-    { href: '/admin/receipts', label: 'Receipts', shortLabel: 'Rcpt', icon: ReceiptText },
-    { href: '/admin/contracts', label: 'Contracts', shortLabel: 'Ctr', icon: Repeat },
+type NavSection = {
+    label: string | null;
+    items: NavItem[];
+};
+
+// Leads routes redirect into Clients, so Clients owns that prefix for
+// active-state highlighting and Leads has no nav entry of its own.
+const navSections: NavSection[] = [
+    {
+        label: null,
+        items: [
+            { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
+        ],
+    },
+    {
+        label: 'Work',
+        items: [
+            { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
+            { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users, matchPrefixes: ['/admin/leads'] },
+            { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
+            { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
+        ],
+    },
+    {
+        label: 'Documents',
+        items: [
+            { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
+            { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
+            { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
+            { href: '/admin/receipts', label: 'Receipts', shortLabel: 'Rcpt', icon: ReceiptText },
+            { href: '/admin/contracts', label: 'Contracts', shortLabel: 'Ctr', icon: Repeat },
+        ],
+    },
 ];
+
+const desktopNavItems: NavItem[] = navSections.flatMap((section) => section.items);
 
 const mobileNavItems: NavItem[] = [
     { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
     { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
-    { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users },
+    { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users, matchPrefixes: ['/admin/leads'] },
     { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Invoices', icon: FileText },
 ];
 
 const moreMenuItems: NavItem[] = [
     { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
-    { href: '/admin/leads', label: 'Leads', shortLabel: 'Leads', icon: Inbox },
     { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
     { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
     { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
@@ -178,47 +199,80 @@ export default function AdminShell({
                             </Box>
                         </Flex>
                         <Separator size="4" />
-                        <Flex direction="column" gap="1">
-                            {desktopNavItems.map((item) => {
-                                const active = isActivePath(pathname, item);
-                                return (
-                                    <Button
-                                        key={item.href}
-                                        asChild
-                                        size="2"
-                                        variant={active ? 'solid' : 'ghost'}
-                                        style={{ justifyContent: 'flex-start' }}
-                                    >
-                                        <Link href={item.href} aria-current={active ? 'page' : undefined}>
-                                            <item.icon size={16} />
-                                            {item.label}
-                                        </Link>
-                                    </Button>
-                                );
-                            })}
+                        <Flex direction="column" gap="3">
+                            {navSections.map((section, sectionIndex) => (
+                                <Flex key={section.label ?? sectionIndex} direction="column" gap="1">
+                                    {section.label ? (
+                                        <Text
+                                            as="div"
+                                            size="1"
+                                            color="gray"
+                                            weight="medium"
+                                            style={{ textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 8px' }}
+                                        >
+                                            {section.label}
+                                        </Text>
+                                    ) : null}
+                                    {section.items.map((item) => {
+                                        const active = isActivePath(pathname, item);
+                                        return (
+                                            <Button
+                                                key={item.href}
+                                                asChild
+                                                size="2"
+                                                variant={active ? 'solid' : 'ghost'}
+                                                color={active ? undefined : 'gray'}
+                                                highContrast={!active}
+                                                style={{ justifyContent: 'flex-start' }}
+                                            >
+                                                <Link href={item.href} aria-current={active ? 'page' : undefined}>
+                                                    <item.icon size={16} />
+                                                    {item.label}
+                                                </Link>
+                                            </Button>
+                                        );
+                                    })}
+                                </Flex>
+                            ))}
                         </Flex>
                         <Box mt="auto">
-                            <Flex direction="column" gap="2">
-                                <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
-                                    <Link href="/admin/presets"><Bookmark size={16} /> Presets</Link>
-                                </Button>
-                                <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
-                                    <Link href="/admin/settings"><Settings size={16} /> Settings</Link>
-                                </Button>
-                                <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
-                                    <Link href="/admin/import"><Upload size={16} /> Import</Link>
-                                </Button>
-                                <Button asChild size="2" variant="soft" style={{ justifyContent: 'flex-start' }}>
-                                    <Link href="/admin/backup"><Archive size={16} /> Backup</Link>
-                                </Button>
-                                <Separator size="4" />
+                            <Flex direction="column" gap="1">
+                                <Text
+                                    as="div"
+                                    size="1"
+                                    color="gray"
+                                    weight="medium"
+                                    style={{ textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 8px' }}
+                                >
+                                    Tools
+                                </Text>
+                                {moreToolItems.map((item) => {
+                                    const active = isActivePath(pathname, item);
+                                    return (
+                                        <Button
+                                            key={item.href}
+                                            asChild
+                                            size="2"
+                                            variant={active ? 'solid' : 'ghost'}
+                                            color={active ? undefined : 'gray'}
+                                            highContrast={!active}
+                                            style={{ justifyContent: 'flex-start' }}
+                                        >
+                                            <Link href={item.href} aria-current={active ? 'page' : undefined}>
+                                                <item.icon size={16} />
+                                                {item.label}
+                                            </Link>
+                                        </Button>
+                                    );
+                                })}
+                                <Separator size="4" my="2" />
                                 {userEmail ? (
                                     <Badge color="gray" variant="soft" style={{ justifyContent: 'center' }}>
                                         {userEmail}
                                     </Badge>
                                 ) : null}
                                 <form action={signOutFromAdmin}>
-                                    <Button type="submit" size="2" variant="ghost" style={{ width: '100%', justifyContent: 'flex-start' }}>
+                                    <Button type="submit" size="2" variant="ghost" color="gray" style={{ width: '100%', justifyContent: 'flex-start' }}>
                                         <LogOut size={16} />
                                         Sign out
                                     </Button>

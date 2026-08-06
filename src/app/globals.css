@@ -20,6 +20,28 @@ body {
   display: none !important;
 }
 
+/* ── Mobile form ergonomics ──────────────────────────────────────────── */
+/* iOS Safari auto-zooms the page when a focused control renders text below
+   16px, and the page stays zoomed afterwards. Radix size-2 controls are 14px,
+   so on touch devices every text control is forced to 16px (the zoom
+   threshold) and given a comfortable hit height. This is the accessible fix —
+   unlike maximum-scale=1, pinch zoom keeps working. */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+  select,
+  textarea,
+  .rt-TextFieldInput,
+  .rt-TextAreaInput,
+  .rt-SelectTrigger {
+    font-size: 16px !important;
+  }
+
+  .rt-TextFieldRoot,
+  .rt-SelectTrigger {
+    min-height: 40px;
+  }
+}
+
 /* ── Public site helpers ─────────────────────────────────────────────── */
 .public-header {
   position: sticky;

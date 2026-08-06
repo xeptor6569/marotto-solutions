@@ -289,6 +289,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                     <TextField.Root
                                         name="intervalCount"
                                         type="number"
+                                        inputMode="decimal"
                                         min="1"
                                         value={intervalCount}
                                         onChange={(e) => setIntervalCount(e.target.value)}
@@ -334,6 +335,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                 <TextField.Root
                                     name="termCycles"
                                     type="number"
+                                    inputMode="decimal"
                                     min="1"
                                     placeholder="e.g. 12 for one year of monthly billing"
                                     value={termCycles}
@@ -505,6 +507,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                             <Table.Cell>
                                                 <TextField.Root
                                                     type="number"
+                                                    inputMode="decimal"
                                                     min="0"
                                                     step="0.5"
                                                     value={line.quantity}
@@ -515,6 +518,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                             <Table.Cell>
                                                 <TextField.Root
                                                     type="number"
+                                                    inputMode="decimal"
                                                     min="0"
                                                     step="0.01"
                                                     value={line.unitPrice}
