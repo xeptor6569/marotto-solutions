@@ -270,10 +270,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
                         <Box>
                             <Heading size="7" mb="4">Ready to start?</Heading>
                             <Text size="4" color="gray" mb="4">
-                                Tell us about your project. Whether it's fixing a leak or setting up a server rack, we're here to help.
+                                Tell us about your project. Whether it&apos;s fixing a leak or setting up a server rack, we&apos;re here to help.
                             </Text>
                             <Text size="4" color="gray">
-                                Fill out the form and we'll get back to you with an estimate and availability.
+                                Fill out the form and we&apos;ll get back to you with an estimate and availability.
                             </Text>
                             <Flex direction="column" gap="3" mt="5">
                                 <Button size="3" variant="outline" asChild>
