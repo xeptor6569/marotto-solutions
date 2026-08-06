@@ -6,13 +6,13 @@ import { revalidatePath } from 'next/cache';
 import { requireAdminAction } from '@/lib/require-admin-session';
 
 // Simple validation
-function isValidDocument(doc: any): doc is DocumentData {
+function isValidDocument(doc: unknown): doc is DocumentData {
+    if (typeof doc !== 'object' || doc === null) return false;
+    const candidate = doc as Partial<DocumentData>;
     return (
-        typeof doc === 'object' &&
-        doc !== null &&
-        typeof doc.id === 'string' &&
-        (doc.type === 'invoice' || doc.type === 'estimate' || doc.type === 'quote' || doc.type === 'receipt') &&
-        typeof doc.number === 'number'
+        typeof candidate.id === 'string' &&
+        (candidate.type === 'invoice' || candidate.type === 'estimate' || candidate.type === 'quote' || candidate.type === 'receipt') &&
+        typeof candidate.number === 'number'
     );
 }
 
@@ -55,8 +55,9 @@ export async function importDocumentsAction(formData: FormData) {
         revalidatePath('/dashboard');
         return { success: true, count, errors };
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error("Import error", e);
-        return { success: false, error: 'Failed to process file: ' + e.message };
+        const message = e instanceof Error ? e.message : 'Unknown error';
+        return { success: false, error: 'Failed to process file: ' + message };
     }
 }

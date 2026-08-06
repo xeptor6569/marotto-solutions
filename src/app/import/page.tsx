@@ -1,7 +1,7 @@
 'use client';
 
 import { Container, Heading, Card, Button, Flex, Text, Callout, Code, Box } from "@radix-ui/themes";
-import { Upload, Info, AlertTriangle, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
+import { Upload, Info, CheckCircle, XCircle, ArrowLeft } from "lucide-react";
 import { importDocumentsAction } from "./actions";
 import { useState } from "react";
 import { useRouter } from "next/navigation";

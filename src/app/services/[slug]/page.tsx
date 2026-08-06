@@ -19,33 +19,27 @@ import {
     Section,
     Text,
 } from '@radix-ui/themes';
-import {
-    BUSINESS_NAME,
-    getMarketingService,
-    getSiteUrl,
-    marketingServices,
-    PHONE_DISPLAY,
-    PHONE_HREF,
-    SERVICE_AREA,
-} from '@/lib/marketing';
+import PublicHeader from '@/app/components/PublicHeader';
+import PublicFooter from '@/app/components/PublicFooter';
+import { getBranding, getPublicSiteService, getSiteUrl } from '@/lib/branding';
 
 interface ServicePageProps {
     params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-    return marketingServices.map((service) => ({ slug: service.slug }));
-}
+// Services are user-configured at runtime, so pages render on demand.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: ServicePageProps): Promise<Metadata> {
     const { slug } = await params;
-    const service = getMarketingService(slug);
+    const { business, publicSite } = await getBranding();
+    const service = getPublicSiteService(publicSite, slug);
 
-    if (!service) {
+    if (!publicSite.enabled || !service) {
         return {};
     }
 
-    const title = `${service.shortTitle} | Marotto Solutions`;
+    const title = `${service.shortTitle} | ${business.name}`;
     const canonical = `/services/${service.slug}`;
 
     return {
@@ -63,9 +57,10 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
 
 export default async function ServicePage({ params }: ServicePageProps) {
     const { slug } = await params;
-    const service = getMarketingService(slug);
+    const { business, branding, publicSite } = await getBranding();
+    const service = getPublicSiteService(publicSite, slug);
 
-    if (!service) {
+    if (!publicSite.enabled || !service) {
         notFound();
     }
 
@@ -77,15 +72,14 @@ export default async function ServicePage({ params }: ServicePageProps) {
         name: service.shortTitle,
         description: service.description,
         url: `${siteUrl}/services/${service.slug}`,
-        areaServed: {
-            '@type': 'AdministrativeArea',
-            name: 'Northeast Pennsylvania',
-        },
+        ...(business.serviceArea
+            ? { areaServed: { '@type': 'AdministrativeArea', name: business.serviceArea } }
+            : {}),
         provider: {
             '@type': 'LocalBusiness',
-            name: BUSINESS_NAME,
+            name: business.name,
             url: siteUrl,
-            telephone: PHONE_DISPLAY,
+            ...(business.phoneDisplay ? { telephone: business.phoneDisplay } : {}),
         },
     };
 
@@ -96,25 +90,9 @@ export default async function ServicePage({ params }: ServicePageProps) {
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd).replace(/</g, '\\u003c') }}
             />
 
-            <Flex px="5" py="4" justify="between" align="center" style={{ borderBottom: '1px solid var(--gray-5)' }}>
-                <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <Heading size="5">{BUSINESS_NAME}</Heading>
-                </Link>
-                <Flex gap="3" align="center">
-                    <Button variant="ghost" size="2" asChild>
-                        <a href={PHONE_HREF} aria-label={`Call ${BUSINESS_NAME} at ${PHONE_DISPLAY}`}>
-                            <Phone size={14} /> Call
-                        </a>
-                    </Button>
-                    <Box display={{ initial: 'none', sm: 'block' }}>
-                        <Button size="2" asChild>
-                            <Link href={quoteHref}>Get a Quote</Link>
-                        </Button>
-                    </Box>
-                </Flex>
-            </Flex>
+            <PublicHeader business={business} branding={branding} quoteHref={quoteHref} />
 
-            <Container size="3">
+            <Container size="3" px="4">
                 <Section size="3">
                     <Flex direction="column" gap="5">
                         <Link href="/#services" style={{ alignSelf: 'flex-start' }}>
@@ -131,51 +109,59 @@ export default async function ServicePage({ params }: ServicePageProps) {
                             <Text size="5" color="gray" style={{ lineHeight: 1.6 }}>
                                 {service.description}
                             </Text>
-                            <Flex gap="2" align="center">
-                                <MapPin size={16} style={{ color: 'var(--gray-8)' }} />
-                                <Text size="3" color="gray">Serving {SERVICE_AREA}</Text>
-                            </Flex>
+                            {business.serviceArea ? (
+                                <Flex gap="2" align="center">
+                                    <MapPin size={16} style={{ color: 'var(--gray-8)' }} />
+                                    <Text size="3" color="gray">Serving {business.serviceArea}</Text>
+                                </Flex>
+                            ) : null}
                             <Flex gap="3" mt="3" wrap="wrap">
                                 <Button size="4" asChild>
                                     <Link href={quoteHref}>Request a Quote <ArrowRight /></Link>
                                 </Button>
-                                <Button size="4" variant="outline" asChild>
-                                    <a href={PHONE_HREF}><Phone size={16} /> Call {PHONE_DISPLAY}</a>
-                                </Button>
+                                {business.phoneHref ? (
+                                    <Button size="4" variant="outline" asChild>
+                                        <a href={business.phoneHref}><Phone size={16} /> Call {business.phoneDisplay}</a>
+                                    </Button>
+                                ) : null}
                             </Flex>
                         </Flex>
                     </Flex>
                 </Section>
 
-                <Box py="8" px="5" style={{ backgroundColor: 'var(--gray-2)', borderRadius: 'var(--radius-5)' }}>
-                    <Grid columns={{ initial: '1', md: '2' }} gap="8">
-                        <Flex direction="column" gap="3">
-                            <Heading as="h2" size="6">How we can help</Heading>
-                            <Text size="3" color="gray" style={{ lineHeight: 1.7 }}>
-                                {service.summary}
-                            </Text>
-                        </Flex>
-                        <Flex direction="column" gap="3">
-                            {service.highlights.map((highlight) => (
-                                <Flex key={highlight} gap="3" align="start">
-                                    <CheckCircle2 size={19} style={{ color: 'var(--accent-9)', flexShrink: 0, marginTop: 2 }} />
-                                    <Text size="3">{highlight}</Text>
-                                </Flex>
-                            ))}
-                        </Flex>
-                    </Grid>
-                </Box>
+                {service.summary || service.highlights.length ? (
+                    <Box py="8" px="5" style={{ backgroundColor: 'var(--gray-2)', borderRadius: 'var(--radius-5)' }}>
+                        <Grid columns={{ initial: '1', md: '2' }} gap="8">
+                            <Flex direction="column" gap="3">
+                                <Heading as="h2" size="6">How we can help</Heading>
+                                <Text size="3" color="gray" style={{ lineHeight: 1.7 }}>
+                                    {service.summary}
+                                </Text>
+                            </Flex>
+                            <Flex direction="column" gap="3">
+                                {service.highlights.map((highlight) => (
+                                    <Flex key={highlight} gap="3" align="start">
+                                        <CheckCircle2 size={19} style={{ color: 'var(--accent-9)', flexShrink: 0, marginTop: 2 }} />
+                                        <Text size="3">{highlight}</Text>
+                                    </Flex>
+                                ))}
+                            </Flex>
+                        </Grid>
+                    </Box>
+                ) : null}
 
-                <Section size="3">
-                    <Heading as="h2" size="7" mb="5">A practical fit for</Heading>
-                    <Grid columns={{ initial: '1', sm: '3' }} gap="4">
-                        {service.idealFor.map((customer) => (
-                            <Card key={customer} size="3">
-                                <Text size="3" style={{ lineHeight: 1.6 }}>{customer}</Text>
-                            </Card>
-                        ))}
-                    </Grid>
-                </Section>
+                {service.idealFor.length ? (
+                    <Section size="3">
+                        <Heading as="h2" size="7" mb="5">A practical fit for</Heading>
+                        <Grid columns={{ initial: '1', sm: '3' }} gap="4">
+                            {service.idealFor.map((customer) => (
+                                <Card key={customer} size="3">
+                                    <Text size="3" style={{ lineHeight: 1.6 }}>{customer}</Text>
+                                </Card>
+                            ))}
+                        </Grid>
+                    </Section>
+                ) : null}
 
                 <Section size="2">
                     <Card size="4">
@@ -190,28 +176,19 @@ export default async function ServicePage({ params }: ServicePageProps) {
                                 <Button size="3" asChild>
                                     <Link href={quoteHref}>Request a Quote</Link>
                                 </Button>
-                                <Button size="3" variant="outline" asChild>
-                                    <a href={PHONE_HREF}>Call {PHONE_DISPLAY}</a>
-                                </Button>
+                                {business.phoneHref ? (
+                                    <Button size="3" variant="outline" asChild>
+                                        <a href={business.phoneHref}>Call {business.phoneDisplay}</a>
+                                    </Button>
+                                ) : null}
                             </Flex>
                         </Grid>
                     </Card>
                 </Section>
             </Container>
 
-            <Box mt="8" py="6" style={{ backgroundColor: 'var(--gray-2)' }}>
-                <Container size="3">
-                    <Flex direction={{ initial: 'column', sm: 'row' }} justify="between" align="center" gap="3">
-                        <Text size="2" color="gray">
-                            &copy; {new Date().getFullYear()} {BUSINESS_NAME}
-                        </Text>
-                        <Flex gap="4" wrap="wrap" justify="center">
-                            <Link href="/#services">Services</Link>
-                            <Link href={quoteHref}>Get a Quote</Link>
-                            <a href={PHONE_HREF}>{PHONE_DISPLAY}</a>
-                        </Flex>
-                    </Flex>
-                </Container>
+            <Box mt="8">
+                <PublicFooter business={business} />
             </Box>
         </Box>
     );

@@ -615,6 +615,7 @@ export default function NewDocumentForm({
                                         <TextField.Root
                                             name="estimatedHours"
                                             type="number"
+                                            inputMode="decimal"
                                             min="0"
                                             step="0.25"
                                             placeholder="e.g. 8"
@@ -886,7 +887,7 @@ export default function NewDocumentForm({
                                 <Heading size="3">Payments</Heading>
                                 <Box style={{ textAlign: 'right' }}>
                                     <Text size="1" color="gray">Balance due</Text>
-                                    <Text as="div" size="6" weight="bold" style={{ color: balanceDue > 0 ? '#b91c1c' : '#166534' }}>
+                                    <Text as="div" size="6" weight="bold" style={{ color: balanceDue > 0 ? 'var(--red-11)' : 'var(--green-11)' }}>
                                         ${balanceDue.toFixed(2)}
                                     </Text>
                                     <Text size="1" color="gray">
@@ -919,6 +920,7 @@ export default function NewDocumentForm({
                                             <TextField.Root
                                                 name="paymentAmount"
                                                 type="number"
+                                                inputMode="decimal"
                                                 min="0"
                                                 step="0.01"
                                                 value={paymentAmount}

@@ -123,6 +123,7 @@ export default function DocumentLineItemEditor({
                         <Text as="label" size="2">Qty</Text>
                         <TextField.Root
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             value={item.quantity}
                             onChange={(e) => {
@@ -136,6 +137,7 @@ export default function DocumentLineItemEditor({
                         <Text as="label" size="2">{unitPriceLabel}</Text>
                         <TextField.Root
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             step="0.01"
                             value={item.unitPrice}
@@ -150,6 +152,7 @@ export default function DocumentLineItemEditor({
                         <Text as="label" size="2">% Off</Text>
                         <TextField.Root
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             max="100"
                             step="1"

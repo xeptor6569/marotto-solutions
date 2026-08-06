@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getDocumentById, getNextNumber, saveNewDocument } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { getEmailBrand } from '@/lib/email-branding';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
@@ -218,7 +219,8 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
         return { success: false, error: 'None of the selected documents have a recipient email.', skipped };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const trimmedMessage = (message || '').trim();
     let documentsSent = 0;
 
@@ -226,8 +228,8 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
         for (const { email, name, docs } of groups.values()) {
             const greeting = name ? `Hi ${name},` : 'Hello,';
             const subject = docs.length === 1
-                ? `Marotto Solutions — ${DOC_LABEL[docs[0].type]} ${docs[0].id}`
-                : `Marotto Solutions — ${docs.length} documents`;
+                ? `${brand.name} — ${DOC_LABEL[docs[0].type]} ${docs[0].id}`
+                : `${brand.name} — ${docs.length} documents`;
 
             const siteBase = getPublicSiteUrl();
             const docsWithUrls = await Promise.all(
@@ -249,7 +251,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
                 listText,
                 '',
                 'Thank you,',
-                'Marotto Solutions',
+                brand.name,
             ].filter((line, i, arr) => !(line === '' && arr[i - 1] === '')).join('\n');
 
             const listHtml = docsWithUrls
@@ -266,7 +268,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
   ${trimmedMessage ? `<p style="margin: 0 0 16px; white-space: pre-line;">${escapeHtml(trimmedMessage)}</p>` : ''}
   <p style="margin: 0 0 8px;">${docs.length === 1 ? 'Here is your document:' : 'Here are your documents:'}</p>
   <ul style="margin: 0 0 16px; padding-left: 20px;">${listHtml}</ul>
-  <p style="margin: 24px 0 0;">Thank you,<br />Marotto Solutions</p>
+  <p style="margin: 24px 0 0;">Thank you,<br />${escapeHtml(brand.name)}</p>
 </body></html>`;
 
             await transport.sendMail({

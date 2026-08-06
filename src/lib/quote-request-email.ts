@@ -1,4 +1,6 @@
+import { buildServiceLabelMap, getPublicSite } from '@/lib/branding';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { getEmailBrand } from '@/lib/email-branding';
 import { serviceLabel, type QuoteRequestInput } from '@/lib/quote-intake';
 
 function escapeHtml(s: string) {
@@ -27,11 +29,12 @@ export async function sendQuoteRequestAdminEmail(
         return { ok: false, error: 'No admin notification email configured.' };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const adminUrl = `${getPublicSiteUrl()}/admin/clients`;
 
     const subject = `New quote request — ${input.name.trim()}`;
-    const service = serviceLabel(input.service);
+    const service = serviceLabel(input.service, buildServiceLabelMap(await getPublicSite()));
 
     const textBody = [
         'New quote request from your website',
@@ -47,7 +50,7 @@ export async function sendQuoteRequestAdminEmail(
         '',
         clientId ? `Saved as prospect in admin: ${adminUrl}` : 'Note: client record could not be saved — follow up manually.',
         '',
-        'Marotto Solutions',
+        brand.name,
     ].filter(Boolean).join('\n');
 
     const htmlBody = `<!DOCTYPE html>
@@ -88,31 +91,32 @@ export async function sendQuoteRequestConfirmationEmail(
         return { ok: false, error: 'No recipient email.' };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const siteUrl = getPublicSiteUrl();
     const greeting = input.name.trim() ? `Hi ${input.name.trim()},` : 'Hello,';
 
-    const subject = 'We received your quote request — Marotto Solutions';
+    const subject = `We received your quote request — ${brand.name}`;
     const textBody = [
         greeting,
         '',
-        'Thank you for reaching out to Marotto Solutions. We received your quote request and will review the details shortly.',
+        `Thank you for reaching out to ${brand.name}. We received your quote request and will review the details shortly.`,
         'We typically get back to you within one business day with next steps, availability, and an estimate when possible.',
         '',
         `If you need to add anything, reply to this email or visit ${siteUrl}.`,
         '',
         'Thank you,',
-        'Marotto Solutions',
+        brand.name,
     ].join('\n');
 
     const htmlBody = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; color: #111827;">
   <p style="margin: 0 0 16px;">${escapeHtml(greeting)}</p>
-  <p style="margin: 0 0 16px;">Thank you for reaching out to <strong>Marotto Solutions</strong>. We received your quote request and will review the details shortly.</p>
+  <p style="margin: 0 0 16px;">Thank you for reaching out to <strong>${escapeHtml(brand.name)}</strong>. We received your quote request and will review the details shortly.</p>
   <p style="margin: 0 0 16px;">We typically get back to you within one business day with next steps, availability, and an estimate when possible.</p>
   <p style="margin: 0 0 16px;">If you need to add anything, reply to this email or visit <a href="${escapeHtml(siteUrl)}" style="color: #4f46e5;">${escapeHtml(siteUrl)}</a>.</p>
-  <p style="margin: 24px 0 0;">Thank you,<br />Marotto Solutions</p>
+  <p style="margin: 24px 0 0;">Thank you,<br />${escapeHtml(brand.name)}</p>
 </body></html>`;
 
     try {

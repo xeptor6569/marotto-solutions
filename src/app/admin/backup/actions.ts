@@ -44,7 +44,7 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
     let extractDir: string | undefined;
 
     try {
-        archivePath = path.join(os.tmpdir(), `marotto-restore-${Date.now()}.tar.gz`);
+        archivePath = path.join(os.tmpdir(), `app-restore-${Date.now()}.tar.gz`);
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(archivePath, buffer);
 
@@ -78,8 +78,9 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
     } finally {
         if (archivePath) await fs.unlink(archivePath).catch(() => {});
         if (extractDir) {
-            const tmpBase = extractDir.substring(0, extractDir.lastIndexOf(path.sep + 'marotto-backup-'));
-            await cleanupExtracted(tmpBase);
+            // extractBackupArchive returns <tmpBase>/<backup-dir>, so the
+            // parent is the mkdtemp directory to clean up.
+            await cleanupExtracted(path.dirname(extractDir));
         }
     }
 }

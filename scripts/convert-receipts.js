@@ -7,7 +7,7 @@ const pdf = require('pdf-parse');
 const INPUT_DIR = path.join(__dirname, '../temp'); // Default looks in temp/
 const OUTPUT_FILE = path.join(__dirname, '../receipts_import.json');
 
-function parseReceiptText(text, filename) {
+function parseReceiptText(text) {
     // Regex logic tailored to the template:
     // "RECEIPT Receipt No: RCPT-00022 Date: December 04, 2025"
     // "Received From: Elaine Zambetti..."
@@ -107,7 +107,7 @@ async function main() {
                 // Use macos textutil to convert to stdout
                 txt = execSync(`textutil -convert txt "${filePath}" -stdout`, { encoding: 'utf-8' });
             }
-            const receipt = parseReceiptText(txt, file);
+            const receipt = parseReceiptText(txt);
 
             // Ensure unique ID
             let uniqueId = receipt.id;

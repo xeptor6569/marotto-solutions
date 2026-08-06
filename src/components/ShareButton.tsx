@@ -8,10 +8,12 @@ export default function ShareButton({
     label = "Document",
     sharePath,
     shareTitle,
+    businessName,
 }: {
     label?: string;
     sharePath: string;
     shareTitle?: string;
+    businessName?: string;
 }) {
     const [copied, setCopied] = useState(false);
     const canUseNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
@@ -19,7 +21,7 @@ export default function ShareButton({
     const handleShare = async () => {
         const url = new URL(sharePath, window.location.origin).toString();
         const title = shareTitle || label;
-        const text = `View ${title} from Marotto Solutions`;
+        const text = businessName ? `View ${title} from ${businessName}` : `View ${title}`;
 
         if (canUseNativeShare) {
             try {

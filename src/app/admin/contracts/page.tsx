@@ -3,6 +3,7 @@ import { Badge, Box, Button, Callout, Card, Container, Table, Text } from '@radi
 import { Plus, XCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
+import HelpLink from '@/components/HelpLink';
 import EmptyState from '@/components/EmptyState';
 import RunSchedulerButton from '@/components/RunSchedulerButton';
 import {
@@ -46,6 +47,7 @@ export default async function AdminContractsPage({
                             <Link href="/admin/contracts/create"><Plus size={14} /> New contract</Link>
                         </Button>
                         <RunSchedulerButton />
+                        <HelpLink topic="contracts" />
                         <BackButton href="/admin" />
                     </>
                 )}

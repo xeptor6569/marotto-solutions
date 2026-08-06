@@ -148,6 +148,7 @@ export default function HelperPayoutPanel({
                             <Text as="label" size="2">Amount</Text>
                             <TextField.Root
                                 type="number"
+                                inputMode="decimal"
                                 min="0.01"
                                 step="0.01"
                                 value={amount}

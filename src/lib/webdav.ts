@@ -1,25 +1,26 @@
 import { createClient, WebDAVClient } from 'webdav';
 import { AppConfig, DocumentData, DocumentType } from './types';
 
-// This is a server-side only utility if we use env vars, 
-// OR client-side if we want to connect from browser directly (CORS issues possible).
-// Given "Self-host via Docker", server-side operations are safer and avoid CORS if Next.js proxies.
-// However, saving to Nextcloud often implies user credentials. 
-// I will implement Server Actions for safe interacting with WebDAV.
+// Server-side WebDAV access for document storage. Server Actions are the only
+// callers, so credentials never reach the browser and CORS is not a concern.
 
-let client: WebDAVClient | null = null;
+let cachedClient: { key: string; client: WebDAVClient } | null = null;
 
 export const getWebDAVClient = (url: string, username: string, password?: string) => {
-    if (client) return client;
-
     if (!url || !username) {
         throw new Error("WebDAV credentials missing");
     }
 
-    client = createClient(url, {
+    // Key the cache on the credentials so saving new settings takes effect
+    // without a server restart.
+    const key = `${url}\u0000${username}\u0000${password ?? ''}`;
+    if (cachedClient?.key === key) return cachedClient.client;
+
+    const client = createClient(url, {
         username,
         password
     });
+    cachedClient = { key, client };
     return client;
 };
 
@@ -34,34 +35,38 @@ export async function checkConnection(config: AppConfig, password?: string) {
     }
 }
 
-const DATA_DIR = "/MarottoSolutions";
+/** Normalize a configured root path to "/Segment[/Sub]" form. */
+export function normalizeWebdavRootPath(raw: string | undefined, fallback: string): string {
+    const trimmed = (raw || '').trim().replace(/^\/+|\/+$/g, '');
+    return trimmed ? `/${trimmed}` : fallback;
+}
 
-export async function ensureDataDir(c: WebDAVClient) {
-    if ((await c.exists(DATA_DIR)) === false) {
-        await c.createDirectory(DATA_DIR);
+export async function ensureDataDir(c: WebDAVClient, rootPath: string) {
+    if ((await c.exists(rootPath)) === false) {
+        await c.createDirectory(rootPath);
     }
 }
 
-export async function saveDocument(c: WebDAVClient, doc: DocumentData) {
-    await ensureDataDir(c);
-    const filename = `${DATA_DIR}/${doc.type}s/${doc.id}.json`;
+export async function saveDocument(c: WebDAVClient, rootPath: string, doc: DocumentData) {
+    await ensureDataDir(c, rootPath);
+    const filename = `${rootPath}/${doc.type}s/${doc.id}.json`;
     // Ensure subfolder
-    if ((await c.exists(`${DATA_DIR}/${doc.type}s`)) === false) {
-        await c.createDirectory(`${DATA_DIR}/${doc.type}s`);
+    if ((await c.exists(`${rootPath}/${doc.type}s`)) === false) {
+        await c.createDirectory(`${rootPath}/${doc.type}s`);
     }
     await c.putFileContents(filename, JSON.stringify(doc, null, 2));
 }
 
-export async function deleteDocumentRemote(c: WebDAVClient, type: DocumentType, id: string) {
-    const filename = `${DATA_DIR}/${type}s/${id}.json`;
+export async function deleteDocumentRemote(c: WebDAVClient, rootPath: string, type: DocumentType, id: string) {
+    const filename = `${rootPath}/${type}s/${id}.json`;
     if (await c.exists(filename)) {
         await c.deleteFile(filename);
     }
 }
 
-export async function fetchDocuments(c: WebDAVClient, type: DocumentType): Promise<DocumentData[]> {
-    await ensureDataDir(c);
-    const folder = `${DATA_DIR}/${type}s`;
+export async function fetchDocuments(c: WebDAVClient, rootPath: string, type: DocumentType): Promise<DocumentData[]> {
+    await ensureDataDir(c, rootPath);
+    const folder = `${rootPath}/${type}s`;
     if ((await c.exists(folder)) === false) return [];
 
     const rawFiles = await c.getDirectoryContents(folder);

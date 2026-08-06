@@ -1,4 +1,4 @@
-import { Badge, Box, Card, Container, Flex, Table, Text } from "@radix-ui/themes";
+import { Badge, Box, Card, Container, Flex, Table, Text, Theme } from "@radix-ui/themes";
 import Link from "next/link";
 import type {
     AppConfig,
@@ -19,6 +19,7 @@ import {
     Wallet,
 } from "lucide-react";
 import { getAppConfig } from "@/lib/config";
+import { resolveBrandingFromConfig } from "@/lib/branding";
 import { ensureDocumentShareToken } from "@/lib/data";
 import { DOC_LABEL } from "@/lib/document-labels";
 import { paymentLinkForMethod, paymentMethodUsesManualDetails } from "@/lib/payment-links";
@@ -222,6 +223,7 @@ export default async function DocumentPreview({
 }) {
     const session = publicMode ? null : await auth();
     const config = await getAppConfig();
+    const { business, branding } = resolveBrandingFromConfig(config);
     const stripeCheckoutEnabled = isStripeConfigured();
     const docTitle = DOC_LABEL[doc.type] ?? "Document";
     const billToLabel = doc.type === "receipt" ? "Received From" : "Bill To";
@@ -283,10 +285,10 @@ export default async function DocumentPreview({
                     mb="4"
                     p="3"
                     style={{
-                        background: "#ecfdf5",
-                        border: "1px solid #a7f3d0",
+                        background: "var(--green-3)",
+                        border: "1px solid var(--green-6)",
                         borderRadius: 8,
-                        color: "#065f46",
+                        color: "var(--green-11)",
                     }}
                 >
                     <Text as="div" size="2" weight="bold">Payment submitted</Text>
@@ -301,10 +303,10 @@ export default async function DocumentPreview({
                     mb="4"
                     p="3"
                     style={{
-                        background: "#fffbeb",
-                        border: "1px solid #fde68a",
+                        background: "var(--amber-3)",
+                        border: "1px solid var(--amber-6)",
                         borderRadius: 8,
-                        color: "#92400e",
+                        color: "var(--amber-11)",
                     }}
                 >
                     <Text as="div" size="2" weight="bold">Checkout cancelled</Text>
@@ -330,11 +332,12 @@ export default async function DocumentPreview({
                                     canSendViaServer={!!session}
                                     serverEmailConfigured={!!process.env.EMAIL_SERVER}
                                     pendingApprovalSummary={pendingApprovalSummary}
+                                    businessName={business.name}
                                 />
                             ) : null
                         }
                         primaryShare={
-                            <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
+                            <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} businessName={business.name} />
                         }
                         overflowDeposit={
                             showDepositInvoice ? (
@@ -374,16 +377,38 @@ export default async function DocumentPreview({
                 )}
             </Flex>
 
-            <Card size="2" className="doc-card print-document">
+            {/* Printable documents are always light-on-white "paper", so the
+                Radix tokens inside are pinned to light regardless of the
+                visitor's theme. */}
+            <Theme appearance="light" asChild>
+            <Card
+                size="2"
+                className="doc-card print-document"
+                style={{ '--doc-accent': branding.documentAccentColor } as React.CSSProperties}
+            >
                 <div className="receipt-content">
                     <div className="doc-header">
                         <Box className="doc-brand">
-                            <p className="doc-brand-name">MAROTTO</p>
-                            <div className="doc-brand-sub">SOLUTIONS</div>
+                            {branding.showLogoOnDocuments && branding.logoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={branding.logoUrl}
+                                    alt={business.name}
+                                    className="doc-brand-logo"
+                                />
+                            ) : (
+                                <>
+                                    <p className="doc-brand-name">{branding.letterhead.line1}</p>
+                                    {branding.letterhead.line2 ? (
+                                        <div className="doc-brand-sub">{branding.letterhead.line2}</div>
+                                    ) : null}
+                                </>
+                            )}
                             <div className="doc-brand-address">
-                                <div>28 E Mountain Ridge MHP</div>
-                                <div>Wilkes Barre, PA 18702</div>
-                                <div>(570) 332-9262</div>
+                                {business.addressLine1 ? <div>{business.addressLine1}</div> : null}
+                                {business.addressLine2 ? <div>{business.addressLine2}</div> : null}
+                                {business.phoneDisplay ? <div>{business.phoneDisplay}</div> : null}
+                                {business.email ? <div>{business.email}</div> : null}
                             </div>
                         </Box>
                         <Box className="doc-meta">
@@ -435,7 +460,7 @@ export default async function DocumentPreview({
                                 {publicMode ? (
                                     linkedJob?.name || jobId
                                 ) : (
-                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "#1e3a5f" }}>
+                                    <Link href={`/admin/jobs/${jobId}`} style={{ color: "var(--doc-accent)" }}>
                                         {linkedJob?.name || jobId}
                                     </Link>
                                 )}
@@ -463,7 +488,7 @@ export default async function DocumentPreview({
                                         <Box
                                             key={pkg.id}
                                             style={{
-                                                border: selected ? "2px solid #1e3a5f" : "1px solid var(--gray-a5)",
+                                                border: selected ? "2px solid var(--doc-accent)" : "1px solid var(--gray-a5)",
                                                 borderRadius: 10,
                                                 padding: 12,
                                             }}
@@ -507,7 +532,7 @@ export default async function DocumentPreview({
                                                     <Box
                                                         key={choice.id}
                                                         style={{
-                                                            border: selected ? "2px solid #1e3a5f" : "1px dashed var(--gray-a5)",
+                                                            border: selected ? "2px solid var(--doc-accent)" : "1px dashed var(--gray-a5)",
                                                             borderRadius: 10,
                                                             padding: 12,
                                                         }}
@@ -609,21 +634,21 @@ export default async function DocumentPreview({
                                                                         display: "inline-flex",
                                                                         alignItems: "center",
                                                                         justifyContent: "center",
-                                                                        background: "#eef2ff",
-                                                                        color: "#1e3a5f",
+                                                                        background: "color-mix(in srgb, var(--doc-accent) 10%, white)",
+                                                                        color: "var(--doc-accent)",
                                                                         flexShrink: 0,
                                                                     }}
                                                                 >
                                                                     {paymentMethodIcon(key)}
                                                                 </Box>
-                                                                <Text as="div" size="2" weight="bold" style={{ color: "#111827" }}>
+                                                                <Text as="div" size="2" weight="bold" style={{ color: "var(--doc-ink)" }}>
                                                                     {method.label}
                                                                 </Text>
                                                             </Flex>
                                                             {method.comingSoon ? <Badge color="gray" size="1">Coming soon</Badge> : null}
                                                         </Flex>
                                                         {primary ? (
-                                                            <Text as="div" size="1" style={{ color: "#374151", lineHeight: 1.35, wordBreak: "break-word" }}>
+                                                            <Text as="div" size="1" style={{ color: "var(--doc-muted)", lineHeight: 1.35, wordBreak: "break-word" }}>
                                                                 {primary}
                                                             </Text>
                                                         ) : null}
@@ -647,7 +672,7 @@ export default async function DocumentPreview({
                                                         <Text
                                                             as="div"
                                                             size="1"
-                                                            style={{ color: "#6b7280", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
+                                                            style={{ color: "var(--doc-muted)", lineHeight: 1.35, marginTop: 4, whiteSpace: "pre-line" }}
                                                         >
                                                             {method.note}
                                                         </Text>
@@ -815,6 +840,7 @@ export default async function DocumentPreview({
                     </div>
                 </div>
             </Card>
+            </Theme>
         </Container>
     );
 }

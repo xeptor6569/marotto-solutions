@@ -1,15 +1,198 @@
 import { Container, Heading, Text, Flex, Button, Card, Grid, Badge, Box } from "@radix-ui/themes";
-import { FileText, ReceiptText, ClipboardList, Users, BadgeCheck, Briefcase, Repeat } from "lucide-react";
+import {
+    AlertTriangle,
+    BadgeCheck,
+    Briefcase,
+    CircleDollarSign,
+    ClipboardList,
+    FileText,
+    ReceiptText,
+    Repeat,
+    TrendingUp,
+    Users,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import Link from 'next/link';
+import type { ReactNode } from "react";
 import { getDocuments } from "@/lib/data";
 import { getJobs } from "@/lib/jobs";
+import { getBusinessTimezone, getUpcomingEvents } from "@/lib/calendar";
 import { getContracts, getContractsNeedingReview } from "@/lib/contracts";
-import { getUpcomingEvents } from "@/lib/calendar";
 import { getClients } from "@/app/admin/clients/actions";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import { formatInTimeZone } from "date-fns-tz";
 import CreateMenu from "@/components/CreateMenu";
 import { documentListLabel, documentListSubLabel } from "@/lib/document-labels";
+import type { DocumentData } from "@/lib/types";
+
+function formatMoney(amount: number): string {
+    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function invoiceOutstanding(invoice: DocumentData): number {
+    if (invoice.status === 'paid' || invoice.status === 'void') return 0;
+    const balance = typeof invoice.balanceDue === 'number' ? invoice.balanceDue : invoice.total;
+    return Math.max(0, balance);
+}
+
+/** Cash received this month: dated payment entries, plus paid invoices without payment records (approximated by update date). */
+function collectedThisMonth(invoices: DocumentData[], now: Date): number {
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const inMonth = (iso: string) => {
+        const d = new Date(iso);
+        return d.getFullYear() === year && d.getMonth() === month;
+    };
+    let total = 0;
+    for (const invoice of invoices) {
+        if (invoice.status === 'void') continue;
+        const payments = invoice.payments ?? [];
+        if (payments.length > 0) {
+            for (const payment of payments) {
+                if (payment.date && inMonth(payment.date)) total += payment.amount;
+            }
+        } else if (invoice.status === 'paid' && inMonth(invoice.updatedAt || invoice.date)) {
+            total += invoice.total;
+        }
+    }
+    return total;
+}
+
+function KpiCard({
+    label,
+    value,
+    detail,
+    icon: Icon,
+    color,
+}: {
+    label: string;
+    value: string;
+    detail?: string;
+    icon: LucideIcon;
+    color: string;
+}) {
+    return (
+        <Card size="2">
+            <Flex align="start" gap="3">
+                <Flex
+                    align="center"
+                    justify="center"
+                    style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 10,
+                        background: `var(--${color}-3)`,
+                        color: `var(--${color}-9)`,
+                        flexShrink: 0,
+                    }}
+                >
+                    <Icon size={19} />
+                </Flex>
+                <Box style={{ minWidth: 0 }}>
+                    <Text size="1" color="gray" as="div" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                        {label}
+                    </Text>
+                    <Heading size="6" style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</Heading>
+                    {detail ? <Text size="1" color="gray" as="div">{detail}</Text> : null}
+                </Box>
+            </Flex>
+        </Card>
+    );
+}
+
+function StatCard({
+    href,
+    label,
+    value,
+    icon: Icon,
+    color,
+    footnote,
+}: {
+    href: string;
+    label: string;
+    value: number;
+    icon: LucideIcon;
+    color: string;
+    footnote?: ReactNode;
+}) {
+    return (
+        <Link href={href} style={{ textDecoration: "none", color: "inherit", display: "block" }}>
+            <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
+                <Flex align="center" gap="3">
+                    <Box style={{ color: `var(--${color}-9)` }}><Icon size={18} /></Box>
+                    <Box>
+                        <Text size="2" color="gray">{label}</Text>
+                        <Heading size="6">{value}</Heading>
+                        {footnote}
+                    </Box>
+                </Flex>
+            </Card>
+        </Link>
+    );
+}
+
+interface ListRow {
+    key: string;
+    href: string;
+    label: string;
+    subLabels: string[];
+    badge: ReactNode;
+}
+
+function ListCard({
+    title,
+    viewAllHref,
+    viewAllLabel = "View all",
+    emptyText,
+    rows,
+    intro,
+}: {
+    title: string;
+    viewAllHref: string;
+    viewAllLabel?: string;
+    emptyText: string;
+    rows: ListRow[];
+    intro?: string;
+}) {
+    return (
+        <Card>
+            <Flex justify="between" align="center" mb="3">
+                <Heading size="4">{title}</Heading>
+                <Button asChild size="1" variant="soft">
+                    <Link href={viewAllHref}>{viewAllLabel}</Link>
+                </Button>
+            </Flex>
+            {intro ? <Text size="2" color="gray" as="p" mb="2">{intro}</Text> : null}
+            {rows.length === 0 ? (
+                <Text size="2" color="gray">{emptyText}</Text>
+            ) : (
+                <Flex direction="column">
+                    {rows.map((row) => (
+                        <Link
+                            key={row.key}
+                            href={row.href}
+                            className="admin-list-row"
+                            style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
+                        >
+                            <Flex justify="between" align="center" gap="2" py="2">
+                                <Box style={{ minWidth: 0, flex: 1 }}>
+                                    <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{row.label}</Text>
+                                    {row.subLabels.map((line, i) => (
+                                        <Box key={i}><Text size="1" color="gray">{line}</Text></Box>
+                                    ))}
+                                </Box>
+                                <Box style={{ flexShrink: 0 }}>{row.badge}</Box>
+                            </Flex>
+                        </Link>
+                    ))}
+                </Flex>
+            )}
+        </Card>
+    );
+}
+
+const invoiceStatusColor = (status: DocumentData['status']) =>
+    status === 'paid' ? 'green' : status === 'void' ? 'gray' : status === 'sent' ? 'blue' : 'orange';
 
 export default async function AdminDashboard() {
     const invoices = await getDocuments('invoice');
@@ -24,105 +207,73 @@ export default async function AdminDashboard() {
     const reviewQueue = await getContractsNeedingReview();
     const dbReady = isDatabaseConfigured();
     const upcomingEvents = dbReady ? await getUpcomingEvents(7) : [];
+    const timezone = await getBusinessTimezone();
+
+    const now = new Date();
+    const openInvoices = invoices.filter((inv) => inv.status !== 'paid' && inv.status !== 'void');
+    const outstandingTotal = openInvoices.reduce((sum, inv) => sum + invoiceOutstanding(inv), 0);
+    const overdueInvoices = openInvoices.filter((inv) => inv.dueDate && new Date(inv.dueDate) < now);
+    const overdueTotal = overdueInvoices.reduce((sum, inv) => sum + invoiceOutstanding(inv), 0);
+    const collected = collectedThisMonth(invoices, now);
+    const monthLabel = now.toLocaleDateString('en-US', { month: 'long' });
 
     const recentInvoices = invoices.slice(0, 5);
     const activeEstimatesList = estimates.filter((e) => e.status !== "void");
     const activeQuotesList = quotes.filter((q) => q.status !== "void");
-    const recentActiveEstimates = activeEstimatesList.slice(0, 5);
-    const recentActiveQuotes = activeQuotesList.slice(0, 5);
-    const recentReceipts = receipts.slice(0, 5);
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
             <Flex direction={{ initial: "column", md: "row" }} justify="between" align={{ initial: "start", md: "center" }} gap="4" mb="5">
                 <Box>
                     <Heading size="8">Dashboard</Heading>
-                    <Text size="3" color="gray">Quick view of invoices, estimates, quotes, receipts, clients, jobs, and recurring contracts.</Text>
+                    <Text size="3" color="gray">Money, work, and what needs attention.</Text>
                 </Box>
                 <CreateMenu size="3" />
             </Flex>
 
-            <Grid columns={{ initial: '1', sm: '2', md: '3', lg: '4' }} gap="4" mb="5">
-                <Link href="/admin/invoices" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--blue-9)" }}><FileText size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Invoices</Text>
-                                <Heading size="6">{invoices.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/estimates" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--amber-9)" }}><ClipboardList size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Active Estimates</Text>
-                                <Heading size="6">{activeEstimatesList.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/quotes" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--teal-9)" }}><BadgeCheck size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Active Quotes</Text>
-                                <Heading size="6">{activeQuotesList.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/receipts" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--green-9)" }}><ReceiptText size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Receipts</Text>
-                                <Heading size="6">{receipts.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/clients" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--violet-9)" }}><Users size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Clients</Text>
-                                <Heading size="6">{clients.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/jobs" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--indigo-9)" }}><Briefcase size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Jobs</Text>
-                                <Heading size="6">{jobs.length}</Heading>
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
-                <Link href="/admin/contracts" style={{ textDecoration: "none", color: "inherit", display: "block" }}>
-                    <Card style={{ height: "100%", cursor: "pointer" }} className="admin-stat-card">
-                        <Flex align="center" gap="3">
-                            <Box style={{ color: "var(--cyan-9)" }}><Repeat size={18} /></Box>
-                            <Box>
-                                <Text size="2" color="gray">Active Contracts</Text>
-                                <Heading size="6">{activeContracts.length}</Heading>
-                                {reviewQueue.length > 0 ? (
-                                    <Text size="1" color="amber">{reviewQueue.length} need review</Text>
-                                ) : null}
-                            </Box>
-                        </Flex>
-                    </Card>
-                </Link>
+            {/* Money at a glance */}
+            <Grid columns={{ initial: '1', sm: '3' }} gap="4" mb="4">
+                <KpiCard
+                    label="Outstanding"
+                    value={formatMoney(outstandingTotal)}
+                    detail={`${openInvoices.length} open invoice${openInvoices.length === 1 ? '' : 's'}`}
+                    icon={CircleDollarSign}
+                    color={outstandingTotal > 0 ? 'amber' : 'green'}
+                />
+                <KpiCard
+                    label="Overdue"
+                    value={formatMoney(overdueTotal)}
+                    detail={overdueInvoices.length > 0
+                        ? `${overdueInvoices.length} invoice${overdueInvoices.length === 1 ? '' : 's'} past due`
+                        : 'Nothing past due'}
+                    icon={AlertTriangle}
+                    color={overdueInvoices.length > 0 ? 'red' : 'green'}
+                />
+                <KpiCard
+                    label={`Collected in ${monthLabel}`}
+                    value={formatMoney(collected)}
+                    icon={TrendingUp}
+                    color="green"
+                />
+            </Grid>
+
+            <Grid columns={{ initial: '2', sm: '3', lg: '4' }} gap="4" mb="5">
+                <StatCard href="/admin/invoices" label="Invoices" value={invoices.length} icon={FileText} color="blue" />
+                <StatCard href="/admin/estimates" label="Active Estimates" value={activeEstimatesList.length} icon={ClipboardList} color="amber" />
+                <StatCard href="/admin/quotes" label="Active Quotes" value={activeQuotesList.length} icon={BadgeCheck} color="teal" />
+                <StatCard href="/admin/receipts" label="Receipts" value={receipts.length} icon={ReceiptText} color="green" />
+                <StatCard href="/admin/clients" label="Clients" value={clients.length} icon={Users} color="violet" />
+                <StatCard href="/admin/jobs" label="Jobs" value={jobs.length} icon={Briefcase} color="indigo" />
+                <StatCard
+                    href="/admin/contracts"
+                    label="Active Contracts"
+                    value={activeContracts.length}
+                    icon={Repeat}
+                    color="cyan"
+                    footnote={reviewQueue.length > 0 ? (
+                        <Text size="1" color="amber">{reviewQueue.length} need review</Text>
+                    ) : undefined}
+                />
             </Grid>
 
             <style>{`
@@ -130,282 +281,153 @@ export default async function AdminDashboard() {
                     transition: box-shadow 0.15s ease, border-color 0.15s ease;
                 }
                 a:focus-visible .admin-stat-card {
-                    outline: 2px solid var(--blue-9);
+                    outline: 2px solid var(--accent-9);
                     outline-offset: 2px;
                 }
                 @media (hover: hover) {
                     a:hover .admin-stat-card {
-                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                        box-shadow: 0 4px 16px var(--gray-a4);
                         border-color: var(--gray-8);
+                    }
+                }
+                .admin-list-row {
+                    border-radius: var(--radius-2);
+                    margin: 0 -6px;
+                    padding: 0 6px;
+                }
+                @media (hover: hover) {
+                    .admin-list-row:hover {
+                        background: var(--gray-a2);
                     }
                 }
             `}</style>
 
             <Grid columns={{ initial: '1', md: '2', lg: '3' }} gap="4">
-                {/* Recent Invoices */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Recent Invoices</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/invoices">View all</Link>
-                        </Button>
-                    </Flex>
-                    {recentInvoices.length === 0 ? (
-                        <Text size="2" color="gray">No recent invoices found.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {recentInvoices.map(inv => (
-                                <Link
-                                    key={inv.id}
-                                    href={`/admin/invoices/${inv.id}`}
-                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                                >
-                                    <Flex
-                                        direction={{ initial: "column", sm: "row" }}
-                                        justify="between"
-                                        align={{ initial: "start", sm: "center" }}
-                                        gap="2"
-                                        py="1"
-                                    >
-                                        <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(inv)}</Text>
-                                            {documentListSubLabel(inv) ? (
-                                                <Box><Text size="1" color="gray">{documentListSubLabel(inv)}</Text></Box>
-                                            ) : null}
-                                            <Box><Text size="1" color="gray">{new Date(inv.date).toLocaleDateString()}</Text></Box>
-                                        </Box>
-                                        <Badge color={inv.status === 'paid' ? 'green' : 'orange'} style={{ flexShrink: 0 }}>{inv.status}</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    )}
-                </Card>
-
-                {/* Active Estimates */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Active Estimates</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/estimates">View all</Link>
-                        </Button>
-                    </Flex>
-                    {recentActiveEstimates.length === 0 ? (
-                        <Text size="2" color="gray">No active estimates.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {recentActiveEstimates.map(est => (
-                                <Link
-                                    key={est.id}
-                                    href={`/admin/estimates/${est.id}`}
-                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                                >
-                                    <Flex
-                                        direction={{ initial: "column", sm: "row" }}
-                                        justify="between"
-                                        align={{ initial: "start", sm: "center" }}
-                                        gap="2"
-                                        py="1"
-                                    >
-                                        <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(est)}</Text>
-                                            {documentListSubLabel(est) ? (
-                                                <Box><Text size="1" color="gray">{documentListSubLabel(est)}</Text></Box>
-                                            ) : null}
-                                            <Box><Text size="1" color="gray">{new Date(est.date).toLocaleDateString()}</Text></Box>
-                                        </Box>
-                                        <Badge color="blue" style={{ flexShrink: 0 }}>{est.status}</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    )}
-                </Card>
-
-                {/* Active Quotes */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Active Quotes</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/quotes">View all</Link>
-                        </Button>
-                    </Flex>
-                    {recentActiveQuotes.length === 0 ? (
-                        <Text size="2" color="gray">No active quotes.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {recentActiveQuotes.map((q) => (
-                                <Link
-                                    key={q.id}
-                                    href={`/admin/quotes/${q.id}`}
-                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                                >
-                                    <Flex
-                                        direction={{ initial: "column", sm: "row" }}
-                                        justify="between"
-                                        align={{ initial: "start", sm: "center" }}
-                                        gap="2"
-                                        py="1"
-                                    >
-                                        <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(q)}</Text>
-                                            {documentListSubLabel(q) ? (
-                                                <Box><Text size="1" color="gray">{documentListSubLabel(q)}</Text></Box>
-                                            ) : null}
-                                            <Box><Text size="1" color="gray">{new Date(q.date).toLocaleDateString()}</Text></Box>
-                                        </Box>
-                                        <Badge color="blue" style={{ flexShrink: 0 }}>{q.status}</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    )}
-                </Card>
-
-                {/* Recent Receipts */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Recent Receipts</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/receipts">View all</Link>
-                        </Button>
-                    </Flex>
-                    {recentReceipts.length === 0 ? (
-                        <Text size="2" color="gray">No recent receipts.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {recentReceipts.slice(0, 5).map(r => (
-                                <Link
-                                    key={r.id}
-                                    href={`/admin/receipts/${r.id}`}
-                                    style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-                                >
-                                    <Flex
-                                        direction={{ initial: "column", sm: "row" }}
-                                        justify="between"
-                                        align={{ initial: "start", sm: "center" }}
-                                        gap="2"
-                                        py="1"
-                                    >
-                                        <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: "break-word" }}>{documentListLabel(r)}</Text>
-                                            {documentListSubLabel(r) ? (
-                                                <Box><Text size="1" color="gray">{documentListSubLabel(r)}</Text></Box>
-                                            ) : null}
-                                            <Box><Text size="1" color="gray">{new Date(r.date).toLocaleDateString()}</Text></Box>
-                                        </Box>
-                                        <Badge color="green" style={{ flexShrink: 0 }}>${r.total.toFixed(2)}</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    )}
-                </Card>
-
-                {/* Active Contracts */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Active Contracts</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/contracts">View all</Link>
-                        </Button>
-                    </Flex>
-                    {activeContracts.length === 0 ? (
-                        <Text size="2" color="gray">No active contracts.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {activeContracts.slice(0, 5).map((contract) => (
-                                <Link
-                                    key={contract.id}
-                                    href={`/admin/contracts/${contract.id}`}
-                                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                                >
-                                    <Flex direction={{ initial: 'column', sm: 'row' }} justify="between" align={{ initial: 'start', sm: 'center' }} gap="2" py="1">
-                                        <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold" style={{ wordBreak: 'break-word' }}>{contract.displayId} — {contract.title}</Text>
-                                            <Text as="div" size="1" color="gray">{contract.customerName}</Text>
-                                            <Text as="div" size="1" color="gray">Next due {new Date(contract.nextDueDate).toLocaleDateString()}</Text>
-                                        </Box>
-                                        <Badge color="cyan" style={{ flexShrink: 0 }}>{contract.cyclesIssued}{contract.termCycles ? `/${contract.termCycles}` : ''}</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    )}
-                </Card>
-
-                {/* Contracts needing review (usage lines) */}
                 {reviewQueue.length > 0 ? (
-                    <Card>
-                        <Flex justify="between" align="center" mb="3">
-                            <Heading size="4">Cycles awaiting review</Heading>
-                            <Button asChild size="1" variant="soft">
-                                <Link href="/admin/contracts">All contracts</Link>
-                            </Button>
-                        </Flex>
-                        <Text size="2" color="gray" as="p" mb="2">
-                            These contracts have a draft cycle invoice with usage lines that need quantities filled in before sending.
-                        </Text>
-                        <Flex direction="column" gap="2">
-                            {reviewQueue.slice(0, 5).map(({ contract, latestDraftInvoice }) => (
-                                <Link
-                                    key={contract.id}
-                                    href={latestDraftInvoice ? `/admin/invoices/${latestDraftInvoice.id}/edit` : `/admin/contracts/${contract.id}`}
-                                    style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                                >
-                                    <Flex justify="between" align="center" gap="2" py="1">
-                                        <Box style={{ minWidth: 0, flex: 1 }}>
-                                            <Text size="2" weight="bold">{contract.displayId} — {contract.title}</Text>
-                                            <Text as="div" size="1" color="gray">{contract.customerName}</Text>
-                                            {latestDraftInvoice ? (
-                                                <Text as="div" size="1" color="gray">
-                                                    Draft {latestDraftInvoice.id}
-                                                    {latestDraftInvoice.contractCycle ? ` · cycle ${latestDraftInvoice.contractCycle}` : ''}
-                                                </Text>
-                                            ) : null}
-                                        </Box>
-                                        <Badge color="amber">review</Badge>
-                                    </Flex>
-                                </Link>
-                            ))}
-                        </Flex>
-                    </Card>
+                    <ListCard
+                        title="Cycles awaiting review"
+                        viewAllHref="/admin/contracts"
+                        viewAllLabel="All contracts"
+                        emptyText=""
+                        intro="These contracts have a draft cycle invoice with usage lines that need quantities filled in before sending."
+                        rows={reviewQueue.slice(0, 5).map(({ contract, latestDraftInvoice }) => ({
+                            key: contract.id,
+                            href: latestDraftInvoice ? `/admin/invoices/${latestDraftInvoice.id}/edit` : `/admin/contracts/${contract.id}`,
+                            label: `${contract.displayId} — ${contract.title}`,
+                            subLabels: [
+                                contract.customerName,
+                                ...(latestDraftInvoice
+                                    ? [`Draft ${latestDraftInvoice.id}${latestDraftInvoice.contractCycle ? ` · cycle ${latestDraftInvoice.contractCycle}` : ''}`]
+                                    : []),
+                            ],
+                            badge: <Badge color="amber">review</Badge>,
+                        }))}
+                    />
                 ) : null}
 
-                {/* Upcoming events this week */}
-                <Card>
-                    <Flex justify="between" align="center" mb="3">
-                        <Heading size="4">Upcoming This Week</Heading>
-                        <Button asChild size="1" variant="soft">
-                            <Link href="/admin/calendar">Calendar</Link>
-                        </Button>
-                    </Flex>
-                    {upcomingEvents.length === 0 ? (
-                        <Text size="2" color="gray">No upcoming events this week.</Text>
-                    ) : (
-                        <Flex direction="column" gap="2">
-                            {upcomingEvents.slice(0, 5).map((event) => {
-                                const startLocal = formatInTimeZone(new Date(event.start), 'America/New_York', event.allDay ? 'MMM d' : 'MMM d h:mm a');
-                                const statusColor = event.status === 'confirmed' ? 'blue' : event.status === 'completed' ? 'green' : 'orange';
-                                return (
-                                    <Link
-                                        key={event.id}
-                                        href={`/admin/calendar/${event.id}`}
-                                        style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                                    >
-                                        <Flex justify="between" align="center" gap="2" py="1">
-                                            <Box style={{ minWidth: 0, flex: 1 }}>
-                                                <Text size="2" weight="bold">{event.title}</Text>
-                                                <Text as="div" size="1" color="gray">{startLocal}{event.clientName ? ` — ${event.clientName}` : ''}</Text>
-                                            </Box>
-                                            <Badge color={statusColor} style={{ flexShrink: 0 }}>{event.status}</Badge>
-                                        </Flex>
-                                    </Link>
-                                );
-                            })}
-                        </Flex>
-                    )}
-                </Card>
+                <ListCard
+                    title="Recent Invoices"
+                    viewAllHref="/admin/invoices"
+                    emptyText="No recent invoices found."
+                    rows={recentInvoices.map((inv) => ({
+                        key: inv.id,
+                        href: `/admin/invoices/${inv.id}`,
+                        label: documentListLabel(inv),
+                        subLabels: [
+                            ...(documentListSubLabel(inv) ? [documentListSubLabel(inv) as string] : []),
+                            new Date(inv.date).toLocaleDateString(),
+                        ],
+                        badge: <Badge color={invoiceStatusColor(inv.status)}>{inv.status}</Badge>,
+                    }))}
+                />
+
+                <ListCard
+                    title="Upcoming This Week"
+                    viewAllHref="/admin/calendar"
+                    viewAllLabel="Calendar"
+                    emptyText="No upcoming events this week."
+                    rows={upcomingEvents.slice(0, 5).map((event) => ({
+                        key: event.id,
+                        href: `/admin/calendar/${event.id}`,
+                        label: event.title,
+                        subLabels: [
+                            `${formatInTimeZone(new Date(event.start), timezone, event.allDay ? 'MMM d' : 'MMM d h:mm a')}${event.clientName ? ` — ${event.clientName}` : ''}`,
+                        ],
+                        badge: (
+                            <Badge color={event.status === 'confirmed' ? 'blue' : event.status === 'completed' ? 'green' : 'orange'}>
+                                {event.status}
+                            </Badge>
+                        ),
+                    }))}
+                />
+
+                <ListCard
+                    title="Active Estimates"
+                    viewAllHref="/admin/estimates"
+                    emptyText="No active estimates."
+                    rows={activeEstimatesList.slice(0, 5).map((est) => ({
+                        key: est.id,
+                        href: `/admin/estimates/${est.id}`,
+                        label: documentListLabel(est),
+                        subLabels: [
+                            ...(documentListSubLabel(est) ? [documentListSubLabel(est) as string] : []),
+                            new Date(est.date).toLocaleDateString(),
+                        ],
+                        badge: <Badge color="blue">{est.status}</Badge>,
+                    }))}
+                />
+
+                <ListCard
+                    title="Active Quotes"
+                    viewAllHref="/admin/quotes"
+                    emptyText="No active quotes."
+                    rows={activeQuotesList.slice(0, 5).map((q) => ({
+                        key: q.id,
+                        href: `/admin/quotes/${q.id}`,
+                        label: documentListLabel(q),
+                        subLabels: [
+                            ...(documentListSubLabel(q) ? [documentListSubLabel(q) as string] : []),
+                            new Date(q.date).toLocaleDateString(),
+                        ],
+                        badge: <Badge color="blue">{q.status}</Badge>,
+                    }))}
+                />
+
+                <ListCard
+                    title="Recent Receipts"
+                    viewAllHref="/admin/receipts"
+                    emptyText="No recent receipts."
+                    rows={receipts.slice(0, 5).map((r) => ({
+                        key: r.id,
+                        href: `/admin/receipts/${r.id}`,
+                        label: documentListLabel(r),
+                        subLabels: [
+                            ...(documentListSubLabel(r) ? [documentListSubLabel(r) as string] : []),
+                            new Date(r.date).toLocaleDateString(),
+                        ],
+                        badge: <Badge color="green">${r.total.toFixed(2)}</Badge>,
+                    }))}
+                />
+
+                <ListCard
+                    title="Active Contracts"
+                    viewAllHref="/admin/contracts"
+                    emptyText="No active contracts."
+                    rows={activeContracts.slice(0, 5).map((contract) => ({
+                        key: contract.id,
+                        href: `/admin/contracts/${contract.id}`,
+                        label: `${contract.displayId} — ${contract.title}`,
+                        subLabels: [
+                            contract.customerName,
+                            `Next due ${new Date(contract.nextDueDate).toLocaleDateString()}`,
+                        ],
+                        badge: (
+                            <Badge color="cyan">
+                                {contract.cyclesIssued}{contract.termCycles ? `/${contract.termCycles}` : ''}
+                            </Badge>
+                        ),
+                    }))}
+                />
             </Grid>
         </Container>
     );

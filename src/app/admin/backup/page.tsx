@@ -5,6 +5,7 @@ import { Container, Heading, Card, Button, Flex, Text, Callout, Box, Separator, 
 import { Download, Upload, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
 import { restoreBackupAction, type RestoreResult } from './actions';
 import BackButton from '@/components/BackButton';
+import HelpLink from '@/components/HelpLink';
 
 export default function BackupPage() {
     const [restoring, setRestoring] = useState(false);
@@ -40,9 +41,12 @@ export default function BackupPage() {
 
     return (
         <Container size="2" p="5">
-            <Flex justify="between" align="center" mb="4">
+            <Flex justify="between" align="center" mb="4" gap="2">
                 <Heading>Backup & Restore</Heading>
-                <BackButton />
+                <Flex gap="2" align="center">
+                    <HelpLink topic="storage-backups" />
+                    <BackButton />
+                </Flex>
             </Flex>
 
             <Card mb="4">

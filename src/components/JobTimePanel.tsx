@@ -151,6 +151,7 @@ export default function JobTimePanel({
                             <Text as="label" size="2">Hours</Text>
                             <TextField.Root
                                 type="number"
+                                inputMode="decimal"
                                 min="0.25"
                                 step="0.25"
                                 value={hours}
