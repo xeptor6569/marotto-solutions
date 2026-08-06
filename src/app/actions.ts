@@ -1,10 +1,7 @@
 'use server';
 
 import { signOut } from '@/lib/auth';
-import { getAppConfig, saveAppConfig } from '@/lib/config';
-import { AppConfig, BillingConfig, DocumentData, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
-import { parseDocumentFormMode } from '@/lib/document-form-mode';
-import { checkConnection } from '@/lib/webdav';
+import { DocumentData, Customer, DocumentType, PaymentEntry, PaymentKind, PaymentMethodKey, WorkflowStatus } from '@/lib/types';
 import { saveNewDocument, getNextNumber, getDocumentById, deleteDocument } from '@/lib/data';
 import { parseLineItemsFromFormData } from '@/lib/parse-line-items';
 import {
@@ -52,100 +49,6 @@ function getPaymentKind(raw: string | null): PaymentKind {
     if (raw === 'down_payment') return 'down_payment';
     if (raw === 'final') return 'final';
     return 'partial';
-}
-
-export async function saveSettingsAction(formData: FormData) {
-    const gate = await requireAdminAction();
-    if (!gate.ok) return { success: false, error: gate.error };
-
-    const url = ((formData.get('webdavUrl') as string) || '').trim();
-    const username = ((formData.get('webdavUsername') as string) || '').trim();
-    const password = ((formData.get('webdavPassword') as string) || '').trim();
-    const checkPayableTo = ((formData.get('checkPayableTo') as string) || '').trim();
-    const paymentInstructions = ((formData.get('paymentInstructions') as string) || '').trim();
-    const businessTimezone = ((formData.get('businessTimezone') as string) || '').trim();
-    const documentFormMode = parseDocumentFormMode(formData.get('documentFormMode'));
-    const paymentMethodKeys: PaymentMethodKey[] = ['cash', 'check', 'zelle', 'cashApp', 'paypal', 'venmo', 'applePay', 'stripe'];
-    const currentConfig = await getAppConfig();
-
-    const orderRaw = ((formData.get('paymentMethodOrder') as string) || '').trim();
-    const orderedKeys = orderRaw
-        .split(',')
-        .map((k) => k.trim())
-        .filter((k): k is PaymentMethodKey => (paymentMethodKeys as string[]).includes(k));
-    const positionByKey = new Map<PaymentMethodKey, number>();
-    orderedKeys.forEach((key, index) => positionByKey.set(key, index));
-    // Any keys missing from the submitted order keep a stable position after the ordered ones.
-    let fallbackPosition = orderedKeys.length;
-    for (const key of paymentMethodKeys) {
-        if (!positionByKey.has(key)) {
-            positionByKey.set(key, fallbackPosition++);
-        }
-    }
-
-    const configUpdate: Partial<AppConfig> = {
-        webdavUrl: url,
-        webdavUsername: username,
-        webdavPassword: password, // Note: Storing plain text password locally. Ideal? No. Functional for self-hosted? Yes.
-        businessTimezone: businessTimezone || undefined,
-        documentFormMode,
-        billing: {
-            checkPayableTo,
-            paymentInstructions,
-            paymentMethods: paymentMethodKeys.reduce((acc, key) => {
-                const existing = currentConfig.billing?.paymentMethods?.[key];
-                const currentLabel = existing?.label
-                    || (key === 'cash' ? 'Cash'
-                        : key === 'check' ? 'Check'
-                        : key === 'zelle' ? 'Zelle'
-                        : key === 'cashApp' ? 'Cash App'
-                        : key === 'paypal' ? 'PayPal'
-                        : key === 'venmo' ? 'Venmo'
-                        : key === 'applePay' ? 'Apple Pay'
-                        : 'Stripe');
-
-                acc[key] = {
-                    enabled: formData.has(`billing.${key}.enabled`),
-                    label: currentLabel,
-                    value: ((formData.get(`billing.${key}.value`) as string) || '').trim(),
-                    note: ((formData.get(`billing.${key}.note`) as string) || '').trim(),
-                    comingSoon: formData.has(`billing.${key}.comingSoon`),
-                    position: positionByKey.get(key) ?? existing?.position ?? 0,
-                };
-                return acc;
-            }, {} as BillingConfig['paymentMethods']),
-        },
-    };
-
-    const webdavConfigChanged =
-        url !== (currentConfig.webdavUrl || '')
-        || username !== (currentConfig.webdavUsername || '')
-        || password !== (currentConfig.webdavPassword || '');
-
-    if (webdavConfigChanged && url && username) {
-        const isValid = await Promise.race([
-            checkConnection(configUpdate as AppConfig, password),
-            new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 5000)),
-        ]);
-        if (!isValid) {
-            return { success: false, error: "Failed to connect to WebDAV with these credentials." };
-        }
-    }
-
-    try {
-        await saveAppConfig(configUpdate);
-    } catch (error) {
-        console.error('Failed to save settings', error);
-        const message = error instanceof Error ? error.message : 'Unknown error';
-        return { success: false, error: `Failed to save settings: ${message}` };
-    }
-    revalidatePath('/admin/settings');
-    revalidatePath('/settings');
-    revalidatePath('/');
-    revalidatePath('/dashboard');
-    revalidatePath('/admin');
-    revalidatePath('/admin/calendar');
-    return { success: true };
 }
 
 export async function createDepositInvoiceAction(input: {
