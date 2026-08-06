@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "@radix-ui/themes/styles.css";
 import "./globals.css";
 import { Theme } from "@radix-ui/themes";
+import { EnvironmentBanner } from "@/components/EnvironmentBanner";
 import { BUSINESS_NAME, getSiteUrl } from "@/lib/marketing";
 
 const geistSans = Geist({
@@ -79,6 +80,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <Theme appearance="dark" accentColor="indigo" grayColor="slate" radius="large">
           {children}
+          <EnvironmentBanner />
         </Theme>
       </body>
     </html>

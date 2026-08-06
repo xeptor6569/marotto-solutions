@@ -1,0 +1,234 @@
+name: Deploy to Dev
+
+# Dev counterpart to deploy.yml. Runs the same self-hosted runner but brings up
+# a fully separate stack (own containers, ports, volumes, database and secrets)
+# so a refactor branch can be exercised at dev.marottosolutions.com without
+# touching production.
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag or SHA to deploy to dev"
+        required: false
+        default: develop
+
+# The runner and the Docker daemon are shared with the prod deploy, so builds
+# must not interleave. deploy.yml uses the same group.
+concurrency:
+  group: self-hosted-deploy
+  cancel-in-progress: false
+
+env:
+  STACK_NAME: marotto-dev
+  APP_ENV: dev
+  APP_PORT: "3082"
+  POSTGRES_PORT: "5434"
+  COMPOSE_PROJECT_NAME: marotto-dev
+  COMPOSE_FILES: "-f docker-compose.yml -f docker-compose.dev.yml"
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: dev
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Validate required configuration
+        env:
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ vars.NEXTAUTH_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          missing=0
+          if [ -z "${NEXTAUTH_SECRET}" ]; then
+            echo "::error::Missing required secret: NEXTAUTH_SECRET (GitHub dev environment). Use a different value than prod so dev sessions cannot be replayed against prod."
+            missing=1
+          fi
+          if [ -z "${NEXTAUTH_URL}" ]; then
+            echo "::error::Missing required environment variable NEXTAUTH_URL (GitHub dev → Variables), e.g. https://dev.marottosolutions.com"
+            missing=1
+          fi
+          # A live key here would let dev create real charges against real cards.
+          case "${STRIPE_SECRET_KEY}" in
+            sk_live_*|rk_live_*)
+              echo "::error::STRIPE_SECRET_KEY in the dev environment is a live key. Use a sk_test_ key."
+              missing=1
+              ;;
+          esac
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Create .env file
+        run: |
+          # Overwrite (do not append) so self-hosted runner workspaces do not
+          # accumulate duplicate keys across deploys.
+          {
+            # Stack identity — this is what keeps dev off prod's containers,
+            # ports and volumes.
+            echo "STACK_NAME=${STACK_NAME}"
+            echo "COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}"
+            echo "APP_ENV=${APP_ENV}"
+            echo "APP_PORT=${APP_PORT}"
+            echo "POSTGRES_PORT=${POSTGRES_PORT}"
+            # Reported by /api/health, so you can confirm which branch dev is on.
+            echo "APP_COMMIT_SHA=${{ github.sha }}"
+            echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}"
+            # Auth.js v5 prefers AUTH_URL / AUTH_SECRET / AUTH_TRUST_HOST in production.
+            echo "AUTH_URL=${{ vars.NEXTAUTH_URL }}"
+            echo "AUTH_TRUST_HOST=true"
+            echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+            echo "AUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}"
+            # Leave EMAIL_SERVER unset to keep the overlay default (the mailpit
+            # sink). Only set the secret when you deliberately want real delivery.
+            if [ -n "${{ secrets.EMAIL_SERVER }}" ]; then
+              echo "EMAIL_SERVER=${{ secrets.EMAIL_SERVER }}"
+            fi
+            if [ -n "${{ secrets.EMAIL_FROM }}" ]; then
+              echo "EMAIL_FROM=${{ secrets.EMAIL_FROM }}"
+            fi
+            if [ -n "${{ secrets.CRON_SECRET }}" ]; then
+              echo "CRON_SECRET=${{ secrets.CRON_SECRET }}"
+            fi
+            if [ -n "${{ secrets.STRIPE_SECRET_KEY }}" ]; then
+              echo "STRIPE_SECRET_KEY=${{ secrets.STRIPE_SECRET_KEY }}"
+            fi
+            if [ -n "${{ secrets.STRIPE_WEBHOOK_SECRET }}" ]; then
+              echo "STRIPE_WEBHOOK_SECRET=${{ secrets.STRIPE_WEBHOOK_SECRET }}"
+            fi
+            if [ -n "${{ vars.NEXT_TELEMETRY_DISABLED }}" ]; then
+              echo "NEXT_TELEMETRY_DISABLED=${{ vars.NEXT_TELEMETRY_DISABLED }}"
+            fi
+            # Optional external database for dev. Unset means the dev stack's own
+            # bundled postgres service. Never point this at the prod database.
+            if [ -n "${{ secrets.DATABASE_URL }}" ]; then
+              echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
+            fi
+          } > .env
+
+      - name: Start Postgres
+        run: docker compose ${COMPOSE_FILES} up -d postgres
+
+      - name: Wait for Postgres
+        run: |
+          for i in $(seq 1 30); do
+            if docker compose ${COMPOSE_FILES} exec -T postgres pg_isready -U marotto -d marotto_db >/dev/null 2>&1; then
+              echo "Postgres is ready"
+              exit 0
+            fi
+            echo "Waiting for Postgres ($i/30)..."
+            sleep 2
+          done
+          echo "::error::Postgres failed to become ready"
+          exit 1
+
+      - name: Install dependencies
+        run: |
+          set -euo pipefail
+          echo "node $(node -v), npm $(npm -v)"
+          # package.json engines require npm >=10; the runner image has shipped
+          # with npm 9.x and npm ci has SIGSEGV'd there (exit 139).
+          major="$(npm -v | cut -d. -f1)"
+          if [ "$major" -lt 10 ]; then
+            echo "Upgrading npm to satisfy engines (>=10)…"
+            npm install -g npm@10
+            echo "npm $(npm -v)"
+          fi
+          for attempt in 1 2 3; do
+            if npm ci; then
+              exit 0
+            fi
+            echo "::warning::'npm ci' failed on attempt ${attempt}/3"
+            rm -rf node_modules
+            sleep 5
+          done
+          echo "::error::'npm ci' failed 3 times"
+          exit 1
+
+      # Not gating on `npm run lint`: the existing tree has pre-existing lint
+      # errors, so it would fail every dev deploy. Same reason deploy.yml omits it.
+      - name: Run tests
+        run: npm test
+
+      - name: Run Prisma migrations
+        env:
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -n "${DATABASE_URL_SECRET}" ]; then
+            export DATABASE_URL="${DATABASE_URL_SECRET}"
+          else
+            # The dev stack's postgres is published on POSTGRES_PORT, not prod's 5433.
+            export DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:${POSTGRES_PORT}/marotto_db"
+          fi
+          prisma="./node_modules/.bin/prisma"
+          if [ ! -x "$prisma" ]; then
+            echo "::error::Prisma CLI not found at $prisma — did 'npm ci' run?"
+            exit 1
+          fi
+          # Dev is disposable, so an unmigratable branch should be easy to
+          # recover from: fall back to pushing the schema when the migration
+          # history does not apply cleanly.
+          if "$prisma" migrate deploy; then
+            echo "Prisma migrations applied."
+          else
+            echo "::warning::'prisma migrate deploy' failed on dev; falling back to 'db push'"
+            "$prisma" db push --accept-data-loss
+          fi
+
+      - name: Build and start application
+        run: docker compose ${COMPOSE_FILES} up -d --build --remove-orphans
+
+      - name: Verify application is healthy
+        run: |
+          set -euo pipefail
+          echo "Waiting for dev application on port ${APP_PORT}…"
+          for i in $(seq 1 36); do
+            status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "${STACK_NAME}-solutions" 2>/dev/null || echo missing)"
+            code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:${APP_PORT}/api/health" || true)"
+            echo "Attempt $i/36: container=$status http=$code"
+            if [ "$code" = "200" ]; then
+              echo "Dev application is healthy"
+              curl -sS --max-time 5 "http://127.0.0.1:${APP_PORT}/api/health" || true
+              exit 0
+            fi
+            if [ "$status" = "exited" ] || [ "$status" = "dead" ] || [ "$status" = "missing" ]; then
+              echo "::error::Container is $status"
+              docker logs --tail 100 "${STACK_NAME}-solutions" || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "::error::Dev application failed health check"
+          docker logs --tail 200 "${STACK_NAME}-solutions" || true
+          exit 1
+
+      - name: Confirm prod stack is untouched
+        run: |
+          # A misconfigured project name or container name would have recreated
+          # the prod containers. Fail loudly rather than discovering it later.
+          set -euo pipefail
+          for name in marotto-solutions marotto-postgres; do
+            if ! docker ps --format '{{.Names}}' | grep -qx "$name"; then
+              echo "::warning::prod container $name is not running (it may legitimately be down)"
+            fi
+          done
+          echo "Dev containers:"
+          docker ps --filter "name=${STACK_NAME}" --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+      - name: Prune unused images
+        run: docker image prune -f

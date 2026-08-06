@@ -6,9 +6,11 @@ on:
       - main
 
 concurrency:
-  # One deploy at a time on the single self-hosted runner. Do not cancel an
-  # in-flight deploy (docker build / migrate mid-flight) when a newer push lands.
-  group: deploy-prod
+  # One deploy at a time on the single self-hosted runner, shared with
+  # deploy-dev.yml so a dev build cannot interleave with a prod one. Do not
+  # cancel an in-flight deploy (docker build / migrate mid-flight) when a newer
+  # push lands.
+  group: self-hosted-deploy
   cancel-in-progress: false
 
 jobs:
@@ -54,6 +56,8 @@ jobs:
           # accumulate duplicate keys across deploys.
           {
             echo "APP_PORT=${{ secrets.APP_PORT }}"
+            # Reported by /api/health so the running build can be identified.
+            echo "APP_COMMIT_SHA=${{ github.sha }}"
             echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}"
             # Auth.js v5 prefers AUTH_URL / AUTH_SECRET / AUTH_TRUST_HOST in production.
             echo "AUTH_URL=${{ vars.NEXTAUTH_URL }}"

@@ -20,6 +20,36 @@ body {
   display: none !important;
 }
 
+/* Non-production instance marker. Fixed so it survives scrolling, and
+   pointer-events: none so it can never intercept a click on the UI beneath. */
+.env-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-top-right-radius: 6px;
+  background-color: #b45309;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  pointer-events: none;
+  /* Keep clear of the iOS home indicator and the admin mobile bottom nav. */
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
+}
+
+.env-banner-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #fde68a;
+}
+
 html.pdf-export .no-print,
 html.pdf-export .admin-shell-sidebar,
 html.pdf-export .admin-shell-topbar,

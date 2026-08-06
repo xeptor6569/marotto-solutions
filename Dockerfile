@@ -22,6 +22,11 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# next.config.ts decides at build time whether to emit browser source maps, so
+# the dev/prod distinction has to be known here and not only at runtime.
+ARG APP_ENV=production
+ENV APP_ENV=$APP_ENV
+
 RUN npm run build
 
 # Production image, copy all the files and run next
@@ -31,6 +36,11 @@ WORKDIR /app
 ENV NODE_ENV production
 # Uncomment the following line in case you want to disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED 1
+
+# Which commit this image was built from, surfaced by /api/health so you can
+# tell which branch a running dev instance is actually serving.
+ARG APP_COMMIT_SHA=""
+ENV APP_COMMIT_SHA=$APP_COMMIT_SHA
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
