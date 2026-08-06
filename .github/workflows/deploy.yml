@@ -5,6 +5,12 @@ on:
     branches:
       - main
 
+concurrency:
+  # One deploy at a time on the single self-hosted runner. Do not cancel an
+  # in-flight deploy (docker build / migrate mid-flight) when a newer push lands.
+  group: deploy-prod
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: self-hosted
@@ -12,6 +18,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
 
       - name: Validate required configuration
         env:
@@ -83,7 +95,30 @@ jobs:
           exit 1
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          set -euo pipefail
+          echo "node $(node -v), npm $(npm -v)"
+          # package.json engines require npm >=10; the runner image has shipped
+          # with npm 9.x and npm ci has SIGSEGV'd there (exit 139).
+          major="$(npm -v | cut -d. -f1)"
+          if [ "$major" -lt 10 ]; then
+            echo "Upgrading npm to satisfy engines (>=10)…"
+            npm install -g npm@10
+            echo "npm $(npm -v)"
+          fi
+          # Same class of runner SIGSEGV as prisma migrate — retry before failing.
+          for attempt in 1 2 3; do
+            if npm ci; then
+              exit 0
+            fi
+            echo "::warning::'npm ci' failed on attempt ${attempt}/3"
+            echo "node $(node -v), npm $(npm -v)"
+            free -m || true
+            rm -rf node_modules
+            sleep 5
+          done
+          echo "::error::'npm ci' failed 3 times"
+          exit 1
 
       - name: Run tests
         run: npm test
