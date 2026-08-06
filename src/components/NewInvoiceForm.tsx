@@ -857,7 +857,7 @@ export default function NewDocumentForm({
                                 <Box style={{ borderTop: '1px solid var(--gray-a5)', paddingTop: 12 }}>
                                     <Text as="label" size="2" weight="bold">Stripe payment link (this invoice)</Text>
                                     <Text size="1" color="gray" as="p" mt="1" mb="2">
-                                        Overrides the general Stripe link from Settings. Paste a Stripe Checkout/Payment Link.
+                                        Optional fallback only. When <code>STRIPE_SECRET_KEY</code> is set, clients pay via Stripe Checkout for the invoice balance (with deposit/partial options). A pasted link overrides the global fallback link if Checkout is not configured.
                                     </Text>
                                     <TextField.Root
                                         name="invoiceStripeLink"
@@ -1073,7 +1073,7 @@ export default function NewDocumentForm({
                 .document-form-section-nav {
                     display: block;
                     position: sticky;
-                    top: calc(64px + env(safe-area-inset-top, 0px));
+                    top: calc(var(--admin-topbar-h, 64px) + env(safe-area-inset-top, 0px));
                     z-index: 30;
                     padding: 8px 0;
                     background: color-mix(in srgb, var(--color-background) 92%, transparent);
@@ -1131,7 +1131,7 @@ export default function NewDocumentForm({
                     position: fixed;
                     left: 0;
                     right: 0;
-                    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+                    bottom: var(--admin-bottom-nav-h, env(safe-area-inset-bottom, 0px));
                     z-index: 45;
                     padding: 10px 16px;
                     background: linear-gradient(to top, var(--color-background) 85%, transparent);

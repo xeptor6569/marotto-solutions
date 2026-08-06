@@ -59,11 +59,18 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 - Both require `X-Cron-Secret` header matching `CRON_SECRET` env var
 - Docker sidecar (`cron` service in compose) triggers these on schedule
 
+### Stripe endpoints
+
+- `POST /api/stripe/checkout` — create a Checkout Session for a public invoice share token (full balance, amount, %, or equal split)
+- `POST /api/stripe/webhook` — Stripe webhook; records payment + receipt on `checkout.session.completed`
+- Requires `STRIPE_SECRET_KEY`; webhook also requires `STRIPE_WEBHOOK_SECRET`
+- Shared payment apply logic: `src/lib/invoice-payments.ts`; amount helpers: `src/lib/stripe-checkout.ts`
+
 ## Testing
 
 - Vitest in node environment, `@/` alias resolved
-- Tests live in `src/lib/__tests__/` — currently `calendar.test.ts`
-- No test DB setup required; calendar tests cover recurrence/timezone math
+- Tests live in `src/lib/__tests__/` — currently `calendar.test.ts`, `stripe-checkout.test.ts`
+- No test DB setup required; calendar tests cover recurrence/timezone math; Stripe amount helpers are pure unit tests
 - When adding tests that touch Prisma, you need a running Postgres
 
 ## Prisma notes
@@ -88,3 +95,4 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 - `next-auth` is v5 beta — API may differ from v4 docs
 - Admin and non-admin routes overlap for some doc types (e.g. `/invoices/*` and `/admin/invoices/*`); use admin routes for operational workflows
 - Document `warranty` and `paymentOverrides` fields live on `DocumentData` in `src/lib/types.ts`, not in the DB
+- Stripe Checkout is preferred over pasted Payment Links when `STRIPE_SECRET_KEY` is set; webhook marks invoices paid (do not double-record manually for the same session)

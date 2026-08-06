@@ -20,7 +20,7 @@ This README is intended to be an operational handbook you can come back to when 
 - auth with email magic link or email/password
 - full admin workspace at `/admin`
 - shared navigation shell across admin pages for desktop and mobile/PWA usage
-- installable admin PWA (`src/app/manifest.ts`) named **Marotto** for short home-screen / Spotlight search (re-add to Home Screen after name changes)
+- installable admin PWA (`src/app/manifest.ts`) named **Marotto** for short home-screen / Spotlight search (re-add to Home Screen after name changes; install from `/admin` and confirm the Add dialog name is exactly `Marotto`)
 
 ### Core business workflows
 
@@ -56,6 +56,22 @@ The editor uses a sticky action footer (mobile + desktop):
 - Method dropdown is populated from enabled billing methods
 - **Record payment & save** appends the payment, updates paid/balance, auto-creates a receipt, and returns to the preview with a confirmation linking the new receipt
 - Validation prevents amounts ≤ 0 or greater than the balance due
+
+### Stripe Checkout (invoices)
+
+When `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are set:
+
+- Public invoice pages (`/d/{shareToken}`) show **Pay with Stripe**
+- Default charge is the **full balance due**
+- Clients can optionally pay a deposit/partial: dollar amount, % of invoice total (e.g. 50% down), or equal installments (`total / N`)
+- Checkout Session metadata ties the payment to the invoice; the webhook records the payment, updates balance/status, and creates a receipt (idempotent by session id)
+- Pasteable Stripe Payment Links remain as a fallback when Checkout env vars are not configured
+
+Local webhook forwarding:
+
+```bash
+stripe listen --forward-to localhost:$APP_PORT/api/stripe/webhook
+```
 
 ### Per-line discounts
 
@@ -234,6 +250,11 @@ Use `.env.example` as your source template.
 
 - `CALENDAR_CRON_SCHEDULE` (optional; defaults to `0 * * * *` — every hour)
 - `OPERATOR_EMAIL` (optional; where reminder emails are sent; defaults to `EMAIL_FROM`)
+
+### Stripe payments (optional)
+
+- `STRIPE_SECRET_KEY` — Stripe secret key (`sk_live_…` / `sk_test_…`)
+- `STRIPE_WEBHOOK_SECRET` — webhook signing secret (`whsec_…`) for `POST /api/stripe/webhook`
 
 ### Port alignment rule
 

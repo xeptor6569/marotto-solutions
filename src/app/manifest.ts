@@ -3,11 +3,11 @@ import type { MetadataRoute } from 'next';
 export default function manifest(): MetadataRoute.Manifest {
     return {
         // Keep name + short_name identical and short so iOS Spotlight / home-screen
-        // search matches on "M" / "Ma" / "Mar…" instead of requiring "MarottoS…".
+        // search matches on "M" / "Ma" / "Mar…" instead of requiring "Marotto S…".
         id: '/admin',
         name: 'Marotto',
         short_name: 'Marotto',
-        description: 'Admin dashboard for Marotto Solutions documents, jobs, and clients.',
+        description: 'Admin for jobs, invoices, clients, and calendar.',
         start_url: '/admin',
         scope: '/',
         display: 'standalone',
