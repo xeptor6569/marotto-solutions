@@ -78,7 +78,7 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
     const config = await getAppConfig() as AppConfig;
     let docs: DocumentData[] = [];
 
-    if (!useWebDAVStorage(config)) {
+    if (!hasWebDAVStorage(config)) {
         // Fallback to local storage
         docs = await fetchDocumentsLocal(type);
     } else {
@@ -141,7 +141,7 @@ export async function ensureDocumentShareToken(doc: DocumentData): Promise<Docum
     return withToken;
 }
 
-function useWebDAVStorage(config: AppConfig): boolean {
+function hasWebDAVStorage(config: AppConfig): boolean {
     return Boolean(config.webdavUrl?.trim() && config.webdavUsername?.trim());
 }
 
@@ -149,7 +149,7 @@ export async function saveNewDocument(doc: DocumentData) {
     const { doc: toSave } = withDocumentShareToken(doc);
     const config = await getAppConfig() as AppConfig;
 
-    if (!useWebDAVStorage(config)) {
+    if (!hasWebDAVStorage(config)) {
         await saveDocumentLocal(toSave);
     } else {
         const client = getWebDAVClient(
@@ -167,7 +167,7 @@ export async function saveNewDocument(doc: DocumentData) {
 export async function deleteDocument(type: DocumentType, id: string) {
     const config = await getAppConfig() as AppConfig;
 
-    if (!useWebDAVStorage(config)) {
+    if (!hasWebDAVStorage(config)) {
         await deleteDocumentLocal(type, id);
     } else {
         const client = getWebDAVClient(

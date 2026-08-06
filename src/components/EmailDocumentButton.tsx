@@ -31,10 +31,14 @@ function EmailSendFields({
     const [to, setTo] = useState(defaultTo || '');
     const [message, setMessage] = useState('');
 
-    useEffect(() => {
+    // Reset fields when the target recipient changes (render-time adjustment
+    // instead of a cascading setState-in-effect).
+    const [lastDefaultTo, setLastDefaultTo] = useState(defaultTo);
+    if (lastDefaultTo !== defaultTo) {
+        setLastDefaultTo(defaultTo);
         setTo(defaultTo || '');
         setMessage('');
-    }, [defaultTo]);
+    }
 
     useEffect(() => {
         if (state.success) {

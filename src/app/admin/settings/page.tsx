@@ -1,4 +1,4 @@
-import { Container, Heading, Card, Button, Flex } from "@radix-ui/themes";
+import { Container, Heading, Card, Flex } from "@radix-ui/themes";
 import { getAppConfig } from "@/lib/config";
 import SettingsForm from "./settings-form";
 import BackButton from "@/components/BackButton";
