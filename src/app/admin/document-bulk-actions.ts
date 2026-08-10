@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getDocumentById, getNextNumber, saveNewDocument } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { getFromAddress } from '@/lib/email-identity';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
@@ -218,7 +219,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
         return { success: false, error: 'None of the selected documents have a recipient email.', skipped };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const from = getFromAddress();
     const trimmedMessage = (message || '').trim();
     let documentsSent = 0;
 

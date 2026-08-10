@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import type { DocumentData, CalendarEventRecord } from './types';
 import { formatInTimeZone } from 'date-fns-tz';
 import { buildDocumentShareUrl } from './document-share-url';
+import { getFromAddress } from './email-identity';
 
 export function createTransportFromEnv() {
     const server = process.env.EMAIL_SERVER;
@@ -44,7 +45,7 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
     if (!to) {
         return { ok: false, error: 'Customer has no email on file.' };
     }
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const from = getFromAddress();
     const url = await buildDocumentShareUrl(invoice, getPublicSiteUrl());
     const cycleLabel = invoice.contractCycle ? `Cycle ${invoice.contractCycle}` : 'New invoice';
     const subject = `Marotto Solutions — ${cycleLabel} ${invoice.id}`;
@@ -97,7 +98,7 @@ export async function sendCalendarEventReminderEmail(
         return { ok: false, error: 'Email is not configured (EMAIL_SERVER missing).' };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const from = getFromAddress();
     const to = process.env.OPERATOR_EMAIL || from;
     const startLocal = formatInTimeZone(new Date(event.start), businessTimezone, event.allDay ? 'MMMM d, yyyy' : 'MMMM d, yyyy h:mm a z');
 
