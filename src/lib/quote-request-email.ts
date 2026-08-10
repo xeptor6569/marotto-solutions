@@ -1,4 +1,5 @@
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { getFromAddress } from '@/lib/email-identity';
 import { serviceLabel, type QuoteRequestInput } from '@/lib/quote-intake';
 
 function escapeHtml(s: string) {
@@ -27,7 +28,7 @@ export async function sendQuoteRequestAdminEmail(
         return { ok: false, error: 'No admin notification email configured.' };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const from = getFromAddress();
     const adminUrl = `${getPublicSiteUrl()}/admin/clients`;
 
     const subject = `New quote request — ${input.name.trim()}`;
@@ -88,7 +89,7 @@ export async function sendQuoteRequestConfirmationEmail(
         return { ok: false, error: 'No recipient email.' };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const from = getFromAddress();
     const siteUrl = getPublicSiteUrl();
     const greeting = input.name.trim() ? `Hi ${input.name.trim()},` : 'Hello,';
 
