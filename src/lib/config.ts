@@ -5,15 +5,18 @@ import {
     BillingConfig,
     BrandingConfig,
     BusinessConfig,
+    DocumentNumberingConfig,
     PublicSiteConfig,
 } from './types';
 import { DEFAULT_DOCUMENT_FORM_MODE, parseDocumentFormMode } from './document-form-mode';
 import {
     LEGACY_BRANDING,
     LEGACY_BUSINESS,
+    LEGACY_NUMBERING,
     LEGACY_PUBLIC_SITE,
     LEGACY_WEBDAV_ROOT_PATH,
 } from './legacy-defaults';
+import { DEFAULT_NUMBER_PADDING, DEFAULT_PREFIXES, DEFAULT_START_NUMBERS } from './document-numbering';
 import { DEFAULT_THEME_PRESET_ID } from './theme-presets';
 
 // Settings live under the persistent `data/` volume so the runtime user
@@ -90,6 +93,14 @@ export function getDefaultPublicSiteConfig(): PublicSiteConfig {
     };
 }
 
+export function getDefaultNumberingConfig(): DocumentNumberingConfig {
+    return {
+        prefixes: { ...DEFAULT_PREFIXES },
+        startNumbers: { ...DEFAULT_START_NUMBERS },
+        padding: DEFAULT_NUMBER_PADDING,
+    };
+}
+
 async function ensureConfigDir() {
     const dir = path.dirname(CONFIG_PATH);
     try {
@@ -132,6 +143,7 @@ export function mergeAppConfig(parsed: Partial<AppConfig> | null): Partial<AppCo
             business: getDefaultBusinessConfig(),
             branding: getDefaultBrandingConfig(),
             publicSite: getDefaultPublicSiteConfig(),
+            numbering: getDefaultNumberingConfig(),
             businessTimezone: 'America/New_York',
             documentFormMode: DEFAULT_DOCUMENT_FORM_MODE,
             webdavRootPath: DEFAULT_WEBDAV_ROOT_PATH,
@@ -142,6 +154,7 @@ export function mergeAppConfig(parsed: Partial<AppConfig> | null): Partial<AppCo
     const business = isPreWhiteLabelInstall ? LEGACY_BUSINESS : parsed.business;
     const branding = isPreWhiteLabelInstall ? LEGACY_BRANDING : parsed.branding;
     const publicSite = isPreWhiteLabelInstall ? LEGACY_PUBLIC_SITE : parsed.publicSite;
+    const numbering = isPreWhiteLabelInstall ? LEGACY_NUMBERING : parsed.numbering;
     const fallbackRootPath = isPreWhiteLabelInstall ? LEGACY_WEBDAV_ROOT_PATH : DEFAULT_WEBDAV_ROOT_PATH;
 
     return {
@@ -158,6 +171,12 @@ export function mergeAppConfig(parsed: Partial<AppConfig> | null): Partial<AppCo
         business: { ...getDefaultBusinessConfig(), ...business },
         branding: { ...getDefaultBrandingConfig(), ...branding },
         publicSite: { ...getDefaultPublicSiteConfig(), ...publicSite },
+        numbering: {
+            ...getDefaultNumberingConfig(),
+            ...numbering,
+            prefixes: { ...DEFAULT_PREFIXES, ...numbering?.prefixes },
+            startNumbers: { ...DEFAULT_START_NUMBERS, ...numbering?.startNumbers },
+        },
         webdavRootPath: parsed.webdavRootPath?.trim() || fallbackRootPath,
     };
 }

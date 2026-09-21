@@ -12,7 +12,7 @@ import {
     TextArea,
     Badge,
 } from '@radix-ui/themes';
-import { PlusIcon, SaveIcon, SendIcon, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusIcon, SaveIcon, SendIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState, useTransition } from 'react';
 import { createInvoiceAction, createJobAction } from '@/app/actions';
 import {
@@ -23,7 +23,6 @@ import {
     DocumentPreset,
     LineItem,
     PaymentEntry,
-    PaymentKind,
     JobOption,
     PaymentMethodKey,
     WorkflowStatus,
@@ -37,7 +36,6 @@ import {
     DOCUMENT_STATUSES,
     issueActionLabel,
     statusLabel,
-    validateRecordPayment,
 } from '@/lib/document-save';
 import { documentDisplayTotal } from '@/lib/document-options';
 import {
@@ -123,13 +121,6 @@ export default function NewDocumentForm({
     const [jobError, setJobError] = useState('');
     const [isCreatingJob, startCreateJob] = useTransition();
     const [payments] = useState<PaymentEntry[]>(initialData?.payments || []);
-    const [paymentAmount, setPaymentAmount] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState('');
-    const [paymentKind, setPaymentKind] = useState<PaymentKind>('partial');
-    const [paymentNotes, setPaymentNotes] = useState('');
-    const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
-    const [paymentError, setPaymentError] = useState('');
-    const [showMoreActions, setShowMoreActions] = useState(false);
     const seededClient = clients.find((c) => {
         if (seed?.jobId) {
             const job = jobs.find((j) => j.id === seed.jobId);
@@ -228,12 +219,6 @@ export default function NewDocumentForm({
     const paidAmount = initialData?.paidAmount ?? payments.reduce((acc, payment) => acc + payment.amount, 0);
     const balanceDue = Math.max(0, subtotal - paidAmount);
 
-    useEffect(() => {
-        if (!paymentAmount && balanceDue > 0) {
-            setPaymentAmount(balanceDue.toFixed(2));
-        }
-    }, [balanceDue, paymentAmount]);
-
     const handleClientChange = (id: string) => {
         setSelectedClientId(id);
         if (!id) return;
@@ -330,19 +315,6 @@ export default function NewDocumentForm({
         }
     };
 
-    const applyPaymentFraction = (fraction: number) => {
-        const amount = Math.min(balanceDue, Math.max(0, balanceDue * fraction));
-        setPaymentAmount(amount.toFixed(2));
-        setPaymentError('');
-    };
-
-    const validatePaymentBeforeSubmit = () => {
-        const amount = Number(paymentAmount);
-        const err = validateRecordPayment(amount, balanceDue);
-        setPaymentError(err || '');
-        return !err;
-    };
-
     const statusBadgeColor =
         docStatus === 'paid' ? 'green' :
         docStatus === 'sent' ? 'blue' :
@@ -364,13 +336,6 @@ export default function NewDocumentForm({
             action={createInvoiceAction}
             className={`document-form document-form--${documentFormMode}`}
             data-form-mode={documentFormMode}
-            onSubmit={(e) => {
-                const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
-                const intent = submitter?.value;
-                if (intent === 'record_payment' && !validatePaymentBeforeSubmit()) {
-                    e.preventDefault();
-                }
-            }}
         >
             <input type="hidden" name="type" value={type} />
             <input type="hidden" name="documentId" value={initialData?.id || ''} />
@@ -885,8 +850,20 @@ export default function NewDocumentForm({
 
                     {showPayments ? (
                         <Card>
-                            <Flex justify="between" align="start" gap="3" wrap="wrap" mb="3">
-                                <Heading size="3">Payments</Heading>
+                            <Flex justify="between" align="start" gap="3" wrap="wrap">
+                                <Box>
+                                    <Heading size="3" mb="1">Payments</Heading>
+                                    <Text size="2" color="gray" as="p">
+                                        {initialData?.id
+                                            ? 'Record, review, or undo payments from the invoice page after saving.'
+                                            : 'Save the invoice first — then record payments from its page.'}
+                                    </Text>
+                                    {payments.length > 0 ? (
+                                        <Text size="1" color="gray" as="p" mt="1">
+                                            {payments.length} payment{payments.length === 1 ? '' : 's'} recorded so far.
+                                        </Text>
+                                    ) : null}
+                                </Box>
                                 <Box style={{ textAlign: 'right' }}>
                                     <Text size="1" color="gray">Balance due</Text>
                                     <Text as="div" size="6" weight="bold" style={{ color: balanceDue > 0 ? 'var(--red-11)' : 'var(--green-11)' }}>
@@ -897,105 +874,6 @@ export default function NewDocumentForm({
                                     </Text>
                                 </Box>
                             </Flex>
-
-                            {payments.length > 0 ? (
-                                <Flex direction="column" gap="1" mb="3">
-                                    {payments.map((payment) => (
-                                        <Text key={payment.id} size="2" color="gray">
-                                            {new Date(payment.date).toLocaleDateString()} — {money(payment.amount)} ({payment.kind.replace('_', ' ')})
-                                            {payment.receiptId ? ` · ${payment.receiptId}` : ''}
-                                        </Text>
-                                    ))}
-                                </Flex>
-                            ) : null}
-
-                            {balanceDue > 0 ? (
-                                <>
-                                    <Flex gap="2" wrap="wrap" mb="3">
-                                        <Button type="button" size="2" variant="soft" onClick={() => applyPaymentFraction(0.25)}>25%</Button>
-                                        <Button type="button" size="2" variant="soft" onClick={() => applyPaymentFraction(0.5)}>50%</Button>
-                                        <Button type="button" size="2" variant="soft" onClick={() => applyPaymentFraction(1)}>Full balance</Button>
-                                    </Flex>
-                                    <Grid columns={{ initial: '1', md: '2' }} gap="3">
-                                        <Box>
-                                            <Text as="label" size="2">Amount</Text>
-                                            <TextField.Root
-                                                name="paymentAmount"
-                                                type="number"
-                                                inputMode="decimal"
-                                                min="0"
-                                                step="0.01"
-                                                value={paymentAmount}
-                                                onChange={(e) => {
-                                                    setPaymentAmount(e.target.value);
-                                                    setPaymentError('');
-                                                }}
-                                            />
-                                        </Box>
-                                        <Box>
-                                            <Text as="label" size="2">Date</Text>
-                                            <TextField.Root name="paymentDate" type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} />
-                                        </Box>
-                                        <Box>
-                                            <Text as="label" size="2">Method</Text>
-                                            {paymentMethods.length > 0 ? (
-                                                <select
-                                                    name="paymentMethod"
-                                                    value={paymentMethod}
-                                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                                    style={nativeSelectStyle}
-                                                >
-                                                    <option value="">Select method</option>
-                                                    {paymentMethods.map((method) => (
-                                                        <option key={method.key} value={method.label}>{method.label}</option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <TextField.Root
-                                                    name="paymentMethod"
-                                                    placeholder="Cash, check, Zelle..."
-                                                    value={paymentMethod}
-                                                    onChange={(e) => setPaymentMethod(e.target.value)}
-                                                />
-                                            )}
-                                        </Box>
-                                        <Box>
-                                            <Text as="label" size="2">Payment type</Text>
-                                            <select
-                                                name="paymentKind"
-                                                value={paymentKind}
-                                                onChange={(e) => setPaymentKind(e.target.value as PaymentKind)}
-                                                style={nativeSelectStyle}
-                                            >
-                                                <option value="partial">Partial payment</option>
-                                                <option value="down_payment">Down payment</option>
-                                                <option value="final">Final payment</option>
-                                            </select>
-                                        </Box>
-                                    </Grid>
-                                    <Box mt="3">
-                                        <Text as="label" size="2">Payment notes</Text>
-                                        <TextArea name="paymentNotes" value={paymentNotes} onChange={(e) => setPaymentNotes(e.target.value)} rows={2} />
-                                    </Box>
-                                    {paymentError ? <Text size="2" color="red" mt="2">{paymentError}</Text> : null}
-                                    <Button
-                                        type="submit"
-                                        name="intent"
-                                        value="record_payment"
-                                        variant="solid"
-                                        mt="3"
-                                        style={{ width: '100%', minHeight: 44 }}
-                                        onClick={() => validatePaymentBeforeSubmit()}
-                                    >
-                                        Record payment &amp; save
-                                    </Button>
-                                    <Text size="1" color="gray" mt="2" as="p">
-                                        Saves the invoice, records this payment, and creates a receipt automatically.
-                                    </Text>
-                                </>
-                            ) : (
-                                <Text size="2" color="gray">This invoice is fully paid.</Text>
-                            )}
                         </Card>
                     ) : (
                         <Card>
@@ -1049,23 +927,7 @@ export default function NewDocumentForm({
                                 <SendIcon size={16} /> {issueLabel}
                             </Button>
                         ) : null}
-                        {showPayments ? (
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                onClick={() => setShowMoreActions((v) => !v)}
-                                aria-expanded={showMoreActions}
-                                style={{ flex: '0 0 auto', minHeight: 44, minWidth: 44 }}
-                            >
-                                <MoreHorizontal size={16} />
-                            </Button>
-                        ) : null}
                     </Flex>
-                    {showMoreActions && showPayments ? (
-                        <Button type="submit" name="intent" value="mark_paid_without_payment" variant="outline" size="2" mt="2" style={{ width: '100%', minHeight: 44 }}>
-                            Mark paid (no payment recorded)
-                        </Button>
-                    ) : null}
                 </Card>
             </Box>
 

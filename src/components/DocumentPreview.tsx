@@ -53,6 +53,7 @@ import SaveAsPresetButton from "@/components/SaveAsPresetButton";
 import BackButton from "@/components/BackButton";
 import DocumentPreviewActions from "@/components/DocumentPreviewActions";
 import DocumentOptionSelectionForm from "@/components/DocumentOptionSelectionForm";
+import InvoicePaymentsPanel from "@/components/InvoicePaymentsPanel";
 import MarkdownContent from "@/components/MarkdownContent";
 import { depositBillingBase } from "@/lib/deposit-invoice";
 import { convertTargets } from "@/lib/convert-document";
@@ -379,6 +380,18 @@ export default async function DocumentPreview({
                     </Flex>
                 )}
             </Flex>
+
+            {doc.type === "invoice" && !publicMode ? (
+                <InvoicePaymentsPanel
+                    invoiceId={doc.id}
+                    status={doc.status}
+                    total={doc.total}
+                    payments={doc.payments ?? []}
+                    paymentMethods={activePaymentMethods
+                        .filter(([, method]) => method.enabled && !method.comingSoon)
+                        .map(([, method]) => method.label)}
+                />
+            ) : null}
 
             {/* Printable documents are always light-on-white "paper", so the
                 Radix tokens inside are pinned to light regardless of the

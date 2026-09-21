@@ -1,4 +1,5 @@
 import type { DocumentData, DocumentType, LineItem } from '@/lib/types';
+import { buildDocumentId, DEFAULT_NUMBERING, type ResolvedNumbering } from './document-numbering';
 import { DOC_LABEL } from '@/lib/document-labels';
 import {
     documentHasOptions,
@@ -13,14 +14,6 @@ import {
 export const ALLOWED_CONVERSIONS: Partial<Record<DocumentType, DocumentType[]>> = {
     estimate: ['quote', 'invoice'],
     quote: ['invoice'],
-};
-
-const PREFIX: Record<DocumentType, string> = {
-    invoice: 'INV',
-    estimate: 'EST',
-    quote: 'QTE',
-    receipt: 'RCT',
-    lead: 'LEAD',
 };
 
 export function convertTargets(from: DocumentType): DocumentType[] {
@@ -46,6 +39,7 @@ export function buildConvertedDocument(
     source: DocumentData,
     targetType: DocumentType,
     newNumber: number,
+    numbering: ResolvedNumbering = DEFAULT_NUMBERING,
 ): DocumentData {
     if (!canConvert(source.type, targetType)) {
         throw new Error(
@@ -54,7 +48,7 @@ export function buildConvertedDocument(
     }
 
     const now = new Date().toISOString();
-    const id = `${PREFIX[targetType]}-${String(newNumber).padStart(4, '0')}`;
+    const id = buildDocumentId(targetType, newNumber, numbering);
 
     let lineItems: LineItem[];
     if (targetType === 'invoice') {

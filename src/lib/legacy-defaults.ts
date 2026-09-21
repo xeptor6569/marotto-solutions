@@ -1,6 +1,7 @@
 import type {
     BrandingConfig,
     BusinessConfig,
+    DocumentNumberingConfig,
     PublicSiteConfig,
 } from './types';
 
@@ -33,6 +34,13 @@ export const LEGACY_BRANDING: BrandingConfig = {
 };
 
 export const LEGACY_WEBDAV_ROOT_PATH = '/MarottoSolutions';
+
+/** The original install started every sequence at 200; preserve that for pre-white-label settings files. */
+export const LEGACY_NUMBERING: DocumentNumberingConfig = {
+    prefixes: { invoice: 'INV', estimate: 'EST', quote: 'QTE', receipt: 'RCT' },
+    startNumbers: { invoice: 200, estimate: 200, quote: 200, receipt: 200 },
+    padding: 4,
+};
 
 export const LEGACY_PUBLIC_SITE: PublicSiteConfig = {
     enabled: true,

@@ -11,14 +11,7 @@ import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import type { DocumentData, DocumentType } from '@/lib/types';
 import { requireAdminAction } from '@/lib/require-admin-session';
 import { getMoneyFormatter } from '@/lib/branding';
-
-const PREFIX: Record<DocumentType, string> = {
-    invoice: 'INV',
-    estimate: 'EST',
-    quote: 'QTE',
-    receipt: 'RCT',
-    lead: 'LEAD',
-};
+import { buildDocumentId, getDocumentNumbering } from '@/lib/document-numbering';
 
 function escapeHtml(s: string) {
     return s
@@ -48,6 +41,7 @@ export async function duplicateDocumentsAction(ids: string[]): Promise<BulkDupli
 
     const newIds: string[] = [];
     const touchedTypes = new Set<DocumentType>();
+    const numbering = await getDocumentNumbering();
 
     try {
         for (const id of ids) {
@@ -55,7 +49,7 @@ export async function duplicateDocumentsAction(ids: string[]): Promise<BulkDupli
             if (!doc) continue;
 
             const number = await getNextNumber(doc.type);
-            const newId = `${PREFIX[doc.type]}-${String(number).padStart(4, '0')}`;
+            const newId = buildDocumentId(doc.type, number, numbering);
             const now = new Date().toISOString();
 
             const copy: DocumentData = {
@@ -149,7 +143,7 @@ export async function convertDocumentsAction(
     try {
         for (const doc of convertible) {
             const number = await getNextNumber(targetType);
-            const converted = buildConvertedDocument(doc, targetType, number);
+            const converted = buildConvertedDocument(doc, targetType, number, await getDocumentNumbering());
             await saveNewDocument(converted);
             newIds.push(converted.id);
         }

@@ -10,6 +10,14 @@ import { parseDocumentFormMode } from '@/lib/document-form-mode';
 import { isValidCurrencyCode, isValidLocale } from '@/lib/money';
 import { isValidTimeZone } from '@/lib/timezones';
 import {
+    DEFAULT_NUMBER_PADDING,
+    DEFAULT_PREFIXES,
+    DEFAULT_START_NUMBERS,
+    NUMBERED_DOCUMENT_TYPES,
+    sanitizePrefix,
+    sanitizeStartNumber,
+} from '@/lib/document-numbering';
+import {
     CUSTOM_THEME_PRESET_ID,
     getThemePreset,
     parseAccentColor,
@@ -22,6 +30,7 @@ import { checkConnection } from '@/lib/webdav';
 import type {
     AppConfig,
     BillingConfig,
+    NumberedDocumentType,
     PaymentMethodKey,
     PublicSiteConfig,
     PublicSiteHighlight,
@@ -306,8 +315,21 @@ async function saveBillingSection(formData: FormData): Promise<SettingsActionSta
 // ─── Documents ───────────────────────────────────────────────────────
 
 async function saveDocumentsSection(formData: FormData): Promise<SettingsActionState> {
+    const current = await getAppConfig();
+    const prefixes: Partial<Record<NumberedDocumentType, string>> = {};
+    const startNumbers: Partial<Record<NumberedDocumentType, number>> = {};
+    for (const type of NUMBERED_DOCUMENT_TYPES) {
+        prefixes[type] = sanitizePrefix(str(formData, `prefix.${type}`), DEFAULT_PREFIXES[type]);
+        startNumbers[type] = sanitizeStartNumber(str(formData, `startNumber.${type}`), DEFAULT_START_NUMBERS[type]);
+    }
+    const paddingRaw = Number(str(formData, 'numberPadding'));
+    const padding = Number.isFinite(paddingRaw) && paddingRaw > 0
+        ? Math.min(8, Math.max(3, Math.floor(paddingRaw)))
+        : current.numbering?.padding ?? DEFAULT_NUMBER_PADDING;
+
     await saveAppConfig({
         documentFormMode: parseDocumentFormMode(formData.get('documentFormMode')),
+        numbering: { prefixes, startNumbers, padding },
     });
     return { success: true };
 }

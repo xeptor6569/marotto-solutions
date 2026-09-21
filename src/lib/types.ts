@@ -325,6 +325,18 @@ export interface PublicSiteConfig {
     testimonials?: PublicSiteTestimonial[];
 }
 
+/** Document types that carry a configurable ID prefix and numbering sequence. */
+export type NumberedDocumentType = Exclude<DocumentType, 'lead'>;
+
+export interface DocumentNumberingConfig {
+    /** ID prefix per type, e.g. { invoice: "INV" } → INV-0001. */
+    prefixes?: Partial<Record<NumberedDocumentType, string>>;
+    /** First number issued per type when none exist yet; numbers never go backwards. */
+    startNumbers?: Partial<Record<NumberedDocumentType, number>>;
+    /** Zero-padding width for the numeric part (default 4). */
+    padding?: number;
+}
+
 export interface AppConfig {
     webdavUrl: string;
     webdavUsername: string; // Saved in local storage or env
@@ -339,6 +351,7 @@ export interface AppConfig {
     business?: BusinessConfig;
     branding?: BrandingConfig;
     publicSite?: PublicSiteConfig;
+    numbering?: DocumentNumberingConfig;
     /** IANA timezone for calendar display and form parsing (default: "America/New_York"). */
     businessTimezone?: string;
     /**

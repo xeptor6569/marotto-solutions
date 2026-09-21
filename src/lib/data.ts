@@ -2,6 +2,7 @@ import { DEFAULT_WEBDAV_ROOT_PATH, getAppConfig } from './config';
 import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote, normalizeWebdavRootPath } from './webdav';
 import { isDatabaseConfigured, prisma } from './prisma';
 import { withDocumentShareToken } from './share-token';
+import { getDocumentNumbering } from './document-numbering';
 import { AppConfig, DocumentData, DocumentType } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -61,12 +62,6 @@ async function deleteDocumentLocal(type: DocumentType, id: string) {
 // Since it's for 1 user, direct WebDAV with short cache is okay.
 const CACHE_TTL = 30 * 1000; // 30 seconds
 const cache: Record<string, { data: DocumentData[], timestamp: number }> = {};
-const NUMBER_BASELINE: Partial<Record<DocumentType, number>> = {
-    invoice: 200,
-    estimate: 200,
-    quote: 200,
-    receipt: 200,
-};
 
 export async function getDocuments(type: DocumentType): Promise<DocumentData[]> {
     // Check cache first
@@ -207,7 +202,8 @@ async function getNextNumberAtomic(type: DocumentType, baseline: number): Promis
 }
 
 export async function getNextNumber(type: DocumentType): Promise<number> {
-    const baseline = NUMBER_BASELINE[type] ?? 1;
+    const numbering = await getDocumentNumbering();
+    const baseline = type === 'lead' ? 1 : numbering.startNumbers[type];
     if (isDatabaseConfigured()) {
         try {
             return await getNextNumberAtomic(type, baseline);

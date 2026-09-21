@@ -29,6 +29,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import { buildServiceLabelMap, getMoneyFormat, getPublicSite } from '@/lib/branding';
+import { buildDocumentId, getDocumentNumbering } from '@/lib/document-numbering';
 import { upsertProspectFromQuoteRequest } from '@/lib/quote-intake';
 import {
     sendQuoteRequestAdminEmail,
@@ -77,7 +78,7 @@ export async function createDepositInvoiceAction(input: {
         }
 
         const number = await getNextNumber('invoice');
-        const doc = buildDepositInvoiceDraft(source, number, input.mode, input.value, await getMoneyFormat());
+        const doc = buildDepositInvoiceDraft(source, number, input.mode, input.value, await getMoneyFormat(), await getDocumentNumbering());
         await saveNewDocument(doc);
 
         revalidatePath('/admin');
@@ -147,7 +148,7 @@ export async function createConvertedDocumentAction(input: {
         }
 
         const number = await getNextNumber(input.targetType);
-        const doc = buildConvertedDocument(source, input.targetType, number);
+        const doc = buildConvertedDocument(source, input.targetType, number, await getDocumentNumbering());
         await saveNewDocument(doc);
 
         revalidatePath('/admin');
@@ -278,12 +279,6 @@ export async function createInvoiceAction(formData: FormData) {
     const subtotal = displayTotal;
     const total = displayTotal;
 
-    const prefix =
-        type === 'invoice' ? 'INV' :
-        type === 'estimate' ? 'EST' :
-        type === 'quote' ? 'QTE' :
-        'RCT';
-
     const existingPayments = initialDataPayments(formData);
     const existingPaidAmount = Number(formData.get('paidAmount') || 0)
         || existingPayments.reduce((acc, payment) => acc + payment.amount, 0);
@@ -305,7 +300,7 @@ export async function createInvoiceAction(formData: FormData) {
     });
 
     const doc: DocumentData = {
-        id: documentId || `${prefix}-${String(number).padStart(4, '0')}`,
+        id: documentId || buildDocumentId(type, number, await getDocumentNumbering()),
         ...(resolvedTitle ? { title: resolvedTitle } : {}),
         number,
         type,
@@ -412,7 +407,7 @@ export async function createLeadAction(formData: FormData) {
     const customerId = email || crypto.randomUUID();
 
     const doc: DocumentData = {
-        id: `LEAD-${String(number).padStart(4, '0')}`,
+        id: buildDocumentId('lead', number),
         number,
         type: 'lead',
         date: new Date().toISOString(),

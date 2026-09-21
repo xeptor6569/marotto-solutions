@@ -1,5 +1,6 @@
 import type { DocumentData, LineItem } from '@/lib/types';
 import { DEFAULT_MONEY_FORMAT, formatMoney, type MoneyFormat } from './money';
+import { buildDocumentId, DEFAULT_NUMBERING, type ResolvedNumbering } from './document-numbering';
 import {
     agreedScopeLineTotal,
     hasPendingApprovalLines,
@@ -66,6 +67,7 @@ export function buildDepositInvoiceDraft(
     mode: DepositMode,
     value: number,
     moneyFormat: MoneyFormat = DEFAULT_MONEY_FORMAT,
+    numbering: ResolvedNumbering = DEFAULT_NUMBERING,
 ): DocumentData {
     const money = (amount: number) => formatMoney(amount, moneyFormat);
     if (source.type !== 'quote' && source.type !== 'estimate') {
@@ -97,7 +99,7 @@ export function buildDepositInvoiceDraft(
             : 'This deposit covers the full billing base.',
     ];
 
-    const id = `INV-${String(invoiceNumber).padStart(4, '0')}`;
+    const id = buildDocumentId('invoice', invoiceNumber, numbering);
 
     return {
         id,
