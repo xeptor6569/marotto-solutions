@@ -6,7 +6,9 @@ import { revalidatePath } from 'next/cache';
 import { signIn } from '@/lib/auth';
 import { saveAppConfig } from '@/lib/config';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
+import { isValidCurrencyCode } from '@/lib/money';
 import { getThemePreset } from '@/lib/theme-presets';
+import { isValidTimeZone } from '@/lib/timezones';
 
 export type SetupActionState = { error?: string };
 
@@ -37,6 +39,10 @@ export async function completeSetupAction(
         const phoneDisplay = ((formData.get('phoneDisplay') as string) || '').trim();
         const businessEmail = ((formData.get('businessEmail') as string) || '').trim();
         const themePreset = ((formData.get('themePreset') as string) || '').trim();
+        const currencyRaw = ((formData.get('currency') as string) || '').trim().toUpperCase();
+        const currency = isValidCurrencyCode(currencyRaw) ? currencyRaw : 'USD';
+        const timezoneRaw = ((formData.get('businessTimezone') as string) || '').trim();
+        const businessTimezone = isValidTimeZone(timezoneRaw) ? timezoneRaw : 'UTC';
 
         if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
             return { error: 'Enter a valid email address for the admin account.' };
@@ -66,7 +72,10 @@ export async function completeSetupAction(
                 name: businessName,
                 phoneDisplay,
                 email: businessEmail,
+                currency,
+                locale: 'en-US',
             },
+            businessTimezone,
             branding: {
                 themePreset: getThemePreset(themePreset)?.id ?? 'classic-indigo',
                 defaultAppearance: 'system',

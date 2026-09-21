@@ -297,7 +297,7 @@ async function saveBillingSection(formData: FormData): Promise<SettingsActionSta
                 const existing = currentConfig.billing?.paymentMethods?.[key];
                 acc[key] = {
                     enabled: formData.has(`billing.${key}.enabled`),
-                    label: existing?.label || DEFAULT_METHOD_LABELS[key],
+                    label: str(formData, `billing.${key}.label`).slice(0, 40) || existing?.label || DEFAULT_METHOD_LABELS[key],
                     value: str(formData, `billing.${key}.value`),
                     note: str(formData, `billing.${key}.note`),
                     comingSoon: formData.has(`billing.${key}.comingSoon`),

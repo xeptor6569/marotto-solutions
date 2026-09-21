@@ -109,6 +109,15 @@ export default function BillingSettingsForm({ config }: { config: Partial<AppCon
                                     </label>
                                 </Flex>
                                 <Box>
+                                    <Text as="label" size="2" weight="bold">Display name</Text>
+                                    <TextField.Root
+                                        name={`billing.${key}.label`}
+                                        defaultValue={method?.label || ''}
+                                        placeholder={key}
+                                        maxLength={40}
+                                    />
+                                </Box>
+                                <Box>
                                     <Text as="label" size="2" weight="bold">{valueLabel}</Text>
                                     {key === 'stripe' ? (
                                         <Text size="1" color="gray" as="p" mb="1">
