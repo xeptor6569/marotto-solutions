@@ -15,6 +15,7 @@ import { convertTargets } from "@/lib/convert-document";
 import { DOC_LABEL, documentListLabel } from "@/lib/document-labels";
 import { hasPendingApprovalLines } from "@/lib/pending-client-approval";
 import { WORKFLOW_STATUSES, workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
+import { useMoney } from '@/components/MoneyProvider';
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
 
@@ -95,6 +96,7 @@ export default function AdminDocumentList({
     type: AdminDocumentListType;
     docs: DocumentData[];
 }) {
+    const { format: money } = useMoney();
     const router = useRouter();
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState<"all" | DocumentData["status"]>("all");
@@ -526,7 +528,7 @@ export default function AdminDocumentList({
                                         </Box>
                                         <Box style={{ textAlign: "right" }}>
                                             <Text size="1" color="gray">Total</Text>
-                                            <Text weight="bold" size="3">${doc.total.toFixed(2)}</Text>
+                                            <Text weight="bold" size="3">{money(doc.total)}</Text>
                                         </Box>
                                     </Flex>
                                     <Flex gap="2" wrap="wrap" style={{ width: "100%" }}>
@@ -618,7 +620,7 @@ export default function AdminDocumentList({
                                                 ) : null}
                                             </Table.Cell>
                                             <Table.Cell>{new Date(doc.date).toLocaleDateString()}</Table.Cell>
-                                            <Table.Cell align="right">${doc.total.toFixed(2)}</Table.Cell>
+                                            <Table.Cell align="right">{money(doc.total)}</Table.Cell>
                                             <Table.Cell>
                                                 <Badge color={badgeColor(doc.status)}>{doc.status}</Badge>
                                             </Table.Cell>

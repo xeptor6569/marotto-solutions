@@ -4,6 +4,7 @@ import "@radix-ui/themes/styles.css";
 import "./globals.css";
 import { Theme } from "@radix-ui/themes";
 import { EnvironmentBanner } from "@/components/EnvironmentBanner";
+import MoneyProvider from "@/components/MoneyProvider";
 import { getAppearancePreference } from "@/lib/appearance";
 import { getBranding, getSiteUrl } from "@/lib/branding";
 
@@ -105,7 +106,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { branding } = await getBranding();
+  const { branding, business } = await getBranding();
   const theme = branding.theme;
   const pref = await getAppearancePreference(theme.defaultAppearance);
   // SSR class for the explicit choices; system mode is resolved by the init
@@ -128,7 +129,9 @@ export default async function RootLayout({
           grayColor={theme.grayColor}
           radius={theme.radius}
         >
-          {children}
+          <MoneyProvider format={business.money}>
+            {children}
+          </MoneyProvider>
           <EnvironmentBanner />
         </Theme>
       </body>

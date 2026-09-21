@@ -14,12 +14,14 @@ import {
     type ContractRecord,
 } from '@/lib/contracts';
 import { isDatabaseConfigured } from '@/lib/prisma';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export default async function AdminContractsPage({
     searchParams,
 }: {
     searchParams?: Promise<{ error?: string; runResult?: string }>;
 }) {
+    const money = await getMoneyFormatter();
     const params = (await searchParams) || {};
     const dbReady = isDatabaseConfigured();
     const contracts = dbReady ? await getContracts() : [];
@@ -118,7 +120,7 @@ export default async function AdminContractsPage({
                                                 <Text size="2">{progress.progressLabel}</Text>
                                             </Table.Cell>
                                             <Table.Cell align="right">
-                                                ${summarizeRecurringTotal(contract).toFixed(2)}
+                                                {money(summarizeRecurringTotal(contract))}
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Badge color={statusColor(contract.status)}>{contract.status}</Badge>

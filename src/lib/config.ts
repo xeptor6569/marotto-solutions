@@ -60,6 +60,8 @@ export function getDefaultBusinessConfig(): BusinessConfig {
         addressLine1: '',
         addressLine2: '',
         serviceArea: '',
+        currency: 'USD',
+        locale: 'en-US',
     };
 }
 

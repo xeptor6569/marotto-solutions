@@ -11,6 +11,7 @@ import {
     type ContractRecord,
 } from '@/lib/contracts';
 import { buildSharePath } from '@/lib/share-token';
+import { getMoneyFormatter } from '@/lib/branding';
 
 interface Props {
     contract: ContractRecord;
@@ -33,6 +34,7 @@ export default async function ContractPreview({
     backHref = '/',
     publicMode = false,
 }: Props) {
+    const money = await getMoneyFormatter();
     const contract = publicMode
         ? initialContract
         : await ensureContractShareToken(initialContract);
@@ -182,9 +184,9 @@ export default async function ContractPreview({
                                             <Table.Cell align="right">
                                                 {line.kind === 'usage' ? 'as-billed' : line.quantity}
                                             </Table.Cell>
-                                            <Table.Cell align="right">${line.unitPrice.toFixed(2)}</Table.Cell>
+                                            <Table.Cell align="right">{money(line.unitPrice)}</Table.Cell>
                                             <Table.Cell align="right">
-                                                {line.kind === 'recurring' ? `$${lineTotal.toFixed(2)}` : '—'}
+                                                {line.kind === 'recurring' ? `${money(lineTotal)}` : '—'}
                                             </Table.Cell>
                                         </Table.Row>
                                     );
@@ -212,13 +214,13 @@ export default async function ContractPreview({
                         <Box className="doc-totals">
                             <div className="doc-total-row">
                                 <span>Recurring per cycle</span>
-                                <span>${recurringTotal.toFixed(2)}</span>
+                                <span>{money(recurringTotal)}</span>
                             </div>
                             {contract.termCycles ? (
                                 <div className="doc-total-due">
                                     <span>Term value (recurring)</span>
                                     <span className="doc-total-due-amount">
-                                        ${(recurringTotal * contract.termCycles).toFixed(2)}
+                                        {money((recurringTotal * contract.termCycles))}
                                     </span>
                                 </div>
                             ) : null}

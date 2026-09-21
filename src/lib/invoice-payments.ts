@@ -1,6 +1,7 @@
 import type { DocumentData, PaymentEntry, PaymentKind } from './types';
 import { getNextNumber, saveNewDocument } from './data';
 import { validateRecordPayment } from './document-save';
+import { getMoneyFormat } from './branding';
 
 export interface RecordInvoicePaymentInput {
     invoice: DocumentData;
@@ -56,7 +57,7 @@ export async function recordInvoicePayment(
         0;
     const balanceDue = invoice.balanceDue ?? Math.max(0, invoice.total - paidSoFar);
     const amount = Math.round(input.amount * 100) / 100;
-    const validationError = validateRecordPayment(amount, balanceDue);
+    const validationError = validateRecordPayment(amount, balanceDue, await getMoneyFormat());
     if (validationError) {
         throw new Error(validationError);
     }

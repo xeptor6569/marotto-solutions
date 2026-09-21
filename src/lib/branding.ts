@@ -1,4 +1,5 @@
 import { getAppConfig } from './config';
+import { createMoneyFormatter, resolveMoneyFormat, type MoneyFormat, type MoneyFormatter } from './money';
 import { resolveTheme, type ResolvedTheme } from './theme-presets';
 import type {
     AppConfig,
@@ -35,6 +36,8 @@ export interface ResolvedBusiness {
     addressLine1: string;
     addressLine2: string;
     serviceArea: string;
+    /** Currency + locale used for every amount in the app. */
+    money: MoneyFormat;
     /** False until the operator sets a business name in Settings. */
     isConfigured: boolean;
 }
@@ -54,6 +57,7 @@ export function resolveBusiness(business: BusinessConfig | undefined): ResolvedB
         addressLine1: business?.addressLine1?.trim() || '',
         addressLine2: business?.addressLine2?.trim() || '',
         serviceArea: business?.serviceArea?.trim() || '',
+        money: resolveMoneyFormat(business),
         isConfigured: Boolean(name),
     };
 }
@@ -162,6 +166,16 @@ export async function getBusiness(): Promise<ResolvedBusiness> {
 
 export async function getPublicSite(): Promise<ResolvedPublicSite> {
     return (await getBranding()).publicSite;
+}
+
+/** Configured currency/locale for server-side formatting. */
+export async function getMoneyFormat(): Promise<MoneyFormat> {
+    return (await getBusiness()).money;
+}
+
+/** `const money = await getMoneyFormatter(); money(12.5)` → "$12.50" (per settings). */
+export async function getMoneyFormatter(): Promise<MoneyFormatter> {
+    return createMoneyFormatter(await getMoneyFormat());
 }
 
 export function getPublicSiteService(

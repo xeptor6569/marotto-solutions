@@ -30,6 +30,7 @@ import type {
     ContractStatus,
 } from '@/lib/types';
 import type { ContractRecord } from '@/lib/contracts';
+import { useMoney } from '@/components/MoneyProvider';
 
 interface ContractFormProps {
     initialData?: ContractRecord;
@@ -70,6 +71,7 @@ function defaultLine(): LineRow {
 }
 
 export default function ContractForm({ initialData, error, clients, leads, jobs, seed }: ContractFormProps) {
+    const { format: money } = useMoney();
     const isEdit = !!initialData;
     const [title, setTitle] = useState(initialData?.title || seed?.title || '');
     const [status, setStatus] = useState<ContractStatus>(initialData?.status || 'active');
@@ -448,7 +450,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                     <Flex justify="between" align="center" mb="3" wrap="wrap" gap="2">
                         <Heading size="3">Recurring line items</Heading>
                         <Heading size="3" color="gray">
-                            ${recurringTotal.toFixed(2)} per cycle
+                            {money(recurringTotal)} per cycle
                         </Heading>
                     </Flex>
                     <Text size="2" color="gray" as="p" mb="3">
@@ -527,7 +529,7 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                                 <input type="hidden" name={`lines[${index}][unitPrice]`} value={line.unitPrice} />
                                             </Table.Cell>
                                             <Table.Cell align="right">
-                                                {line.kind === 'recurring' ? `$${cycleTotal.toFixed(2)}` : <Text size="1" color="gray">usage</Text>}
+                                                {line.kind === 'recurring' ? `${money(cycleTotal)}` : <Text size="1" color="gray">usage</Text>}
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Flex direction="column" gap="1">

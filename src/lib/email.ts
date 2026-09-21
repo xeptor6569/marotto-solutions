@@ -3,6 +3,7 @@ import type { DocumentData, CalendarEventRecord } from './types';
 import { formatInTimeZone } from 'date-fns-tz';
 import { buildDocumentShareUrl } from './document-share-url';
 import { getEmailBrand } from './email-branding';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export function createTransportFromEnv() {
     const server = process.env.EMAIL_SERVER;
@@ -37,6 +38,7 @@ export interface SendInvoiceEmailResult {
  * when the document has a recipient email and EMAIL_SERVER is configured.
  */
 export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<SendInvoiceEmailResult> {
+    const money = await getMoneyFormatter();
     const transport = createTransportFromEnv();
     if (!transport) {
         return { ok: false, error: 'Email is not configured (EMAIL_SERVER missing).' };
@@ -56,7 +58,7 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
         greeting,
         '',
         `Your latest service invoice is ready.`,
-        `Amount due: $${invoice.total.toFixed(2)}.`,
+        `Amount due: ${money(invoice.total)}.`,
         invoice.dueDate ? `Due date: ${new Date(invoice.dueDate).toLocaleDateString()}.` : '',
         '',
         `View it online: ${url}`,
@@ -72,7 +74,7 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
   <p style="margin: 0 0 16px;">${escapeHtml(greeting)}</p>
   <p style="margin: 0 0 16px;">Your latest service invoice is ready.</p>
   <p style="margin: 0 0 16px;">
-    <strong>Amount due:</strong> $${invoice.total.toFixed(2)}<br />
+    <strong>Amount due:</strong> ${money(invoice.total)}<br />
     ${invoice.dueDate ? `<strong>Due date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}` : ''}
   </p>
   <p style="margin: 0 0 16px;"><a href="${safeUrl}" style="color: #4f46e5;">View invoice</a></p>

@@ -52,6 +52,7 @@ import DocumentLineItemEditor, {
 } from '@/components/DocumentLineItemEditor';
 import DocumentOptionsEditor from '@/components/DocumentOptionsEditor';
 import SaveAsPresetButton from '@/components/SaveAsPresetButton';
+import { useMoney } from '@/components/MoneyProvider';
 
 const nativeSelectStyle = {
     width: '100%',
@@ -95,6 +96,7 @@ export default function NewDocumentForm({
     /** From Settings → Documents. guided = step flow; full = all sections. */
     formMode?: DocumentFormMode;
 }) {
+    const { format: money } = useMoney();
     const documentFormMode: DocumentFormMode = formMode === 'full' ? 'full' : 'guided';
     const isEditing = Boolean(initialData);
     const seededJobId = seed?.jobId || initialData?.jobId || initialData?.customer?.jobId || '';
@@ -723,17 +725,17 @@ export default function NewDocumentForm({
                             <Box style={{ textAlign: 'right' }}>
                                 {discountSavings > 0 ? (
                                     <>
-                                        <Text as="div" size="2" color="gray">Base subtotal: ${grossSubtotal.toFixed(2)}</Text>
-                                        <Text as="div" size="2" color="green">Discount savings: −${discountSavings.toFixed(2)}</Text>
+                                        <Text as="div" size="2" color="gray">Base subtotal: {money(grossSubtotal)}</Text>
+                                        <Text as="div" size="2" color="green">Discount savings: −{money(discountSavings)}</Text>
                                     </>
                                 ) : null}
                                 {showDocumentOptions ? (
-                                    <Text as="div" size="2" color="gray">Base scope: ${baseSubtotal.toFixed(2)}</Text>
+                                    <Text as="div" size="2" color="gray">Base scope: {money(baseSubtotal)}</Text>
                                 ) : null}
                                 <Text size="4" weight="bold">
                                     {showDocumentOptions && (packages.length > 0 || choiceGroups.length > 0)
-                                        ? `From / selected: $${subtotal.toFixed(2)}`
-                                        : `Total: $${subtotal.toFixed(2)}`}
+                                        ? `From / selected: ${money(subtotal)}`
+                                        : `Total: ${money(subtotal)}`}
                                 </Text>
                             </Box>
                         </Flex>
@@ -888,10 +890,10 @@ export default function NewDocumentForm({
                                 <Box style={{ textAlign: 'right' }}>
                                     <Text size="1" color="gray">Balance due</Text>
                                     <Text as="div" size="6" weight="bold" style={{ color: balanceDue > 0 ? 'var(--red-11)' : 'var(--green-11)' }}>
-                                        ${balanceDue.toFixed(2)}
+                                        {money(balanceDue)}
                                     </Text>
                                     <Text size="1" color="gray">
-                                        Paid ${paidAmount.toFixed(2)} of ${subtotal.toFixed(2)}
+                                        Paid {money(paidAmount)} of {money(subtotal)}
                                     </Text>
                                 </Box>
                             </Flex>
@@ -900,7 +902,7 @@ export default function NewDocumentForm({
                                 <Flex direction="column" gap="1" mb="3">
                                     {payments.map((payment) => (
                                         <Text key={payment.id} size="2" color="gray">
-                                            {new Date(payment.date).toLocaleDateString()} — ${payment.amount.toFixed(2)} ({payment.kind.replace('_', ' ')})
+                                            {new Date(payment.date).toLocaleDateString()} — {money(payment.amount)} ({payment.kind.replace('_', ' ')})
                                             {payment.receiptId ? ` · ${payment.receiptId}` : ''}
                                         </Text>
                                     ))}
@@ -999,7 +1001,7 @@ export default function NewDocumentForm({
                         <Card>
                             <Heading size="3" mb="2">Review</Heading>
                             <Text size="2" color="gray" as="p">
-                                Total: <Text weight="bold">${subtotal.toFixed(2)}</Text>
+                                Total: <Text weight="bold">{money(subtotal)}</Text>
                             </Text>
                             <Text size="2" color="gray" as="p" mt="2">
                                 Save or issue from the action bar below. Email the client from the preview page after saving.

@@ -1,11 +1,32 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Grid, TextArea, TextField, Text, Box } from '@radix-ui/themes';
 import SettingsSectionForm, { Field } from './SettingsSectionForm';
+import { CURRENCY_OPTIONS } from '@/lib/money';
+import { listTimeZones } from '@/lib/timezones';
 import type { AppConfig } from '@/lib/types';
+
+export const nativeSelectStyle: React.CSSProperties = {
+    width: '100%',
+    minHeight: 32,
+    padding: '0 10px',
+    borderRadius: 'var(--radius-2)',
+    border: '1px solid var(--gray-a7)',
+    background: 'var(--color-surface)',
+    color: 'var(--gray-12)',
+    font: 'inherit',
+    fontSize: 'var(--font-size-2)',
+};
 
 export default function BusinessSettingsForm({ config }: { config: Partial<AppConfig> }) {
     const business = config.business;
+    const timeZones = useMemo(() => listTimeZones(), []);
+    const currentTimezone = config.businessTimezone || 'America/New_York';
+    const currentCurrency = (business?.currency || 'USD').toUpperCase();
+    const currencyOptions = CURRENCY_OPTIONS.some((c) => c.code === currentCurrency)
+        ? CURRENCY_OPTIONS
+        : [{ code: currentCurrency, label: currentCurrency }, ...CURRENCY_OPTIONS];
 
     return (
         <SettingsSectionForm section="business">
@@ -96,14 +117,34 @@ export default function BusinessSettingsForm({ config }: { config: Partial<AppCo
                 />
             </Field>
 
-            <Box>
-                <Field label="Business timezone" hint="IANA identifier (e.g. America/New_York). Calendar times and reminders use this.">
-                    <TextField.Root
-                        name="businessTimezone"
-                        defaultValue={config.businessTimezone || 'America/New_York'}
-                        placeholder="America/New_York"
-                    />
-                </Field>
+            <Box style={{ borderTop: '1px solid var(--gray-a5)', paddingTop: 16 }}>
+                <Text size="3" weight="bold" as="div" mb="3">Region</Text>
+                <Grid columns={{ initial: '1', sm: '3' }} gap="4">
+                    <Field label="Currency" hint="Used for every amount in the app, on documents, and for card payments.">
+                        <select name="currency" defaultValue={currentCurrency} style={nativeSelectStyle}>
+                            {currencyOptions.map((option) => (
+                                <option key={option.code} value={option.code}>{option.label}</option>
+                            ))}
+                        </select>
+                    </Field>
+                    <Field label="Number format locale" hint='Controls separators and symbol placement, e.g. "en-US", "en-GB", "de-DE".'>
+                        <TextField.Root
+                            name="locale"
+                            defaultValue={business?.locale || 'en-US'}
+                            placeholder="en-US"
+                        />
+                    </Field>
+                    <Field label="Business timezone" hint="Calendar times and reminders use this.">
+                        <select name="businessTimezone" defaultValue={currentTimezone} style={nativeSelectStyle}>
+                            {!timeZones.includes(currentTimezone) ? (
+                                <option value={currentTimezone}>{currentTimezone}</option>
+                            ) : null}
+                            {timeZones.map((zone) => (
+                                <option key={zone} value={zone}>{zone.replace(/_/g, ' ')}</option>
+                            ))}
+                        </select>
+                    </Field>
+                </Grid>
             </Box>
         </SettingsSectionForm>
     );

@@ -24,10 +24,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import CreateMenu from "@/components/CreateMenu";
 import { documentListLabel, documentListSubLabel } from "@/lib/document-labels";
 import type { DocumentData } from "@/lib/types";
-
-function formatMoney(amount: number): string {
-    return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+import { getMoneyFormatter } from '@/lib/branding';
 
 function invoiceOutstanding(invoice: DocumentData): number {
     if (invoice.status === 'paid' || invoice.status === 'void') return 0;
@@ -195,6 +192,7 @@ const invoiceStatusColor = (status: DocumentData['status']) =>
     status === 'paid' ? 'green' : status === 'void' ? 'gray' : status === 'sent' ? 'blue' : 'orange';
 
 export default async function AdminDashboard() {
+    const money = await getMoneyFormatter();
     const invoices = await getDocuments('invoice');
     const estimates = await getDocuments('estimate');
     const quotes = await getDocuments('quote');
@@ -235,14 +233,14 @@ export default async function AdminDashboard() {
             <Grid columns={{ initial: '1', sm: '3' }} gap="4" mb="4">
                 <KpiCard
                     label="Outstanding"
-                    value={formatMoney(outstandingTotal)}
+                    value={money(outstandingTotal)}
                     detail={`${openInvoices.length} open invoice${openInvoices.length === 1 ? '' : 's'}`}
                     icon={CircleDollarSign}
                     color={outstandingTotal > 0 ? 'amber' : 'green'}
                 />
                 <KpiCard
                     label="Overdue"
-                    value={formatMoney(overdueTotal)}
+                    value={money(overdueTotal)}
                     detail={overdueInvoices.length > 0
                         ? `${overdueInvoices.length} invoice${overdueInvoices.length === 1 ? '' : 's'} past due`
                         : 'Nothing past due'}
@@ -251,7 +249,7 @@ export default async function AdminDashboard() {
                 />
                 <KpiCard
                     label={`Collected in ${monthLabel}`}
-                    value={formatMoney(collected)}
+                    value={money(collected)}
                     icon={TrendingUp}
                     color="green"
                 />
@@ -405,7 +403,7 @@ export default async function AdminDashboard() {
                             ...(documentListSubLabel(r) ? [documentListSubLabel(r) as string] : []),
                             new Date(r.date).toLocaleDateString(),
                         ],
-                        badge: <Badge color="green">${r.total.toFixed(2)}</Badge>,
+                        badge: <Badge color="green">{money(r.total)}</Badge>,
                     }))}
                 />
 

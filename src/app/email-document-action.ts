@@ -3,6 +3,7 @@
 import { getDocumentById } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
 import { getEmailBrand } from '@/lib/email-branding';
+import { getMoneyFormat } from '@/lib/branding';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import {
@@ -66,7 +67,7 @@ export async function sendDocumentEmailAction(
     const greeting = doc.customer.name ? `Hi ${doc.customer.name},` : 'Hello,';
 
     const pendingParagraph = hasPendingApprovalLines(doc.lineItems)
-        ? pendingApprovalSummarySentence(docTitle, pendingApprovalLineTotal(doc.lineItems))
+        ? pendingApprovalSummarySentence(docTitle, pendingApprovalLineTotal(doc.lineItems), await getMoneyFormat())
         : '';
 
     const textLines = [

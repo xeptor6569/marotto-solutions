@@ -7,6 +7,8 @@ import { revalidatePath } from 'next/cache';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { parseDocumentFormMode } from '@/lib/document-form-mode';
+import { isValidCurrencyCode, isValidLocale } from '@/lib/money';
+import { isValidTimeZone } from '@/lib/timezones';
 import {
     CUSTOM_THEME_PRESET_ID,
     getThemePreset,
@@ -50,6 +52,19 @@ function revalidateAll() {
 // ─── Business profile ────────────────────────────────────────────────
 
 async function saveBusinessSection(formData: FormData): Promise<SettingsActionState> {
+    const currency = str(formData, 'currency').toUpperCase();
+    if (currency && !isValidCurrencyCode(currency)) {
+        return { success: false, error: `"${currency}" is not a valid ISO 4217 currency code.` };
+    }
+    const locale = str(formData, 'locale');
+    if (locale && !isValidLocale(locale)) {
+        return { success: false, error: `"${locale}" is not a valid locale (try "en-US", "en-GB", "de-DE").` };
+    }
+    const timezone = str(formData, 'businessTimezone');
+    if (timezone && !isValidTimeZone(timezone)) {
+        return { success: false, error: `"${timezone}" is not a valid IANA timezone (try "America/New_York").` };
+    }
+
     const update: Partial<AppConfig> = {
         business: {
             name: str(formData, 'businessName'),
@@ -61,8 +76,10 @@ async function saveBusinessSection(formData: FormData): Promise<SettingsActionSt
             addressLine1: str(formData, 'addressLine1'),
             addressLine2: str(formData, 'addressLine2'),
             serviceArea: str(formData, 'serviceArea'),
+            currency: currency || 'USD',
+            locale: locale || 'en-US',
         },
-        businessTimezone: str(formData, 'businessTimezone') || undefined,
+        businessTimezone: timezone || undefined,
     };
     await saveAppConfig(update);
     return { success: true };

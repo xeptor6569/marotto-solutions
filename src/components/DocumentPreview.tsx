@@ -57,8 +57,10 @@ import MarkdownContent from "@/components/MarkdownContent";
 import { depositBillingBase } from "@/lib/deposit-invoice";
 import { convertTargets } from "@/lib/convert-document";
 import { formatHours } from "@/lib/job-estimated-hours";
+import { getMoneyFormatter } from "@/lib/branding";
+import type { MoneyFormatter } from "@/lib/money";
 
-function LineItemsTable({ items }: { items: LineItem[] }) {
+function LineItemsTable({ items, money }: { items: LineItem[]; money: MoneyFormatter }) {
     if (!items.length) {
         return <Text size="2" color="gray">No line items.</Text>;
     }
@@ -93,17 +95,17 @@ function LineItemsTable({ items }: { items: LineItem[] }) {
                                 ) : null}
                             </Table.Cell>
                             <Table.Cell align="right">{item.quantity ?? 0}</Table.Cell>
-                            <Table.Cell align="right">${(Number(item.unitPrice) || 0).toFixed(2)}</Table.Cell>
+                            <Table.Cell align="right">{money((Number(item.unitPrice) || 0))}</Table.Cell>
                             <Table.Cell align="right">
                                 {item.discountPercent ? (
                                     <Box>
                                         <Text as="div" size="1" style={{ color: "#9ca3af", textDecoration: "line-through" }}>
-                                            ${((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)).toFixed(2)}
+                                            {money(((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0)))}
                                         </Text>
-                                        <span className="doc-line-title">${(Number(item.total) || 0).toFixed(2)}</span>
+                                        <span className="doc-line-title">{money((Number(item.total) || 0))}</span>
                                     </Box>
                                 ) : (
-                                    <>${(Number(item.total) || 0).toFixed(2)}</>
+                                    <>{money((Number(item.total) || 0))}</>
                                 )}
                             </Table.Cell>
                         </Table.Row>
@@ -221,6 +223,7 @@ export default async function DocumentPreview({
     /** Stripe Checkout return status from `/d/{token}?stripe=…`. */
     stripeReturn?: "success" | "cancelled" | null;
 }) {
+    const money = await getMoneyFormatter();
     const session = publicMode ? null : await auth();
     const config = await getAppConfig();
     const { business, branding } = resolveBrandingFromConfig(config);
@@ -261,7 +264,7 @@ export default async function DocumentPreview({
     const agreedSubtotal = agreedScopeLineTotal(resolvedLines);
     const pendingSubtotal = pendingApprovalLineTotal(resolvedLines);
     const pendingApprovalSummary = pendingLines
-        ? pendingApprovalSummarySentence(docTitle, pendingSubtotal)
+        ? pendingApprovalSummarySentence(docTitle, pendingSubtotal, business.money)
         : undefined;
     const showDepositInvoice = !publicMode && (doc.type === "quote" || doc.type === "estimate");
     const depositBase = showDepositInvoice ? depositBillingBase(doc) : 0;
@@ -473,7 +476,7 @@ export default async function DocumentPreview({
                             <div className="doc-section-label">Base scope</div>
                         </Box>
                     ) : null}
-                    <LineItemsTable items={lineItems} />
+                    <LineItemsTable items={lineItems} money={money} />
 
                     {packages.length > 0 ? (
                         <Box className="doc-section" mt="4">
@@ -497,12 +500,12 @@ export default async function DocumentPreview({
                                                 <Text weight="bold">{pkg.label}</Text>
                                                 {pkg.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                                 {selected ? <Badge size="1" color="green">Selected</Badge> : null}
-                                                <Text size="2" color="gray">${packageTotal(pkg).toFixed(2)}</Text>
+                                                <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
                                             </Flex>
                                             {pkg.description ? (
                                                 <Text size="2" color="gray" as="p" mb="2">{pkg.description}</Text>
                                             ) : null}
-                                            <LineItemsTable items={pkg.lineItems} />
+                                            <LineItemsTable items={pkg.lineItems} money={money} />
                                         </Box>
                                     );
                                 })}
@@ -540,12 +543,12 @@ export default async function DocumentPreview({
                                                         <Flex align="center" gap="2" wrap="wrap" mb="2">
                                                             <Text weight="medium">{choice.label}</Text>
                                                             {selected ? <Badge size="1" color="green">Selected</Badge> : null}
-                                                            <Text size="2" color="gray">${choiceTotal(choice).toFixed(2)}</Text>
+                                                            <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                                         </Flex>
                                                         {choice.description ? (
                                                             <Text size="2" color="gray" as="p" mb="2">{choice.description}</Text>
                                                         ) : null}
-                                                        <LineItemsTable items={choice.lineItems} />
+                                                        <LineItemsTable items={choice.lineItems} money={money} />
                                                     </Box>
                                                 );
                                             })}
@@ -758,11 +761,11 @@ export default async function DocumentPreview({
                                 <>
                                     <div className="doc-total-row">
                                         <span>Subtotal (before discounts)</span>
-                                        <span>${grossSubtotal.toFixed(2)}</span>
+                                        <span>{money(grossSubtotal)}</span>
                                     </div>
                                     <div className="doc-total-row">
                                         <span style={{ color: "#15803d", fontWeight: 600 }}>Discount savings</span>
-                                        <span style={{ color: "#15803d", fontWeight: 600 }}>−${discountSavings.toFixed(2)}</span>
+                                        <span style={{ color: "#15803d", fontWeight: 600 }}>−{money(discountSavings)}</span>
                                     </div>
                                 </>
                             ) : null}
@@ -770,41 +773,41 @@ export default async function DocumentPreview({
                                 <>
                                     <div className="doc-total-row">
                                         <span>Subtotal</span>
-                                        <span>${doc.subtotal.toFixed(2)}</span>
+                                        <span>{money(doc.subtotal)}</span>
                                     </div>
                                     <div className="doc-total-row">
                                         <span>Paid</span>
-                                        <span>${paidAmount.toFixed(2)}</span>
+                                        <span>{money(paidAmount)}</span>
                                     </div>
                                 </>
                             ) : null}
                             {hasOptions && !selectionComplete && doc.type !== "invoice" ? (
                                 <div className="doc-total-row">
                                     <span>Starting from</span>
-                                    <span>${startingFrom.toFixed(2)}</span>
+                                    <span>{money(startingFrom)}</span>
                                 </div>
                             ) : null}
                             {hasOptions && selectionComplete && doc.type !== "invoice" ? (
                                 <div className="doc-total-row">
                                     <span>Selected configuration</span>
-                                    <span>${resolvedTotal.toFixed(2)}</span>
+                                    <span>{money(resolvedTotal)}</span>
                                 </div>
                             ) : null}
                             {showSplitTotals ? (
                                 <>
                                     <div className="doc-total-row">
                                         <span>Agreed scope subtotal</span>
-                                        <span>${agreedSubtotal.toFixed(2)}</span>
+                                        <span>{money(agreedSubtotal)}</span>
                                     </div>
                                     <div className="doc-total-row">
                                         <span>Additional scope (pending approval)</span>
-                                        <span>${pendingSubtotal.toFixed(2)}</span>
+                                        <span>{money(pendingSubtotal)}</span>
                                     </div>
                                 </>
                             ) : doc.type !== "invoice" && !hasOptions ? (
                                 <div className="doc-total-row">
                                     <span>Subtotal</span>
-                                    <span>${doc.subtotal.toFixed(2)}</span>
+                                    <span>{money(doc.subtotal)}</span>
                                 </div>
                             ) : null}
                             <div className="doc-total-due">
@@ -827,13 +830,13 @@ export default async function DocumentPreview({
                                             : undefined
                                     }
                                 >
-                                    ${invoiceAmountDue.toFixed(2)}
+                                    {money(invoiceAmountDue)}
                                 </span>
                             </div>
                             {showInvoiceAmountDue && paidAmount > 0 ? (
                                 <div className="doc-total-footnote">
                                     <span>Original Invoice Total</span>
-                                    <span>${doc.total.toFixed(2)}</span>
+                                    <span>{money(doc.total)}</span>
                                 </div>
                             ) : null}
                         </Box>

@@ -10,6 +10,7 @@ import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import type { DocumentData, DocumentType } from '@/lib/types';
 import { requireAdminAction } from '@/lib/require-admin-session';
+import { getMoneyFormatter } from '@/lib/branding';
 
 const PREFIX: Record<DocumentType, string> = {
     invoice: 'INV',
@@ -182,6 +183,7 @@ export interface BulkSendResult {
  * single email listing links to all of their selected documents.
  */
 export async function sendDocumentsAction(ids: string[], message?: string): Promise<BulkSendResult> {
+    const money = await getMoneyFormatter();
     const gate = await requireAdminAction();
     if (!gate.ok) return { success: false, error: 'You must be signed in to send email.' };
     const session = gate.session;
@@ -240,7 +242,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
             );
 
             const listText = docsWithUrls
-                .map(({ doc: d, url }) => `- ${DOC_LABEL[d.type]} ${d.id} ($${d.total.toFixed(2)}): ${url}`)
+                .map(({ doc: d, url }) => `- ${DOC_LABEL[d.type]} ${d.id} (${money(d.total)}): ${url}`)
                 .join('\n');
 
             const textBody = [
@@ -257,7 +259,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
             const listHtml = docsWithUrls
                 .map(({ doc: d, url }) => {
                     const safeUrl = escapeHtml(url);
-                    return `<li style="margin: 0 0 8px;"><a href="${safeUrl}" style="color: #4f46e5;">${escapeHtml(DOC_LABEL[d.type])} ${escapeHtml(d.id)}</a> — $${d.total.toFixed(2)}</li>`;
+                    return `<li style="margin: 0 0 8px;"><a href="${safeUrl}" style="color: #4f46e5;">${escapeHtml(DOC_LABEL[d.type])} ${escapeHtml(d.id)}</a> — ${money(d.total)}</li>`;
                 })
                 .join('');
 

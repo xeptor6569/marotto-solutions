@@ -7,12 +7,14 @@ import EmptyState from '@/components/EmptyState';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { listPresets } from '@/lib/presets';
 import { requireAdminPage } from '@/lib/require-admin-session';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export default async function AdminPresetsPage({
     searchParams,
 }: {
     searchParams?: Promise<{ error?: string }>;
 }) {
+    const money = await getMoneyFormatter();
     await requireAdminPage('/admin/presets');
     const params = (await searchParams) || {};
     const presets = await listPresets();
@@ -90,7 +92,7 @@ export default async function AdminPresetsPage({
                                                 </Flex>
                                             </Table.Cell>
                                             <Table.Cell>{preset.lineItems.length}</Table.Cell>
-                                            <Table.Cell align="right">${subtotal.toFixed(2)}</Table.Cell>
+                                            <Table.Cell align="right">{money(subtotal)}</Table.Cell>
                                             <Table.Cell>
                                                 <Button asChild size="1" variant="soft">
                                                     <Link href={`/admin/presets/${preset.id}/edit`}>Edit</Link>

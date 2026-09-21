@@ -7,6 +7,7 @@ import {
     resolveStripeCheckoutAmount,
     type StripeCheckoutMode,
 } from '@/lib/stripe-checkout';
+import { useMoney } from '@/components/MoneyProvider';
 
 type Props = {
     shareToken: string;
@@ -27,6 +28,7 @@ export default function StripeCheckoutPay({
     label = 'Stripe',
     note,
 }: Props) {
+    const { format: money } = useMoney();
     const [showPartial, setShowPartial] = useState(false);
     const [partialMode, setPartialMode] = useState<PartialMode>('percent');
     const [amount, setAmount] = useState(() => (balanceDue > 0 ? balanceDue.toFixed(2) : ''));
@@ -230,7 +232,7 @@ export default function StripeCheckoutPay({
                                 onChange={(e) => setSplitCount(e.target.value)}
                             />
                             <Text as="div" size="1" color="gray" mt="1">
-                                Each payment ≈ ${(invoiceTotal / Math.max(2, Number(splitCount) || 2)).toFixed(2)}
+                                Each payment ≈ {money((invoiceTotal / Math.max(2, Number(splitCount) || 2)))}
                                 {' '}(capped at balance due)
                             </Text>
                         </Box>
@@ -274,7 +276,7 @@ export default function StripeCheckoutPay({
             >
                 {isPending
                     ? 'Redirecting…'
-                    : `Pay $${(chargeAmount ?? balanceDue).toFixed(2)} with Stripe`}
+                    : `Pay ${money((chargeAmount ?? balanceDue))} with Stripe`}
             </Button>
 
             {error || preview.error ? (

@@ -28,7 +28,7 @@ import { suggestDocumentTitle } from '@/lib/document-labels';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
-import { buildServiceLabelMap, getPublicSite } from '@/lib/branding';
+import { buildServiceLabelMap, getMoneyFormat, getPublicSite } from '@/lib/branding';
 import { upsertProspectFromQuoteRequest } from '@/lib/quote-intake';
 import {
     sendQuoteRequestAdminEmail,
@@ -77,7 +77,7 @@ export async function createDepositInvoiceAction(input: {
         }
 
         const number = await getNextNumber('invoice');
-        const doc = buildDepositInvoiceDraft(source, number, input.mode, input.value);
+        const doc = buildDepositInvoiceDraft(source, number, input.mode, input.value, await getMoneyFormat());
         await saveNewDocument(doc);
 
         revalidatePath('/admin');
@@ -290,7 +290,7 @@ export async function createInvoiceAction(formData: FormData) {
     const existingBalanceDue = Math.max(0, total - existingPaidAmount);
 
     if (type === 'invoice' && intent === 'record_payment') {
-        const paymentError = validateRecordPayment(paymentAmount, existingBalanceDue);
+        const paymentError = validateRecordPayment(paymentAmount, existingBalanceDue, await getMoneyFormat());
         if (paymentError) {
             throw new Error(paymentError);
         }

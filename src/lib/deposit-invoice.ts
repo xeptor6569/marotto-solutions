@@ -1,4 +1,5 @@
 import type { DocumentData, LineItem } from '@/lib/types';
+import { DEFAULT_MONEY_FORMAT, formatMoney, type MoneyFormat } from './money';
 import {
     agreedScopeLineTotal,
     hasPendingApprovalLines,
@@ -50,12 +51,13 @@ export function computeDepositAmount(
     return Math.round(value * 100) / 100;
 }
 
-export function formatDepositLabel(mode: DepositMode, value: number): string {
+export function formatDepositLabel(mode: DepositMode, value: number, moneyFormat: MoneyFormat = DEFAULT_MONEY_FORMAT): string {
+    const money = (amount: number) => formatMoney(amount, moneyFormat);
     if (mode === 'percent') {
         const pct = Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
         return `${pct}% down payment`;
     }
-    return `$${value.toFixed(2)} down payment`;
+    return `${money(value)} down payment`;
 }
 
 export function buildDepositInvoiceDraft(
@@ -63,7 +65,9 @@ export function buildDepositInvoiceDraft(
     invoiceNumber: number,
     mode: DepositMode,
     value: number,
+    moneyFormat: MoneyFormat = DEFAULT_MONEY_FORMAT,
 ): DocumentData {
+    const money = (amount: number) => formatMoney(amount, moneyFormat);
     if (source.type !== 'quote' && source.type !== 'estimate') {
         throw new Error('Deposit invoices can only be created from a quote or estimate.');
     }
@@ -72,7 +76,7 @@ export function buildDepositInvoiceDraft(
     const depositAmount = computeDepositAmount(baseTotal, mode, value);
     const balanceAfterDeposit = Math.max(0, Math.round((baseTotal - depositAmount) * 100) / 100);
     const sourceLabel = DOC_LABEL[source.type];
-    const depositLabel = formatDepositLabel(mode, value);
+    const depositLabel = formatDepositLabel(mode, value, moneyFormat);
     const today = new Date().toISOString().split('T')[0];
 
     const lineItem: LineItem = {
@@ -86,10 +90,10 @@ export function buildDepositInvoiceDraft(
 
     const noteLines = [
         `Deposit invoice for ${sourceLabel} ${source.id}.`,
-        `Billing base (agreed scope): $${baseTotal.toFixed(2)}.`,
-        `This invoice: $${depositAmount.toFixed(2)} (${depositLabel}).`,
+        `Billing base (agreed scope): ${money(baseTotal)}.`,
+        `This invoice: ${money(depositAmount)} (${depositLabel}).`,
         balanceAfterDeposit > 0
-            ? `Estimated balance after this deposit: $${balanceAfterDeposit.toFixed(2)}.`
+            ? `Estimated balance after this deposit: ${money(balanceAfterDeposit)}.`
             : 'This deposit covers the full billing base.',
     ];
 

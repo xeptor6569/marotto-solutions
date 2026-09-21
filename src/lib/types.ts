@@ -253,6 +253,10 @@ export interface BusinessConfig {
     addressLine2?: string;
     /** Human-readable service area, e.g. "Springfield and surrounding communities". */
     serviceArea?: string;
+    /** ISO 4217 currency code for all amounts (default "USD"). */
+    currency?: string;
+    /** BCP 47 locale for number formatting (default "en-US"). */
+    locale?: string;
 }
 
 export type ThemeAppearance = 'light' | 'dark' | 'system';
