@@ -199,6 +199,27 @@ jobs:
             "$prisma" db push --accept-data-loss
           fi
 
+      # Optional: same as prod. Set ADMIN_EMAIL / ADMIN_PASSWORD on the GitHub
+      # "dev" environment to unlock password sign-in after OTP-only first login.
+      - name: Ensure admin password
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ADMIN_EMAIL}" ] || [ -z "${ADMIN_PASSWORD}" ]; then
+            echo "Skipping admin seed (set ADMIN_EMAIL and ADMIN_PASSWORD secrets to enable)."
+            exit 0
+          fi
+          if [ -n "${DATABASE_URL_SECRET}" ]; then
+            export DATABASE_URL="${DATABASE_URL_SECRET}"
+          else
+            export DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:${POSTGRES_PORT}/marotto_db"
+          fi
+          node scripts/seed-admin.js
+
       - name: Build and start application
         run: docker compose ${COMPOSE_FILES} up -d --build --remove-orphans
 

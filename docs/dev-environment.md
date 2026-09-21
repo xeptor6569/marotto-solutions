@@ -53,12 +53,18 @@ DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
   npx prisma migrate deploy
 ```
 
-Create an admin user:
+Create or update an admin password (works for OTP-only accounts too):
 
 ```bash
 DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
+  ADMIN_EMAIL=me@cameronmarotto.com \
+  ADMIN_PASSWORD='choose-a-strong-password' \
   node scripts/seed-admin.js
 ```
+
+The deploy-dev workflow does the same when `ADMIN_EMAIL` and `ADMIN_PASSWORD`
+are set as secrets on the GitHub **dev** environment. After signing in with OTP,
+you can also set a password at `/admin/settings` → Account password.
 
 Always pass both `-f` files. Running `docker compose up` with only the base file
 while a dev `.env` is present starts a dev-named stack with production settings.
