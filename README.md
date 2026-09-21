@@ -16,6 +16,7 @@ Everything brand-specific is configuration: set your business name, logo, colors
 - **Sharing:** every document gets an unguessable share link clients can view, print, and pay from — no client accounts needed
 - **Operations:** dashboard with money KPIs (outstanding, overdue, collected), full backup/restore as one archive, JSON import, System Health diagnostics, API reference, and an in-app manual (`/admin/help`)
 - **Mobile-first PWA:** installable on a phone home screen, bottom navigation, card layouts, and no iOS focus-zoom
+- **Auth:** email one-time codes or email/password; set or change your password under Settings → Account (deploys can also seed an admin via `ADMIN_EMAIL`/`ADMIN_PASSWORD` secrets)
 
 ### White-label & theming
 

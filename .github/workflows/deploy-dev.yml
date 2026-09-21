@@ -14,7 +14,9 @@ on:
       ref:
         description: "Branch, tag or SHA to deploy to dev"
         required: false
-        default: develop
+        # main rather than develop: a develop branch may not exist, and
+        # checkout fails outright on a missing ref before anything else runs.
+        default: main
 
 # The runner and the Docker daemon are shared with the prod deploy, so builds
 # must not interleave. deploy.yml uses the same group.
@@ -26,7 +28,9 @@ env:
   STACK_NAME: marotto-dev
   APP_ENV: dev
   APP_PORT: "3082"
-  POSTGRES_PORT: "5434"
+  # Not 5434: that port was already taken on the host by something outside
+  # this stack, and Docker fails the whole `up` when a publish bind collides.
+  POSTGRES_PORT: "5444"
   COMPOSE_PROJECT_NAME: marotto-dev
   COMPOSE_FILES: "-f docker-compose.yml -f docker-compose.dev.yml"
 
@@ -43,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '26'
           cache: npm
 
       - name: Validate required configuration
@@ -194,6 +198,27 @@ jobs:
             echo "::warning::'prisma migrate deploy' failed on dev; falling back to 'db push'"
             "$prisma" db push --accept-data-loss
           fi
+
+      # Optional: same as prod. Set ADMIN_EMAIL / ADMIN_PASSWORD on the GitHub
+      # "dev" environment to unlock password sign-in after OTP-only first login.
+      - name: Ensure admin password
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ADMIN_EMAIL}" ] || [ -z "${ADMIN_PASSWORD}" ]; then
+            echo "Skipping admin seed (set ADMIN_EMAIL and ADMIN_PASSWORD secrets to enable)."
+            exit 0
+          fi
+          if [ -n "${DATABASE_URL_SECRET}" ]; then
+            export DATABASE_URL="${DATABASE_URL_SECRET}"
+          else
+            export DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:${POSTGRES_PORT}/marotto_db"
+          fi
+          node scripts/seed-admin.js
 
       - name: Build and start application
         run: docker compose ${COMPOSE_FILES} up -d --build --remove-orphans

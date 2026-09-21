@@ -76,7 +76,7 @@ services:
   # Debian-based on purpose: the mounted node_modules holds Prisma query engines
   # built for the runner's libc, so an Alpine (musl) image would fail to load them.
   prisma-studio:
-    image: node:20-slim
+    image: node:26-slim
     container_name: ${STACK_NAME:-marotto-dev}-prisma-studio
     profiles:
       - tools

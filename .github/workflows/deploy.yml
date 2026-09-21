@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '26'
           cache: npm
 
       - name: Validate required configuration
@@ -189,6 +189,28 @@ jobs:
           done
           echo "::error::'prisma migrate deploy' failed 3 times; leaving the running deployment untouched"
           exit 1
+
+      # Optional: attach/reset an admin password hash so credentials sign-in
+      # works for OTP-only accounts (e.g. me@…). Set both secrets in the GitHub
+      # prod environment; omit either to skip. Re-runs overwrite the hash.
+      - name: Ensure admin password
+        env:
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_NAME: ${{ secrets.ADMIN_NAME }}
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ADMIN_EMAIL}" ] || [ -z "${ADMIN_PASSWORD}" ]; then
+            echo "Skipping admin seed (set ADMIN_EMAIL and ADMIN_PASSWORD secrets to enable)."
+            exit 0
+          fi
+          if [ -n "${DATABASE_URL_SECRET}" ]; then
+            export DATABASE_URL="${DATABASE_URL_SECRET}"
+          else
+            export DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5433/marotto_db"
+          fi
+          node scripts/seed-admin.js
 
       - name: Build and start application
         run: docker compose up -d --build --remove-orphans

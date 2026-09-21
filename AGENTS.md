@@ -19,7 +19,8 @@ Run order for verification: **lint → test → build**.
 3. `npm run prisma:migrate:dev`
 4. `npm run dev`
 5. Create the first admin via the in-app wizard at `/setup`, or scripted:
-   `ADMIN_EMAIL=you@example.com ADMIN_PASSWORD=... node scripts/seed-admin.js`
+   `ADMIN_EMAIL=you@example.com ADMIN_PASSWORD='…' node scripts/seed-admin.js`
+   (Deploy workflows also run the script when `ADMIN_EMAIL` / `ADMIN_PASSWORD` secrets are set. Signed-in admins can set or change their password under Settings → Account.)
 
 **Port alignment:** `APP_PORT` must match `NEXTAUTH_URL` port or auth redirects break.
 
@@ -111,7 +112,7 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 Second isolated stack at `dev.marottosolutions.com`. Full guide: `docs/dev-environment.md`.
 
 - Always pass both files: `docker compose -f docker-compose.yml -f docker-compose.dev.yml …`
-- Isolation is env-only (`STACK_NAME=marotto-dev`, `APP_PORT=3082`, `POSTGRES_PORT=5434`, `COMPOSE_PROJECT_NAME=marotto-dev`); there is no separate code path
+- Isolation is env-only (`STACK_NAME=marotto-dev`, `APP_PORT=3082`, `POSTGRES_PORT=5444`, `COMPOSE_PROJECT_NAME=marotto-dev`); there is no separate code path
 - `APP_ENV` (not `NODE_ENV`) marks an instance non-production — dev runs a production build on purpose. See `src/lib/app-env.ts`
 - Non-production effects: DEV banner, `Disallow: /` robots, browser source maps, live Stripe keys rejected
 - All dev email goes to a mailpit sink; nothing reaches real clients
