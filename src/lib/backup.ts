@@ -43,9 +43,9 @@ export interface BackupManifest {
 // ─── Collect ─────────────────────────────────────────────────────────
 
 export async function collectBackupData(): Promise<string> {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'marotto-backup-'));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'app-backup-'));
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupDir = path.join(tmpDir, `marotto-backup-${timestamp}`);
+    const backupDir = path.join(tmpDir, `app-backup-${timestamp}`);
     await fs.mkdir(backupDir, { recursive: true });
 
     const config = await getAppConfig();
@@ -184,13 +184,13 @@ export async function createBackupArchiveFile(backupDir: string, outputPath: str
 
 export function getBackupFilename(): string {
     const ts = new Date().toISOString().replace(/[:.]/g, '-');
-    return `marotto-backup-${ts}.tar.gz`;
+    return `app-backup-${ts}.tar.gz`;
 }
 
 // ─── Extract ─────────────────────────────────────────────────────────
 
 export async function extractBackupArchive(archivePath: string): Promise<string> {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'marotto-restore-'));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'app-restore-'));
     await tar.x({
         file: archivePath,
         cwd: tmpDir,
@@ -198,7 +198,8 @@ export async function extractBackupArchive(archivePath: string): Promise<string>
     });
 
     const entries = await fs.readdir(tmpDir);
-    const backupDir = entries.find((e) => e.startsWith('marotto-backup-'));
+    // Accept archives from older builds that used the branded prefix.
+    const backupDir = entries.find((e) => e.startsWith('app-backup-') || e.startsWith('marotto-backup-'));
     if (!backupDir) {
         throw new Error('Archive does not contain a valid backup directory.');
     }

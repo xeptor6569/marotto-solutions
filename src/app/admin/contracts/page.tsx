@@ -3,6 +3,7 @@ import { Badge, Box, Button, Callout, Card, Container, Table, Text } from '@radi
 import { Plus, XCircle } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import AdminListPageHeader from '@/components/AdminListPageHeader';
+import HelpLink from '@/components/HelpLink';
 import EmptyState from '@/components/EmptyState';
 import RunSchedulerButton from '@/components/RunSchedulerButton';
 import {
@@ -13,12 +14,14 @@ import {
     type ContractRecord,
 } from '@/lib/contracts';
 import { isDatabaseConfigured } from '@/lib/prisma';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export default async function AdminContractsPage({
     searchParams,
 }: {
     searchParams?: Promise<{ error?: string; runResult?: string }>;
 }) {
+    const money = await getMoneyFormatter();
     const params = (await searchParams) || {};
     const dbReady = isDatabaseConfigured();
     const contracts = dbReady ? await getContracts() : [];
@@ -46,6 +49,7 @@ export default async function AdminContractsPage({
                             <Link href="/admin/contracts/create"><Plus size={14} /> New contract</Link>
                         </Button>
                         <RunSchedulerButton />
+                        <HelpLink topic="contracts" />
                         <BackButton href="/admin" />
                     </>
                 )}
@@ -116,7 +120,7 @@ export default async function AdminContractsPage({
                                                 <Text size="2">{progress.progressLabel}</Text>
                                             </Table.Cell>
                                             <Table.Cell align="right">
-                                                ${summarizeRecurringTotal(contract).toFixed(2)}
+                                                {money(summarizeRecurringTotal(contract))}
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Badge color={statusColor(contract.status)}>{contract.status}</Badge>

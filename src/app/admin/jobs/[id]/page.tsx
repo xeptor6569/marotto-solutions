@@ -15,8 +15,10 @@ import { listPayoutsForJob } from '@/lib/helper-payouts';
 import { getHelperOptions } from '@/lib/helpers';
 import { aggregateJobEstimatedHours, formatHours } from '@/lib/job-estimated-hours';
 import { getClientOptions } from '@/lib/clients';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export default async function AdminJobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const money = await getMoneyFormatter();
     const { id } = await params;
     const [job, groupedDocs, attachments, timeLogs, payouts, helpers, clients] = await Promise.all([
         getJobById(id),
@@ -132,7 +134,7 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                                                             {doc.id}{doc.title ? ` — ${doc.title}` : ''}
                                                         </Text>
                                                         <Text as="div" size="1" color="gray">
-                                                            {doc.customer.name} · {new Date(doc.date).toLocaleDateString()} · ${doc.total.toFixed(2)}
+                                                            {doc.customer.name} · {new Date(doc.date).toLocaleDateString()} · {money(doc.total)}
                                                             {(doc.type === 'estimate' || doc.type === 'quote')
                                                                 && typeof doc.estimatedHours === 'number'
                                                                 && doc.estimatedHours > 0

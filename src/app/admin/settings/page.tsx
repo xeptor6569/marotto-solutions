@@ -1,15 +1,23 @@
-import { Container, Heading, Card, Flex } from "@radix-ui/themes";
+import { Container, Flex, Heading, Text, Box } from "@radix-ui/themes";
 import { getAppConfig } from "@/lib/config";
+import { resolveBrandingFromConfig } from "@/lib/branding";
 import { requireAdminPage } from "@/lib/require-admin-session";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
-import SettingsForm from "./settings-form";
-import AccountPasswordForm from "./account-password-form";
-import BackButton from "@/components/BackButton";
+import HelpLink from "@/components/HelpLink";
+import SettingsTabs from "@/components/settings/SettingsTabs";
+import { parseSettingsTab } from "@/lib/settings-tabs";
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ tab?: string }>;
+}) {
+    const { tab } = await searchParams;
     const session = await requireAdminPage("/admin/settings");
     const config = await getAppConfig();
+    const { branding } = resolveBrandingFromConfig(config);
 
+    // OTP-only accounts have no password hash yet; the Account tab adapts.
     const email = (session.user?.email || "").trim();
     let hasPassword = false;
     if (isDatabaseConfigured() && (session.user?.id || email)) {
@@ -26,21 +34,24 @@ export default async function SettingsPage() {
     }
 
     return (
-        <Container size="2" p="5">
-            <Flex mb="4" justify="between" align="center">
-                <Heading>Settings</Heading>
-                <BackButton />
+        <Container size="3" p={{ initial: "4", sm: "5" }}>
+            <Flex justify="between" align="start" gap="2" mb="4">
+                <Flex direction="column">
+                    <Heading size="7">Settings</Heading>
+                    <Text size="2" color="gray">
+                        Business profile, appearance, public site content, billing, storage, and your account.
+                    </Text>
+                </Flex>
+                <HelpLink topic="branding-theming" />
             </Flex>
-            <Flex direction="column" gap="4">
-                {email ? (
-                    <Card>
-                        <AccountPasswordForm email={email} hasPassword={hasPassword} />
-                    </Card>
-                ) : null}
-                <Card>
-                    <SettingsForm config={config} />
-                </Card>
-            </Flex>
+            <Box>
+                <SettingsTabs
+                    config={config}
+                    logoUrl={branding.logoUrl}
+                    defaultTab={parseSettingsTab(tab)}
+                    account={{ email, hasPassword }}
+                />
+            </Box>
         </Container>
     );
 }

@@ -14,6 +14,7 @@ import {
     summarizeRecurringTotal,
 } from '@/lib/contracts';
 import { buildSharePath } from '@/lib/share-token';
+import { getMoneyFormatter } from '@/lib/branding';
 
 function statusColor(status: string) {
     if (status === 'active') return 'green' as const;
@@ -23,6 +24,7 @@ function statusColor(status: string) {
 }
 
 export default async function AdminContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+    const money = await getMoneyFormatter();
     const { id } = await params;
     const loaded = await getContractById(id);
     if (!loaded) {
@@ -115,7 +117,7 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
 
                     <Card>
                         <Heading size="3" mb="2">Recurring per cycle</Heading>
-                        <Heading size="6">${recurringTotal.toFixed(2)}</Heading>
+                        <Heading size="6">{money(recurringTotal)}</Heading>
                         <Text as="div" size="1" color="gray">
                             Sum of recurring line items. Usage lines are added when each cycle invoice is reviewed.
                         </Text>
@@ -160,9 +162,9 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
                                                 ) : null}
                                             </Table.Cell>
                                             <Table.Cell align="right">{line.quantity}</Table.Cell>
-                                            <Table.Cell align="right">${line.unitPrice.toFixed(2)}</Table.Cell>
+                                            <Table.Cell align="right">{money(line.unitPrice)}</Table.Cell>
                                             <Table.Cell align="right">
-                                                {line.kind === 'recurring' ? `$${cycleTotal.toFixed(2)}` : <Text size="1" color="gray">usage</Text>}
+                                                {line.kind === 'recurring' ? `${money(cycleTotal)}` : <Text size="1" color="gray">usage</Text>}
                                             </Table.Cell>
                                         </Table.Row>
                                     );
@@ -198,7 +200,7 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
                                                 {invoice.title ? <Text as="div" size="1">{invoice.title}</Text> : null}
                                             </Table.Cell>
                                             <Table.Cell>{new Date(invoice.date).toLocaleDateString()}</Table.Cell>
-                                            <Table.Cell align="right">${invoice.total.toFixed(2)}</Table.Cell>
+                                            <Table.Cell align="right">{money(invoice.total)}</Table.Cell>
                                             <Table.Cell>
                                                 <Badge color={invoice.status === 'paid' ? 'green' : invoice.status === 'sent' ? 'blue' : invoice.status === 'void' ? 'red' : 'orange'}>
                                                     {invoice.status}

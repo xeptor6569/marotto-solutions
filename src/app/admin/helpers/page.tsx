@@ -7,12 +7,14 @@ import EmptyState from '@/components/EmptyState';
 import { listHelpers } from '@/lib/helpers';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import { requireAdminPage } from '@/lib/require-admin-session';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export default async function AdminHelpersPage({
     searchParams,
 }: {
     searchParams?: Promise<{ error?: string }>;
 }) {
+    const money = await getMoneyFormatter();
     await requireAdminPage('/admin/helpers');
     const params = (await searchParams) || {};
     const dbReady = isDatabaseConfigured();
@@ -98,7 +100,7 @@ export default async function AdminHelpersPage({
                                             )}
                                         </Table.Cell>
                                         <Table.Cell>{helper.payoutCount}</Table.Cell>
-                                        <Table.Cell align="right">${helper.payoutTotal.toFixed(2)}</Table.Cell>
+                                        <Table.Cell align="right">{money(helper.payoutTotal)}</Table.Cell>
                                         <Table.Cell>
                                             <Badge color={helper.active ? 'green' : 'gray'}>
                                                 {helper.active ? 'Active' : 'Inactive'}

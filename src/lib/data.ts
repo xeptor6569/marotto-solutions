@@ -1,7 +1,8 @@
-import { getAppConfig } from './config';
-import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote } from './webdav';
+import { DEFAULT_WEBDAV_ROOT_PATH, getAppConfig } from './config';
+import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote, normalizeWebdavRootPath } from './webdav';
 import { isDatabaseConfigured, prisma } from './prisma';
 import { withDocumentShareToken } from './share-token';
+import { getDocumentNumbering } from './document-numbering-server';
 import { AppConfig, DocumentData, DocumentType } from './types';
 import fs from 'fs/promises';
 import path from 'path';
@@ -61,12 +62,6 @@ async function deleteDocumentLocal(type: DocumentType, id: string) {
 // Since it's for 1 user, direct WebDAV with short cache is okay.
 const CACHE_TTL = 30 * 1000; // 30 seconds
 const cache: Record<string, { data: DocumentData[], timestamp: number }> = {};
-const NUMBER_BASELINE: Partial<Record<DocumentType, number>> = {
-    invoice: 200,
-    estimate: 200,
-    quote: 200,
-    receipt: 200,
-};
 
 export async function getDocuments(type: DocumentType): Promise<DocumentData[]> {
     // Check cache first
@@ -78,7 +73,7 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
     const config = await getAppConfig() as AppConfig;
     let docs: DocumentData[] = [];
 
-    if (!useWebDAVStorage(config)) {
+    if (!hasWebDAVStorage(config)) {
         // Fallback to local storage
         docs = await fetchDocumentsLocal(type);
     } else {
@@ -88,7 +83,7 @@ export async function getDocuments(type: DocumentType): Promise<DocumentData[]> 
                 config.webdavUsername!,
                 config.webdavPassword,
             );
-            docs = await fetchDocuments(client, type);
+            docs = await fetchDocuments(client, webdavRootPath(config), type);
         } catch (error) {
             console.error(`Error fetching ${type}s from WebDAV:`, error);
             // Fallback to local? Maybe not if configured but failed. 
@@ -141,15 +136,19 @@ export async function ensureDocumentShareToken(doc: DocumentData): Promise<Docum
     return withToken;
 }
 
-function useWebDAVStorage(config: AppConfig): boolean {
+function hasWebDAVStorage(config: AppConfig): boolean {
     return Boolean(config.webdavUrl?.trim() && config.webdavUsername?.trim());
+}
+
+function webdavRootPath(config: AppConfig): string {
+    return normalizeWebdavRootPath(config.webdavRootPath, DEFAULT_WEBDAV_ROOT_PATH);
 }
 
 export async function saveNewDocument(doc: DocumentData) {
     const { doc: toSave } = withDocumentShareToken(doc);
     const config = await getAppConfig() as AppConfig;
 
-    if (!useWebDAVStorage(config)) {
+    if (!hasWebDAVStorage(config)) {
         await saveDocumentLocal(toSave);
     } else {
         const client = getWebDAVClient(
@@ -157,7 +156,7 @@ export async function saveNewDocument(doc: DocumentData) {
             config.webdavUsername!,
             config.webdavPassword,
         );
-        await saveDocument(client, toSave);
+        await saveDocument(client, webdavRootPath(config), toSave);
     }
 
     // Invalidate cache
@@ -167,7 +166,7 @@ export async function saveNewDocument(doc: DocumentData) {
 export async function deleteDocument(type: DocumentType, id: string) {
     const config = await getAppConfig() as AppConfig;
 
-    if (!useWebDAVStorage(config)) {
+    if (!hasWebDAVStorage(config)) {
         await deleteDocumentLocal(type, id);
     } else {
         const client = getWebDAVClient(
@@ -175,7 +174,7 @@ export async function deleteDocument(type: DocumentType, id: string) {
             config.webdavUsername!,
             config.webdavPassword,
         );
-        await deleteDocumentRemote(client, type, id);
+        await deleteDocumentRemote(client, webdavRootPath(config), type, id);
     }
 
     delete cache[type];
@@ -203,7 +202,8 @@ async function getNextNumberAtomic(type: DocumentType, baseline: number): Promis
 }
 
 export async function getNextNumber(type: DocumentType): Promise<number> {
-    const baseline = NUMBER_BASELINE[type] ?? 1;
+    const numbering = await getDocumentNumbering();
+    const baseline = type === 'lead' ? 1 : numbering.startNumbers[type];
     if (isDatabaseConfigured()) {
         try {
             return await getNextNumberAtomic(type, baseline);

@@ -9,7 +9,7 @@ export default async function EstimatePage({ params }: { params: Promise<{ id: s
         <DocumentPreview
             doc={doc}
             showBackButton
-            backHref="/dashboard"
+            backHref="/admin"
             editHref={doc.status === "draft" ? `/admin/estimates/${doc.id}/edit` : undefined}
         />
     );

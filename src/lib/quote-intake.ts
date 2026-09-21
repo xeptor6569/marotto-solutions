@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
 
-const SERVICE_LABELS: Record<string, string> = {
+// Legacy form values kept so old prefill links (/?service=it#quote) and
+// historical intake notes still resolve to a readable label. Configured
+// services take precedence via the optional `labels` map.
+const LEGACY_SERVICE_LABELS: Record<string, string> = {
     general: 'General Contracting',
     it: 'IT / Networking',
     pc: 'PC Building',
@@ -17,15 +20,15 @@ export interface QuoteRequestInput {
     date?: string;
 }
 
-export function serviceLabel(service: string): string {
-    return SERVICE_LABELS[service] || service;
+export function serviceLabel(service: string, labels?: Record<string, string>): string {
+    return labels?.[service] || LEGACY_SERVICE_LABELS[service] || service;
 }
 
-export function formatQuoteIntakeNote(input: QuoteRequestInput): string {
+export function formatQuoteIntakeNote(input: QuoteRequestInput, labels?: Record<string, string>): string {
     const when = new Date().toLocaleString();
     const lines = [
         `--- Website quote request (${when}) ---`,
-        `Service: ${serviceLabel(input.service)}`,
+        `Service: ${serviceLabel(input.service, labels)}`,
         `Phone: ${input.phone.trim()}`,
         input.date?.trim() ? `Preferred schedule: ${input.date.trim()}` : null,
         `Details: ${input.details.trim()}`,
@@ -46,7 +49,10 @@ export type UpsertProspectResult =
  * Create or update a prospect Client from a homepage quote submission.
  * Matches on email (case-insensitive); appends a timestamped intake note.
  */
-export async function upsertProspectFromQuoteRequest(input: QuoteRequestInput): Promise<UpsertProspectResult> {
+export async function upsertProspectFromQuoteRequest(
+    input: QuoteRequestInput,
+    serviceLabels?: Record<string, string>,
+): Promise<UpsertProspectResult> {
     const name = input.name.trim();
     const email = input.email.trim().toLowerCase();
     const phone = input.phone.trim();
@@ -54,7 +60,7 @@ export async function upsertProspectFromQuoteRequest(input: QuoteRequestInput): 
         return { ok: false, error: 'Name, email, and phone are required.' };
     }
 
-    const intakeNote = formatQuoteIntakeNote({ ...input, email });
+    const intakeNote = formatQuoteIntakeNote({ ...input, email }, serviceLabels);
 
     try {
         const existing = await prisma.client.findFirst({

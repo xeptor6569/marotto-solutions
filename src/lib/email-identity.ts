@@ -1,18 +1,9 @@
 /**
  * Fallback sender for outbound mail.
  *
- * Production always sets EMAIL_FROM — the deploy workflow fails without it — so
- * this only applies to local runs and the dev stack. It lives in one place so a
- * domain change is a single edit rather than a hunt through every module that
- * sends mail.
- *
- * Note this is a mail domain, which does not have to match the website domain;
- * change it only once the new sender is authenticated (SPF/DKIM/DMARC) with the
- * SMTP provider.
+ * Kept as a thin alias so existing references stay valid: the resolution
+ * order (EMAIL_FROM → the business contact email configured in Settings →
+ * a neutral placeholder) lives in email-branding.ts, and there is no longer
+ * a brand-specific default in code. Production always sets EMAIL_FROM.
  */
-export const DEFAULT_FROM_ADDRESS = 'noreply@marotto-solutions.com';
-
-/** Configured sender, or the fallback above. */
-export function getFromAddress(): string {
-    return process.env.EMAIL_FROM?.trim() || DEFAULT_FROM_ADDRESS;
-}
+export { resolveFromAddress as getFromAddress } from './email-branding';

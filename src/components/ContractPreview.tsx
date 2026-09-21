@@ -1,7 +1,8 @@
-import { Badge, Box, Card, Container, Flex, Table } from '@radix-ui/themes';
+import { Badge, Box, Card, Container, Flex, Table, Theme } from '@radix-ui/themes';
 import BackButton from '@/components/BackButton';
 import PrintButton from '@/components/PrintButton';
 import ShareButton from '@/components/ShareButton';
+import { getBranding } from '@/lib/branding';
 import {
     ensureContractShareToken,
     getContractProgress,
@@ -10,6 +11,7 @@ import {
     type ContractRecord,
 } from '@/lib/contracts';
 import { buildSharePath } from '@/lib/share-token';
+import { getMoneyFormatter } from '@/lib/branding';
 
 interface Props {
     contract: ContractRecord;
@@ -32,9 +34,11 @@ export default async function ContractPreview({
     backHref = '/',
     publicMode = false,
 }: Props) {
+    const money = await getMoneyFormatter();
     const contract = publicMode
         ? initialContract
         : await ensureContractShareToken(initialContract);
+    const { business, branding } = await getBranding();
     const cadence = summarizeContractCadence(contract);
     const progress = getContractProgress(contract);
     const recurringTotal = summarizeRecurringTotal(contract);
@@ -48,22 +52,42 @@ export default async function ContractPreview({
                 {!publicMode && showBackButton ? <BackButton href={backHref} /> : <Box />}
                 <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
                     {!publicMode ? (
-                        <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} />
-                    ) : null}
+                    <ShareButton label={docTitle} sharePath={sharePath} shareTitle={shareTitle} businessName={business.name} />
+                ) : null}
                     <PrintButton label={docTitle} fileName={`${docTitle} ${contract.displayId}`} />
                 </Flex>
             </Flex>
 
-            <Card size="2" className="doc-card print-document">
+            {/* Contracts print as light paper regardless of the visitor theme. */}
+            <Theme appearance="light" asChild>
+            <Card
+                size="2"
+                className="doc-card print-document"
+                style={{ '--doc-accent': branding.documentAccentColor } as React.CSSProperties}
+            >
                 <div className="receipt-content">
                     <div className="doc-header">
                         <Box className="doc-brand">
-                            <p className="doc-brand-name">MAROTTO</p>
-                            <div className="doc-brand-sub">SOLUTIONS</div>
+                            {branding.showLogoOnDocuments && branding.logoUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                    src={branding.logoUrl}
+                                    alt={business.name}
+                                    className="doc-brand-logo"
+                                />
+                            ) : (
+                                <>
+                                    <p className="doc-brand-name">{branding.letterhead.line1}</p>
+                                    {branding.letterhead.line2 ? (
+                                        <div className="doc-brand-sub">{branding.letterhead.line2}</div>
+                                    ) : null}
+                                </>
+                            )}
                             <div className="doc-brand-address">
-                                <div>28 E Mountain Ridge MHP</div>
-                                <div>Wilkes Barre, PA 18702</div>
-                                <div>(570) 332-9262</div>
+                                {business.addressLine1 ? <div>{business.addressLine1}</div> : null}
+                                {business.addressLine2 ? <div>{business.addressLine2}</div> : null}
+                                {business.phoneDisplay ? <div>{business.phoneDisplay}</div> : null}
+                                {business.email ? <div>{business.email}</div> : null}
                             </div>
                         </Box>
                         <Box className="doc-meta">
@@ -160,9 +184,9 @@ export default async function ContractPreview({
                                             <Table.Cell align="right">
                                                 {line.kind === 'usage' ? 'as-billed' : line.quantity}
                                             </Table.Cell>
-                                            <Table.Cell align="right">${line.unitPrice.toFixed(2)}</Table.Cell>
+                                            <Table.Cell align="right">{money(line.unitPrice)}</Table.Cell>
                                             <Table.Cell align="right">
-                                                {line.kind === 'recurring' ? `$${lineTotal.toFixed(2)}` : '—'}
+                                                {line.kind === 'recurring' ? `${money(lineTotal)}` : '—'}
                                             </Table.Cell>
                                         </Table.Row>
                                     );
@@ -190,13 +214,13 @@ export default async function ContractPreview({
                         <Box className="doc-totals">
                             <div className="doc-total-row">
                                 <span>Recurring per cycle</span>
-                                <span>${recurringTotal.toFixed(2)}</span>
+                                <span>{money(recurringTotal)}</span>
                             </div>
                             {contract.termCycles ? (
                                 <div className="doc-total-due">
                                     <span>Term value (recurring)</span>
                                     <span className="doc-total-due-amount">
-                                        ${(recurringTotal * contract.termCycles).toFixed(2)}
+                                        {money((recurringTotal * contract.termCycles))}
                                     </span>
                                 </div>
                             ) : null}
@@ -209,12 +233,13 @@ export default async function ContractPreview({
                             By signing below, the parties agree to the services, schedule, and terms above. This agreement may be cancelled in writing by either party with reasonable notice unless otherwise stated in the scope.
                         </div>
                         <div className="doc-auth-lines">
-                            <div className="doc-auth-line">Marotto Solutions</div>
+                            <div className="doc-auth-line">{business.legalName}</div>
                             <div className="doc-auth-line">{contract.customerName}</div>
                         </div>
                     </Box>
                 </div>
             </Card>
+            </Theme>
         </Container>
     );
 }

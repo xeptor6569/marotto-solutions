@@ -1,4 +1,5 @@
 import type { LineItem } from '@/lib/types';
+import { DEFAULT_MONEY_FORMAT, formatMoney, type MoneyFormat } from './money';
 
 function normalizeLineItems(lineItems: LineItem[] | null | undefined): LineItem[] {
     return Array.isArray(lineItems) ? lineItems : [];
@@ -21,7 +22,12 @@ export function agreedScopeLineTotal(lineItems: LineItem[] | null | undefined): 
 }
 
 /** Single paragraph for email/mailto when any line awaits approval. */
-export function pendingApprovalSummarySentence(docTitle: string, pendingTotal: number): string {
+export function pendingApprovalSummarySentence(
+    docTitle: string,
+    pendingTotal: number,
+    moneyFormat: MoneyFormat = DEFAULT_MONEY_FORMAT,
+): string {
     const label = docTitle.toLowerCase();
-    return `This ${label} includes additional scope totaling $${pendingTotal.toFixed(2)} pending your approval. Please review the full breakdown at the link below.`;
+    const money = (amount: number) => formatMoney(amount, moneyFormat);
+    return `This ${label} includes additional scope totaling ${money(pendingTotal)} pending your approval. Please review the full breakdown at the link below.`;
 }

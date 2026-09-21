@@ -2,7 +2,8 @@
 
 import { getDocumentById } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
-import { getFromAddress } from '@/lib/email-identity';
+import { getEmailBrand } from '@/lib/email-branding';
+import { getMoneyFormat } from '@/lib/branding';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import {
@@ -58,14 +59,15 @@ export async function sendDocumentEmailAction(
         return { success: false, error: 'Email is not configured. Set EMAIL_SERVER in the environment.' };
     }
 
-    const from = getFromAddress();
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const docTitle = DOC_LABEL[doc.type];
     const url = await buildDocumentShareUrl(doc, getPublicSiteUrl());
-    const subject = `Marotto Solutions — ${docTitle} ${doc.id}`;
+    const subject = `${brand.name} — ${docTitle} ${doc.id}`;
     const greeting = doc.customer.name ? `Hi ${doc.customer.name},` : 'Hello,';
 
     const pendingParagraph = hasPendingApprovalLines(doc.lineItems)
-        ? pendingApprovalSummarySentence(docTitle, pendingApprovalLineTotal(doc.lineItems))
+        ? pendingApprovalSummarySentence(docTitle, pendingApprovalLineTotal(doc.lineItems), await getMoneyFormat())
         : '';
 
     const textLines = [
@@ -76,7 +78,7 @@ export async function sendDocumentEmailAction(
         `View your ${docTitle}: ${url}`,
         '',
         'Thank you,',
-        'Marotto Solutions',
+        brand.name,
     ].filter((line, i, arr) => !(line === '' && arr[i - 1] === ''));
 
     const textBody = textLines.join('\n');
@@ -94,7 +96,7 @@ export async function sendDocumentEmailAction(
     <a href="${safeUrl}" style="color: #4f46e5;">View your ${escapeHtml(docTitle)}</a>
   </p>
   <p style="margin: 0; color: #6b7280; font-size: 14px;">${safeUrl}</p>
-  <p style="margin: 24px 0 0;">Thank you,<br />Marotto Solutions</p>
+  <p style="margin: 24px 0 0;">Thank you,<br />${escapeHtml(brand.name)}</p>
 </body>
 </html>`;
 

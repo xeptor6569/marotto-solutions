@@ -8,6 +8,7 @@ import DocumentLineItemEditor, {
     recalcLineItem,
 } from '@/components/DocumentLineItemEditor';
 import { choiceTotal, packageTotal } from '@/lib/document-options';
+import { useMoney } from '@/components/MoneyProvider';
 
 function emptyPackage(): DocumentPackage {
     return {
@@ -67,6 +68,7 @@ export default function DocumentOptionsEditor({
     onPackagesChange: (packages: DocumentPackage[]) => void;
     onChoiceGroupsChange: (groups: DocumentChoiceGroup[]) => void;
 }) {
+    const { format: money } = useMoney();
     const updatePackageLines = (
         packageId: string,
         updater: (items: LineItem[]) => LineItem[],
@@ -123,7 +125,7 @@ export default function DocumentOptionsEditor({
                             <Flex justify="between" align="center" gap="2" mb="3" wrap="wrap">
                                 <Text size="2" weight="bold">Package {pkgIndex + 1}</Text>
                                 <Flex gap="2" align="center" wrap="wrap">
-                                    <Text size="2" color="gray">${packageTotal(pkg).toFixed(2)}</Text>
+                                    <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
                                     <Button
                                         type="button"
                                         size="2"
@@ -347,7 +349,7 @@ export default function DocumentOptionsEditor({
                                         <Flex justify="between" align="center" gap="2" mb="2" wrap="wrap">
                                             <Text size="2" weight="medium">Choice {choiceIndex + 1}</Text>
                                             <Flex gap="2" align="center">
-                                                <Text size="2" color="gray">${choiceTotal(choice).toFixed(2)}</Text>
+                                                <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                                 <Button
                                                     type="button"
                                                     size="2"

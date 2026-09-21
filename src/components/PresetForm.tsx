@@ -24,6 +24,7 @@ import DocumentLineItemEditor, {
 import { DOC_LABEL } from '@/lib/document-labels';
 import { PRESET_DOCUMENT_TYPES } from '@/lib/preset-utils';
 import type { DocumentPreset, LineItem, PresetDocumentType } from '@/lib/types';
+import { useMoney } from '@/components/MoneyProvider';
 
 export default function PresetForm({
     initialData,
@@ -34,6 +35,7 @@ export default function PresetForm({
     error?: string;
     saved?: boolean;
 }) {
+    const { format: money } = useMoney();
     const isEdit = !!initialData;
     const [name, setName] = useState(initialData?.name || '');
     const [title, setTitle] = useState(initialData?.title || '');
@@ -193,7 +195,7 @@ export default function PresetForm({
                         <Button type="button" variant="soft" onClick={addLineItem} style={{ minHeight: 44 }}>
                             <PlusIcon size={16} /> Add item
                         </Button>
-                        <Text size="4" weight="bold">Total: ${subtotal.toFixed(2)}</Text>
+                        <Text size="4" weight="bold">Total: {money(subtotal)}</Text>
                     </Flex>
                 </Card>
 

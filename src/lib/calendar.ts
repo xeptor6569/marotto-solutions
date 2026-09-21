@@ -1,5 +1,5 @@
 import { addDays, addWeeks, addMonths, isBefore, isAfter } from 'date-fns';
-import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { toZonedTime } from 'date-fns-tz';
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { getAppConfig } from '@/lib/config';
 import type {
@@ -20,9 +20,68 @@ export async function getBusinessTimezone(): Promise<string> {
     return config.businessTimezone || 'America/New_York';
 }
 
+/** Parse "YYYY-MM-DD[THH:mm[:ss]]" into a Date whose UTC fields carry the wall-clock values. */
+function parseWallClockFields(wallClockIso: string): Date {
+    const m = /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(wallClockIso.trim());
+    if (!m) return new Date(NaN);
+    const [, y, mo, d, h = '0', mi = '0', s = '0'] = m;
+    return new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(s)));
+}
+
+/**
+ * True UTC offset (ms) of `tz` at the given instant, via Intl. date-fns-tz's
+ * getTimezoneOffset reports the wrong offset for instants near DST
+ * transitions, so it cannot be used here.
+ */
+function tzOffsetMs(tz: string, instant: Date): number {
+    const dtf = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    });
+    const parts: Record<string, number> = {};
+    for (const part of dtf.formatToParts(instant)) {
+        if (part.type !== 'literal') parts[part.type] = Number(part.value);
+    }
+    const wallAsUtc = Date.UTC(
+        parts.year,
+        parts.month - 1,
+        parts.day,
+        parts.hour === 24 ? 0 : parts.hour,
+        parts.minute,
+        parts.second,
+    );
+    // Truncate sub-second precision the formatter cannot represent.
+    return wallAsUtc - Math.floor(instant.getTime() / 1000) * 1000;
+}
+
+/** Apply the zone offset to wall-clock fields (held in a Date's UTC getters) to get the real instant. */
+function wallClockFieldsToUtc(fields: Date, tz: string): Date {
+    // Single pass on purpose: querying the offset at the "fields read as UTC"
+    // instant makes nonexistent spring-forward times shift forward
+    // (2:30 AM → 3:30 AM EDT) and resolves ambiguous fall-back times to the
+    // earlier (DST) offset, matching the documented calendar semantics.
+    return new Date(fields.getTime() - tzOffsetMs(tz, fields));
+}
+
+/**
+ * Convert a wall-clock ISO string (no offset, e.g. "2026-06-15T09:00") in the
+ * given IANA timezone to the UTC instant it represents.
+ *
+ * Host-timezone independent: a naive `new Date(iso)` parse would interpret the
+ * string in the *server's* local zone, which differs between dev machines and
+ * the Docker container (UTC). Instead the wall-clock fields are read as-is and
+ * the zone offset applied explicitly. Nonexistent times in the spring-forward
+ * gap shift forward (2:30 AM → 3:30 AM EDT); ambiguous fall-back times resolve
+ * to the earlier (DST) offset.
+ */
 export function wallClockToUtc(wallClockIso: string, tz: string): Date {
-    const local = new Date(wallClockIso);
-    return fromZonedTime(local, tz);
+    return wallClockFieldsToUtc(parseWallClockFields(wallClockIso), tz);
 }
 
 export function utcToWallClock(utcDate: Date, tz: string): Date {
@@ -30,12 +89,12 @@ export function utcToWallClock(utcDate: Date, tz: string): Date {
 }
 
 export function allDayUtcRange(dateStr: string, tz: string): { start: Date; end: Date } {
-    const localStart = new Date(`${dateStr}T00:00:00`);
-    const localEnd = new Date(`${dateStr}T00:00:00`);
-    localEnd.setDate(localEnd.getDate() + 1);
+    const startFields = parseWallClockFields(dateStr);
+    const endFields = new Date(startFields.getTime());
+    endFields.setUTCDate(endFields.getUTCDate() + 1);
     return {
-        start: fromZonedTime(localStart, tz),
-        end: fromZonedTime(localEnd, tz),
+        start: wallClockFieldsToUtc(startFields, tz),
+        end: wallClockFieldsToUtc(endFields, tz),
     };
 }
 
@@ -135,7 +194,7 @@ export interface MonthGridWeek {
 }
 
 export function getMonthGrid(year: number, month: number, tz: string): MonthGridWeek[] {
-    const firstOfMonth = fromZonedTime(new Date(`${year}-${String(month).padStart(2, '0')}-01T00:00:00`), tz);
+    const firstOfMonth = wallClockToUtc(`${year}-${String(month).padStart(2, '0')}-01T00:00:00`, tz);
     const dayOfWeek = firstOfMonth.getUTCDay();
     const weeks: MonthGridWeek[] = [];
     let current = addDays(firstOfMonth, -dayOfWeek);
