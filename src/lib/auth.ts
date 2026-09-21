@@ -7,6 +7,7 @@ import { prisma } from './prisma';
 import type { Adapter } from 'next-auth/adapters';
 import bcrypt from 'bcryptjs';
 import { EMAIL_OTP_MAX_AGE_SECONDS, generateEmailOtp } from '@/lib/email-otp';
+import { getFromAddress } from '@/lib/email-identity';
 
 export const authConfig: NextAuthConfig = {
   // Required for self-hosted Docker/production. Without this, Auth.js rejects
@@ -16,7 +17,7 @@ export const authConfig: NextAuthConfig = {
   providers: [
     Nodemailer({
       server: process.env.EMAIL_SERVER || '',
-      from: process.env.EMAIL_FROM || 'noreply@marotto-solutions.com',
+      from: getFromAddress(),
       maxAge: EMAIL_OTP_MAX_AGE_SECONDS,
       generateVerificationToken: async () => generateEmailOtp(),
       sendVerificationRequest: async ({ identifier: email, token, expires }) => {
@@ -26,7 +27,7 @@ export const authConfig: NextAuthConfig = {
 
         await transport.sendMail({
           to: email,
-          from: process.env.EMAIL_FROM,
+          from: getFromAddress(),
           subject: `${token} is your Marotto Solutions sign-in code`,
           text: text({ token, email, minutes }),
           html: html({ token, email, minutes }),

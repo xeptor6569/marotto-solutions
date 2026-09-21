@@ -2,6 +2,7 @@
 
 import { getDocumentById } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
+import { getFromAddress } from '@/lib/email-identity';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import {
@@ -57,7 +58,7 @@ export async function sendDocumentEmailAction(
         return { success: false, error: 'Email is not configured. Set EMAIL_SERVER in the environment.' };
     }
 
-    const from = process.env.EMAIL_FROM || 'noreply@marotto-solutions.com';
+    const from = getFromAddress();
     const docTitle = DOC_LABEL[doc.type];
     const url = await buildDocumentShareUrl(doc, getPublicSiteUrl());
     const subject = `Marotto Solutions — ${docTitle} ${doc.id}`;
