@@ -30,7 +30,7 @@ import { createJob, getJobById, getJobOptions } from '@/lib/jobs';
 import { suggestDocumentTitle } from '@/lib/document-labels';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { isDatabaseConfigured } from '@/lib/prisma';
+import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { upsertProspectFromQuoteRequest } from '@/lib/quote-intake';
 import {
     sendQuoteRequestAdminEmail,
@@ -46,6 +46,7 @@ import {
     requireAdminAction,
     requireAdminActionOrRedirect,
 } from '@/lib/require-admin-session';
+import bcrypt from 'bcryptjs';
 
 function getPaymentKind(raw: string | null): PaymentKind {
     if (raw === 'down_payment') return 'down_payment';
@@ -145,6 +146,73 @@ export async function saveSettingsAction(formData: FormData) {
     revalidatePath('/admin');
     revalidatePath('/admin/calendar');
     return { success: true };
+}
+
+/**
+ * Set or change the signed-in admin's password.
+ * OTP-only accounts (no hash yet) can set one without a current password.
+ * Accounts that already have a password must confirm the current one.
+ */
+export async function changeAccountPasswordAction(formData: FormData): Promise<{
+    success: boolean;
+    error?: string;
+    message?: string;
+}> {
+    const gate = await requireAdminAction();
+    if (!gate.ok) return { success: false, error: gate.error };
+
+    if (!isDatabaseConfigured()) {
+        return { success: false, error: 'Database is not configured.' };
+    }
+
+    const userId = gate.session.user?.id;
+    const email = (gate.session.user?.email || '').trim().toLowerCase();
+    if (!userId && !email) {
+        return { success: false, error: 'Could not identify the signed-in user.' };
+    }
+
+    const currentPassword = ((formData.get('currentPassword') as string) || '');
+    const newPassword = ((formData.get('newPassword') as string) || '');
+    const confirmPassword = ((formData.get('confirmPassword') as string) || '');
+
+    if (newPassword.length < 8) {
+        return { success: false, error: 'New password must be at least 8 characters.' };
+    }
+    if (newPassword !== confirmPassword) {
+        return { success: false, error: 'New password and confirmation do not match.' };
+    }
+
+    const user = userId
+        ? await prisma.user.findUnique({ where: { id: userId } })
+        : await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+        return { success: false, error: 'User record not found.' };
+    }
+
+    if (user.password) {
+        if (!currentPassword) {
+            return { success: false, error: 'Current password is required.' };
+        }
+        const ok = await bcrypt.compare(currentPassword, user.password);
+        if (!ok) {
+            return { success: false, error: 'Current password is incorrect.' };
+        }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+    });
+
+    revalidatePath('/admin/settings');
+    return {
+        success: true,
+        message: user.password
+            ? 'Password updated. You can sign in with email and password.'
+            : 'Password set. You can sign in with email and password, or keep using a one-time code.',
+    };
 }
 
 export async function createDepositInvoiceAction(input: {

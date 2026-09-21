@@ -18,7 +18,9 @@ Run order for verification: **lint → test → build**.
 2. `docker compose up -d postgres` — Postgres on host port **5433** (not 5432)
 3. `npm run prisma:migrate:dev`
 4. `npm run dev`
-5. Create admin user: `node scripts/seed-admin.js` (email: `admin@cameronmarotto.com`)
+5. Create/update admin password:
+   `ADMIN_EMAIL=me@example.com ADMIN_PASSWORD='…' node scripts/seed-admin.js`
+   (Deploy workflows also run this when `ADMIN_EMAIL` / `ADMIN_PASSWORD` secrets are set. Signed-in admins can set or change their password under `/admin/settings`.)
 
 **Port alignment:** `APP_PORT` must match `NEXTAUTH_URL` port or auth redirects break.
 

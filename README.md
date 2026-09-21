@@ -17,7 +17,9 @@ This README is intended to be an operational handbook you can come back to when 
 
 ### Admin workspace
 
-- auth with email magic link or email/password
+- auth with email OTP (one-time code) or email/password
+- set or change your account password under `/admin/settings` (OTP-only accounts can attach a password there)
+- optional deploy bootstrap: set `ADMIN_EMAIL` + `ADMIN_PASSWORD` GitHub environment secrets so the Actions runner upserts a password hash after migrate
 - full admin workspace at `/admin`
 - shared navigation shell across admin pages for desktop and mobile/PWA usage
 - installable admin PWA (`src/app/manifest.ts`) named **Marotto** for short home-screen / Spotlight search (re-add to Home Screen after name changes; install from `/admin` and confirm the Add dialog name is exactly `Marotto`)
