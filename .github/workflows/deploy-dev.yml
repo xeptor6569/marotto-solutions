@@ -14,7 +14,9 @@ on:
       ref:
         description: "Branch, tag or SHA to deploy to dev"
         required: false
-        default: develop
+        # main rather than develop: a develop branch may not exist, and
+        # checkout fails outright on a missing ref before anything else runs.
+        default: main
 
 # The runner and the Docker daemon are shared with the prod deploy, so builds
 # must not interleave. deploy.yml uses the same group.
