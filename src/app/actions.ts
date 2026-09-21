@@ -29,7 +29,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import { buildServiceLabelMap, getMoneyFormat, getPublicSite } from '@/lib/branding';
-import { buildDocumentId, getDocumentNumbering } from '@/lib/document-numbering';
+import { buildDocumentId } from '@/lib/document-numbering';
+import { getDocumentNumbering } from '@/lib/document-numbering-server';
 import { upsertProspectFromQuoteRequest } from '@/lib/quote-intake';
 import {
     sendQuoteRequestAdminEmail,

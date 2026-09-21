@@ -75,10 +75,5 @@ export function buildDocumentId(
     return `${prefix}-${String(number).padStart(numbering.padding, '0')}`;
 }
 
-export async function getDocumentNumbering(): Promise<ResolvedNumbering> {
-    // Lazy import: config.ts uses the defaults above, so a static import would
-    // create a module cycle.
-    const { getAppConfig } = await import('./config');
-    const config = await getAppConfig();
-    return resolveNumbering(config.numbering);
-}
+// The config-backed accessor lives in document-numbering-server.ts so this
+// module stays importable from client components (no fs dependency).

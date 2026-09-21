@@ -2,7 +2,7 @@ import { DEFAULT_WEBDAV_ROOT_PATH, getAppConfig } from './config';
 import { getWebDAVClient, fetchDocuments, saveDocument, deleteDocumentRemote, normalizeWebdavRootPath } from './webdav';
 import { isDatabaseConfigured, prisma } from './prisma';
 import { withDocumentShareToken } from './share-token';
-import { getDocumentNumbering } from './document-numbering';
+import { getDocumentNumbering } from './document-numbering-server';
 import { AppConfig, DocumentData, DocumentType } from './types';
 import fs from 'fs/promises';
 import path from 'path';

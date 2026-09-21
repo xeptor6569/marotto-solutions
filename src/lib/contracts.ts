@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
-import { buildDocumentId, getDocumentNumbering } from './document-numbering';
+import { buildDocumentId } from './document-numbering';
+import { getDocumentNumbering } from './document-numbering-server';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { getNextNumber, saveNewDocument, getDocuments } from '@/lib/data';
 import { generateShareToken, withContractShareToken } from '@/lib/share-token';

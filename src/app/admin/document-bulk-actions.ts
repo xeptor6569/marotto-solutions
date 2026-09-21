@@ -11,7 +11,8 @@ import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import type { DocumentData, DocumentType } from '@/lib/types';
 import { requireAdminAction } from '@/lib/require-admin-session';
 import { getMoneyFormatter } from '@/lib/branding';
-import { buildDocumentId, getDocumentNumbering } from '@/lib/document-numbering';
+import { buildDocumentId } from '@/lib/document-numbering';
+import { getDocumentNumbering } from '@/lib/document-numbering-server';
 
 function escapeHtml(s: string) {
     return s

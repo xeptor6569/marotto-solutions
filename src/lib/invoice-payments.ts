@@ -2,7 +2,8 @@ import type { DocumentData, PaymentEntry, PaymentKind } from './types';
 import { deleteDocument, getNextNumber, saveNewDocument } from './data';
 import { validateRecordPayment } from './document-save';
 import { getMoneyFormat } from './branding';
-import { buildDocumentId, getDocumentNumbering } from './document-numbering';
+import { buildDocumentId } from './document-numbering';
+import { getDocumentNumbering } from './document-numbering-server';
 
 export interface RecordInvoicePaymentInput {
     invoice: DocumentData;
