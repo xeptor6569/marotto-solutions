@@ -56,13 +56,9 @@ DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
 Create or update an admin password (works for OTP-only accounts too):
 
 ```bash
-<<<<<<< HEAD
-DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5434/marotto_db" \
+DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
   ADMIN_EMAIL=me@cameronmarotto.com \
   ADMIN_PASSWORD='choose-a-strong-password' \
-=======
-DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
->>>>>>> origin/main
   node scripts/seed-admin.js
 ```
 
