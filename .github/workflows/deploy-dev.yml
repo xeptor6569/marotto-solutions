@@ -14,7 +14,9 @@ on:
       ref:
         description: "Branch, tag or SHA to deploy to dev"
         required: false
-        default: develop
+        # main rather than develop: a develop branch may not exist, and
+        # checkout fails outright on a missing ref before anything else runs.
+        default: main
 
 # The runner and the Docker daemon are shared with the prod deploy, so builds
 # must not interleave. deploy.yml uses the same group.
@@ -26,7 +28,9 @@ env:
   STACK_NAME: marotto-dev
   APP_ENV: dev
   APP_PORT: "3082"
-  POSTGRES_PORT: "5434"
+  # Not 5434: that port was already taken on the host by something outside
+  # this stack, and Docker fails the whole `up` when a publish bind collides.
+  POSTGRES_PORT: "5444"
   COMPOSE_PROJECT_NAME: marotto-dev
   COMPOSE_FILES: "-f docker-compose.yml -f docker-compose.dev.yml"
 
@@ -43,7 +47,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '26'
           cache: npm
 
       - name: Validate required configuration

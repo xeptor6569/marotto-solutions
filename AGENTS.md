@@ -95,7 +95,7 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 Second isolated stack at `dev.marottosolutions.com`. Full guide: `docs/dev-environment.md`.
 
 - Always pass both files: `docker compose -f docker-compose.yml -f docker-compose.dev.yml …`
-- Isolation is env-only (`STACK_NAME=marotto-dev`, `APP_PORT=3082`, `POSTGRES_PORT=5434`, `COMPOSE_PROJECT_NAME=marotto-dev`); there is no separate code path
+- Isolation is env-only (`STACK_NAME=marotto-dev`, `APP_PORT=3082`, `POSTGRES_PORT=5444`, `COMPOSE_PROJECT_NAME=marotto-dev`); there is no separate code path
 - `APP_ENV` (not `NODE_ENV`) marks an instance non-production — dev runs a production build on purpose. See `src/lib/app-env.ts`
 - Non-production effects: DEV banner, `Disallow: /` robots, browser source maps, live Stripe keys rejected
 - All dev email goes to a mailpit sink; nothing reaches real clients

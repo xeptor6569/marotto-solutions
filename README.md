@@ -342,7 +342,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
 It gets its own database, document volume, and secrets, and runs on ports
-`3082` / `5434`. Outbound email is captured by a mailpit sink rather than
+`3082` / `5444`. Outbound email is captured by a mailpit sink rather than
 delivered, so a dev instance can never contact a real client.
 
 Push to `develop` to deploy it, or run the **Deploy to Dev** workflow manually
