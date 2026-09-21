@@ -13,7 +13,7 @@ Isolation is entirely env-driven; there is no separate application code path.
 | Compose project | default | `marotto-dev` (prefixes the volumes) |
 | Containers | `marotto-solutions`, `marotto-postgres`, `marotto-cron` | `marotto-dev-*` |
 | App host port | `3081` | `3082` |
-| Postgres host port | `5433` | `5434` |
+| Postgres host port | `5433` | `5444` |
 | Outbound email | real SMTP | mailpit sink, nothing leaves the host |
 | Stripe | live key | test key only, enforced in code |
 | Scheduler | runs | behind the `cron` profile, off by default |
@@ -28,7 +28,7 @@ without a dev `.env` therefore behaves exactly as it always has.
 | Service | Bind | Purpose |
 |---|---|---|
 | app | `3082` | proxied to `dev.marottosolutions.com` |
-| postgres | `5434` | dev database |
+| postgres | `5444` | dev database |
 | mailpit UI | `127.0.0.1:8025` | captured outbound email |
 | adminer | `127.0.0.1:8083` | database browser |
 | prisma studio | `127.0.0.1:5555` | record editor (`tools` profile) |
@@ -49,14 +49,14 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 Apply migrations from the host, against the dev port:
 
 ```bash
-DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5434/marotto_db" \
+DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
   npx prisma migrate deploy
 ```
 
 Create an admin user:
 
 ```bash
-DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5434/marotto_db" \
+DATABASE_URL="postgresql://marotto:marotto_password@127.0.0.1:5444/marotto_db" \
   node scripts/seed-admin.js
 ```
 
