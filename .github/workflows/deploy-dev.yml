@@ -28,7 +28,9 @@ env:
   STACK_NAME: marotto-dev
   APP_ENV: dev
   APP_PORT: "3082"
-  POSTGRES_PORT: "5434"
+  # Not 5434: that port was already taken on the host by something outside
+  # this stack, and Docker fails the whole `up` when a publish bind collides.
+  POSTGRES_PORT: "5444"
   COMPOSE_PROJECT_NAME: marotto-dev
   COMPOSE_FILES: "-f docker-compose.yml -f docker-compose.dev.yml"
 
