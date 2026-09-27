@@ -170,7 +170,12 @@ export default function AppearanceSettingsForm({
                 </Grid>
             ) : null}
 
-            <Field label="Default appearance" hint="Applied to visitors who have not chosen light or dark themselves.">
+            <Field
+                label="Default appearance"
+                hint="Applied to visitors who have not chosen light or dark themselves."
+                help={`"System" follows each device's own setting. Anyone can switch with the sun/moon button, and their choice is remembered on that device. Printed documents are always light.`}
+                helpTopic="branding-theming"
+            >
                 <Select.Root name="defaultAppearance" defaultValue={branding?.defaultAppearance || 'system'}>
                     <Select.Trigger style={{ maxWidth: 220 }} />
                     <Select.Content>
@@ -238,7 +243,12 @@ export default function AppearanceSettingsForm({
                     </Field>
                 </Grid>
                 <Box mt="3" style={{ maxWidth: 240 }}>
-                    <Field label="Document accent color" hint="Rules, headings, and totals on printed documents.">
+                    <Field
+                        label="Document accent color"
+                        hint="Rules, headings, and totals on printed documents."
+                        help="Printed and PDF documents use this instead of the app theme, so your paperwork can match your brand color even if the app uses a different preset."
+                        helpTopic="branding-theming"
+                    >
                         <input
                             type="color"
                             name="documentAccentColor"

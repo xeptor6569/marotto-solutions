@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, TrashIcon } from 'lucide-react';
 import type { LineItem } from '@/lib/types';
 import MarkdownEditor from '@/components/MarkdownEditor';
 import { useMoney } from '@/components/MoneyProvider';
+import HelpTip from '@/components/HelpTip';
 
 export function emptyLineItem(): LineItem {
     return {
@@ -192,6 +193,11 @@ export default function DocumentLineItemEditor({
                             onCheckedChange={(v) => onChange('pendingClientApproval', v === true)}
                         />
                         Needs client approval
+                        <HelpTip label="Needs client approval">
+                            For extra or optional work the client hasn&apos;t agreed to yet. It&apos;s marked &ldquo;Pending your
+                            approval&rdquo; with its own subtotal on the shared document and mentioned in the email. Converting to
+                            an invoice bills it too, so remove it first if they decline.
+                        </HelpTip>
                     </label>
                 ) : null}
             </Flex>

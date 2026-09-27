@@ -6,6 +6,7 @@ import { Download, Upload, AlertTriangle, CheckCircle, XCircle, Info } from 'luc
 import { restoreBackupAction, type RestoreResult } from './actions';
 import BackButton from '@/components/BackButton';
 import HelpLink from '@/components/HelpLink';
+import HelpTip from '@/components/HelpTip';
 
 export default function BackupPage() {
     const [restoring, setRestoring] = useState(false);
@@ -82,7 +83,14 @@ export default function BackupPage() {
             <Card>
                 <form onSubmit={handleRestore}>
                     <Flex direction="column" gap="4">
-                        <Heading size="4">Restore from Backup</Heading>
+                        <Flex align="center" gap="1">
+                            <Heading size="4">Restore from Backup</Heading>
+                            <HelpTip title="What restore replaces" topic="storage-backups">
+                                Everything in the archive overwrites what&apos;s here now: clients, jobs, contracts, calendar,
+                                documents, attachments, settings, and logo. Sign-in accounts on this server are kept, so you
+                                stay signed in. Download a fresh backup first if you might want the current data back.
+                            </HelpTip>
+                        </Flex>
                         <Text as="p" size="2" color="gray">
                             Upload a backup archive (the <code>.tar.gz</code> file downloaded above, e.g.{' '}
                             <code>app-backup-2026-….tar.gz</code>) to restore all data. This will replace ALL

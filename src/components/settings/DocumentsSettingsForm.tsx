@@ -67,8 +67,9 @@ export default function DocumentsSettingsForm({ config }: { config: Partial<AppC
             <Box style={{ borderTop: '1px solid var(--gray-a5)', paddingTop: 16 }}>
                 <Text size="3" weight="bold" as="div">Document numbering</Text>
                 <Text as="p" size="1" color="gray" mt="1" mb="3">
-                    Each document type gets a prefix and a sequence. Changing a prefix only affects new documents;
-                    the start number applies when no documents of that type exist yet — numbers never go backwards.
+                    Each document type gets a prefix and a sequence. Changing a prefix only affects new documents.
+                    Numbers never go backwards: the next document uses the start number or the number after the last one
+                    issued, whichever is higher.
                 </Text>
                 <Grid columns={{ initial: '1', sm: '2' }} gap="3">
                     {NUMBERED_DOCUMENT_TYPES.map((type) => {
@@ -84,7 +85,11 @@ export default function DocumentsSettingsForm({ config }: { config: Partial<AppC
                                     <Text size="1" color="gray" style={{ fontFamily: 'var(--font-geist-mono), monospace' }}>{preview}</Text>
                                 </Flex>
                                 <Grid columns="2" gap="2">
-                                    <Field label="Prefix">
+                                    <Field
+                                        label="Prefix"
+                                        help="Letters or digits (up to 8) before the number, e.g. INV → INV-0042. Existing documents keep their old IDs, so share links and records never break."
+                                        helpTopic="documents"
+                                    >
                                         <TextField.Root
                                             name={`prefix.${type}`}
                                             value={prefixes[type]}
@@ -94,7 +99,11 @@ export default function DocumentsSettingsForm({ config }: { config: Partial<AppC
                                             style={{ fontFamily: 'var(--font-geist-mono), monospace' }}
                                         />
                                     </Field>
-                                    <Field label="Start at">
+                                    <Field
+                                        label="Start at"
+                                        help="To continue from another system, set this to your next number (e.g. 1043). If you've already issued higher numbers, the sequence simply carries on from those."
+                                        helpTopic="documents"
+                                    >
                                         <TextField.Root
                                             name={`startNumber.${type}`}
                                             type="number"
@@ -110,7 +119,11 @@ export default function DocumentsSettingsForm({ config }: { config: Partial<AppC
                     })}
                 </Grid>
                 <Box mt="3" style={{ maxWidth: 220 }}>
-                    <Field label="Number width" hint="Digits in the numeric part (3–8), e.g. 4 → 0001.">
+                    <Field
+                        label="Number width"
+                        hint="Digits in the numeric part (3–8), e.g. 4 → 0001."
+                        help="Only pads short numbers with zeros. Numbers that outgrow the width keep counting (INV-9999 → INV-10000)."
+                    >
                         <TextField.Root
                             name="numberPadding"
                             type="number"

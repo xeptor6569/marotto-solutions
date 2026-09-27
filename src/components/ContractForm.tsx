@@ -31,6 +31,7 @@ import type {
 } from '@/lib/types';
 import type { ContractRecord } from '@/lib/contracts';
 import { useMoney } from '@/components/MoneyProvider';
+import HelpTip, { LabelWithHelp } from '@/components/HelpTip';
 
 interface ContractFormProps {
     initialData?: ContractRecord;
@@ -258,6 +259,10 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                         onChange={(e) => setAutoRenew(e.target.checked)}
                                     />
                                     Auto-renew at term end
+                                    <HelpTip label="Auto-renew at term end" topic="contracts">
+                                        When the term length or end date is reached, the contract extends by another full
+                                        term and keeps billing. When off, it ends after the last cycle.
+                                    </HelpTip>
                                 </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
                                     <input
@@ -267,6 +272,11 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                         onChange={(e) => setAutoSend(e.target.checked)}
                                     />
                                     Auto-send each cycle
+                                    <HelpTip label="Auto-send each cycle" topic="contracts">
+                                        Emails each new cycle invoice to the customer as soon as it&apos;s created. Skipped for
+                                        contracts with usage lines, since those need quantities filled in first. When off,
+                                        invoices wait as drafts for you to send.
+                                    </HelpTip>
                                 </label>
                             </Flex>
                             <Box>
@@ -313,7 +323,11 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                             </Grid>
                             <Grid columns="2" gap="3">
                                 <Box>
-                                    <Text as="label" size="2" weight="bold">Start date</Text>
+                                    <Text as="label" size="2" weight="bold">
+                                        <LabelWithHelp help="The first cycle invoice is created on this date (or on the next scheduler run after it), then again every interval." topic="contracts">
+                                            Start date
+                                        </LabelWithHelp>
+                                    </Text>
                                     <TextField.Root
                                         name="startDate"
                                         type="date"
@@ -333,7 +347,11 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                                 </Box>
                             </Grid>
                             <Box>
-                                <Text as="label" size="2" weight="bold">Term length (cycles)</Text>
+                                <Text as="label" size="2" weight="bold">
+                                    <LabelWithHelp help="How many invoices make up one term, e.g. 12 monthly cycles for a one-year agreement. Invoices show “Cycle 3 of 12”. Use this or an end date." topic="contracts">
+                                        Term length (cycles)
+                                    </LabelWithHelp>
+                                </Text>
                                 <TextField.Root
                                     name="termCycles"
                                     type="number"
@@ -460,7 +478,11 @@ export default function ContractForm({ initialData, error, clients, leads, jobs,
                         <Table.Root style={{ minWidth: 720 }}>
                             <Table.Header>
                                 <Table.Row>
-                                    <Table.ColumnHeaderCell>Kind</Table.ColumnHeaderCell>
+                                    <Table.ColumnHeaderCell>
+                                        <LabelWithHelp help="Recurring: same quantity billed every cycle (e.g. a monthly service fee). Usage: billed as used — the cycle invoice arrives as a draft for you to enter quantities (e.g. extra visits or hours)." topic="contracts">
+                                            Kind
+                                        </LabelWithHelp>
+                                    </Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell width="40%">Description</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell>Qty</Table.ColumnHeaderCell>
                                     <Table.ColumnHeaderCell>Unit price</Table.ColumnHeaderCell>

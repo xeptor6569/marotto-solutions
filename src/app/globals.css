@@ -40,6 +40,18 @@ body {
   .rt-SelectTrigger {
     min-height: 40px;
   }
+
+  /* Bigger tap target for the small "?" help icons without changing layout. */
+  .help-tip-trigger::after {
+    content: '';
+    position: absolute;
+    inset: -10px;
+  }
+}
+
+.help-tip-trigger {
+  position: relative;
+  vertical-align: middle;
 }
 
 /* ── Public site helpers ─────────────────────────────────────────────── */
@@ -101,6 +113,15 @@ body {
   background: var(--accent-a3);
   color: var(--accent-11);
   font-weight: 500;
+}
+
+.docs-nav-group {
+  margin: 14px 12px 4px;
+  font-size: var(--font-size-1);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gray-10);
 }
 
 .docs-main {
@@ -457,6 +478,13 @@ body {
 
   .docs-nav-link[data-active] {
     border-color: var(--accent-a7);
+  }
+
+  .docs-nav-group {
+    flex-shrink: 0;
+    align-self: center;
+    margin: 0 0 0 10px;
+    white-space: nowrap;
   }
 
   .docs-content {

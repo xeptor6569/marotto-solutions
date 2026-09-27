@@ -22,6 +22,7 @@ import { getClients } from "@/app/admin/clients/actions";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import { formatInTimeZone } from "date-fns-tz";
 import CreateMenu from "@/components/CreateMenu";
+import HelpTip from "@/components/HelpTip";
 import { documentListLabel, documentListSubLabel } from "@/lib/document-labels";
 import type { DocumentData } from "@/lib/types";
 import { getMoneyFormatter } from '@/lib/branding';
@@ -61,12 +62,14 @@ function KpiCard({
     detail,
     icon: Icon,
     color,
+    help,
 }: {
     label: string;
     value: string;
     detail?: string;
     icon: LucideIcon;
     color: string;
+    help?: string;
 }) {
     return (
         <Card size="2">
@@ -86,9 +89,12 @@ function KpiCard({
                     <Icon size={19} />
                 </Flex>
                 <Box style={{ minWidth: 0 }}>
-                    <Text size="1" color="gray" as="div" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                        {label}
-                    </Text>
+                    <Flex align="center" gap="1">
+                        <Text size="1" color="gray" as="div" style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                            {label}
+                        </Text>
+                        {help ? <HelpTip title={label} topic="payments">{help}</HelpTip> : null}
+                    </Flex>
                     <Heading size="6" style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</Heading>
                     {detail ? <Text size="1" color="gray" as="div">{detail}</Text> : null}
                 </Box>
@@ -237,6 +243,7 @@ export default async function AdminDashboard() {
                     detail={`${openInvoices.length} open invoice${openInvoices.length === 1 ? '' : 's'}`}
                     icon={CircleDollarSign}
                     color={outstandingTotal > 0 ? 'amber' : 'green'}
+                    help="What clients still owe: the unpaid balance of every invoice that isn't paid or void. Partial payments are already subtracted."
                 />
                 <KpiCard
                     label="Overdue"
@@ -246,12 +253,14 @@ export default async function AdminDashboard() {
                         : 'Nothing past due'}
                     icon={AlertTriangle}
                     color={overdueInvoices.length > 0 ? 'red' : 'green'}
+                    help="The part of Outstanding on invoices whose due date has passed. Invoices without a due date never count as overdue."
                 />
                 <KpiCard
                     label={`Collected in ${monthLabel}`}
                     value={money(collected)}
                     icon={TrendingUp}
                     color="green"
+                    help="Payments recorded with a date in this calendar month, including Stripe card payments. Invoices marked paid without a recorded payment count on the day they were marked."
                 />
             </Grid>
 

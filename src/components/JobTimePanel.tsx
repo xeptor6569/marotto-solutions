@@ -12,6 +12,7 @@ import type { JobEstimatedHoursSummary } from '@/lib/job-estimated-hours';
 import type { JobTimeLogRecord } from '@/lib/job-time-logs';
 import { sumLoggedHours } from '@/lib/job-time-logs';
 import Link from 'next/link';
+import HelpTip from '@/components/HelpTip';
 
 export default function JobTimePanel({
     jobId,
@@ -65,7 +66,14 @@ export default function JobTimePanel({
 
     return (
         <Card>
-            <Heading size="4" mb="3">Time</Heading>
+            <Flex align="center" gap="1" mb="3">
+                <Heading size="4">Time</Heading>
+                <HelpTip title="Time" topic="clients-jobs">
+                    Estimated adds up the estimated hours on this job&apos;s estimates and quotes (an estimate converted
+                    into a quote is counted once). Logged is the time entered below. Remaining turns red when the job
+                    runs over.
+                </HelpTip>
+            </Flex>
 
             <Flex gap="3" wrap="wrap" mb="4">
                 <Box

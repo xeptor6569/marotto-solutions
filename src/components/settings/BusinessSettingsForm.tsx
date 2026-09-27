@@ -43,7 +43,11 @@ export default function BusinessSettingsForm({ config }: { config: Partial<AppCo
                         autoComplete="organization"
                     />
                 </Field>
-                <Field label="Legal name" hint="Used on contract signature lines. Falls back to the business name.">
+                <Field
+                    label="Legal name"
+                    hint="Used on contract signature lines. Falls back to the business name."
+                    help='Your registered name if it differs from your trading name, e.g. "Acme Services LLC" trading as "Acme Lawn Care".'
+                >
                     <TextField.Root
                         name="legalName"
                         defaultValue={business?.legalName || ''}
@@ -70,7 +74,11 @@ export default function BusinessSettingsForm({ config }: { config: Partial<AppCo
                         placeholder="(555) 555-0100"
                     />
                 </Field>
-                <Field label="Phone (dialing)" hint='Full number for tap-to-call links, e.g. "+15555550100".'>
+                <Field
+                    label="Phone (dialing)"
+                    hint='Full number for tap-to-call links, e.g. "+15555550100".'
+                    help="Digits with a leading + and country code, no spaces. Phones use this when someone taps your number on the website or a shared document."
+                >
                     <TextField.Root
                         name="phoneE164"
                         type="tel"
@@ -120,21 +128,35 @@ export default function BusinessSettingsForm({ config }: { config: Partial<AppCo
             <Box style={{ borderTop: '1px solid var(--gray-a5)', paddingTop: 16 }}>
                 <Text size="3" weight="bold" as="div" mb="3">Region</Text>
                 <Grid columns={{ initial: '1', sm: '3' }} gap="4">
-                    <Field label="Currency" hint="Used for every amount in the app, on documents, and for card payments.">
+                    <Field
+                        label="Currency"
+                        hint="Used for every amount in the app, on documents, and for card payments."
+                        help="Amounts are stored as plain numbers, so changing the currency relabels existing documents rather than converting them. Pick it once, before you start invoicing."
+                        helpTopic="documents"
+                    >
                         <select name="currency" defaultValue={currentCurrency} style={nativeSelectStyle}>
                             {currencyOptions.map((option) => (
                                 <option key={option.code} value={option.code}>{option.label}</option>
                             ))}
                         </select>
                     </Field>
-                    <Field label="Number format locale" hint='Controls separators and symbol placement, e.g. "en-US", "en-GB", "de-DE".'>
+                    <Field
+                        label="Number format locale"
+                        hint='Controls separators and symbol placement, e.g. "en-US", "en-GB", "de-DE".'
+                        help='Only changes how amounts look: "en-US" shows $1,234.50, "de-DE" shows 1.234,50 €. It never changes the amounts themselves.'
+                    >
                         <TextField.Root
                             name="locale"
                             defaultValue={business?.locale || 'en-US'}
                             placeholder="en-US"
                         />
                     </Field>
-                    <Field label="Business timezone" hint="Calendar times and reminders use this.">
+                    <Field
+                        label="Business timezone"
+                        hint="Calendar times and reminders use this."
+                        help="Due dates, calendar events, and reminder emails are calculated in this timezone, no matter where the server is or where you're traveling."
+                        helpTopic="calendar"
+                    >
                         <select name="businessTimezone" defaultValue={currentTimezone} style={nativeSelectStyle}>
                             {!timeZones.includes(currentTimezone) ? (
                                 <option value={currentTimezone}>{currentTimezone}</option>
