@@ -1,8 +1,9 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect } from 'react';
 import { Box, Button, Callout, Flex, Text } from '@radix-ui/themes';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/Toaster';
 import { LabelWithHelp } from '@/components/HelpTip';
 import {
     saveSettingsSectionAction,
@@ -23,6 +24,11 @@ export default function SettingsSectionForm({
     submitLabel?: string;
 }) {
     const [state, formAction, isPending] = useActionState(saveSettingsSectionAction, initialState);
+    const toast = useToast();
+
+    useEffect(() => {
+        if (state?.success) toast({ title: 'Settings saved' });
+    }, [state, toast]);
 
     return (
         <form action={formAction}>
@@ -34,14 +40,8 @@ export default function SettingsSectionForm({
                         <Callout.Text>{state.error}</Callout.Text>
                     </Callout.Root>
                 ) : null}
-                {state?.success ? (
-                    <Callout.Root color="green">
-                        <Callout.Icon><CheckCircle size={16} /></Callout.Icon>
-                        <Callout.Text>Settings saved.</Callout.Text>
-                    </Callout.Root>
-                ) : null}
                 {children}
-                <Box>
+                <Box className="settings-save-bar">
                     <Button type="submit" loading={isPending} size="3">{submitLabel}</Button>
                 </Box>
             </Flex>

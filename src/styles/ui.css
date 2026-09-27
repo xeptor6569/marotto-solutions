@@ -581,3 +581,193 @@
   outline: 2px solid var(--focus-8);
   outline-offset: -1px;
 }
+
+/* ── Toasts ── */
+.toast-viewport {
+  position: fixed;
+  z-index: 2147483000;
+  right: 0;
+  bottom: calc(var(--admin-bottom-nav-h, 0px) + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, 100vw);
+  max-width: 100vw;
+  margin: 0;
+  padding: 16px;
+  list-style: none;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border-radius: var(--radius-4);
+  background: var(--color-panel-solid);
+  color: var(--gray-12);
+  box-shadow: var(--shadow-5);
+  box-sizing: border-box;
+}
+
+.toast-icon {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.toast[data-tone='success'] .toast-icon { color: var(--green-10); }
+.toast[data-tone='error'] .toast-icon { color: var(--red-10); }
+.toast[data-tone='info'] .toast-icon { color: var(--accent-10); }
+
+.toast[data-tone='error'] {
+  box-shadow: var(--shadow-5), inset 3px 0 0 var(--red-9);
+}
+
+.toast-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: var(--font-size-2);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.toast-description {
+  margin-top: 2px;
+  font-size: var(--font-size-1);
+  color: var(--gray-11);
+  line-height: 1.4;
+}
+
+.toast-action {
+  flex-shrink: 0;
+  align-self: center;
+  padding: 4px 10px;
+  border: none;
+  border-radius: var(--radius-2);
+  background: var(--accent-a3);
+  color: var(--accent-11);
+  font: inherit;
+  font-size: var(--font-size-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toast-close {
+  display: flex;
+  flex-shrink: 0;
+  padding: 4px;
+  border: none;
+  border-radius: var(--radius-2);
+  background: transparent;
+  color: var(--gray-10);
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  background: var(--gray-a3);
+  color: var(--gray-12);
+}
+
+.toast[data-state='open'] {
+  animation: toast-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast[data-state='closed'] {
+  animation: toast-out 160ms ease-in forwards;
+}
+
+.toast[data-swipe='move'] {
+  transform: translateX(var(--radix-toast-swipe-move-x));
+}
+
+.toast[data-swipe='cancel'] {
+  transform: translateX(0);
+  transition: transform 200ms ease-out;
+}
+
+.toast[data-swipe='end'] {
+  animation: toast-swipe-out 160ms ease-out forwards;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; }
+  to { opacity: 0; transform: translateX(16px); }
+}
+
+@keyframes toast-swipe-out {
+  from { transform: translateX(var(--radix-toast-swipe-end-x)); }
+  to { transform: translateX(100%); }
+}
+
+/* ── Reduced motion: keep feedback, drop movement ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .rt-Skeleton {
+    animation: none !important;
+  }
+}
+
+/* Settings save button stays reachable at the bottom of long tabs. */
+.settings-save-bar {
+  position: sticky;
+  bottom: calc(var(--admin-bottom-nav-h, 0px) + 12px);
+  z-index: 5;
+  align-self: flex-start;
+  padding: 6px;
+  margin: -6px;
+  border-radius: var(--radius-4);
+  background: color-mix(in oklab, var(--look-canvas, var(--color-background)) 80%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.skeleton-row + .skeleton-row { border-top: 1px solid var(--gray-a3); }
+
+/* ── Status pages (not found, error, expired link) ── */
+.status-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(70dvh, 640px);
+  padding: 48px 20px;
+  box-sizing: border-box;
+}
+
+.status-page-inner {
+  max-width: 520px;
+}
+
+.status-page-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-5);
+  background: var(--accent-a3);
+  color: var(--accent-11);
+  box-shadow: inset 0 0 0 1px var(--accent-a5);
+}
+
+.status-page-detail {
+  max-width: 460px;
+  word-break: break-word;
+}

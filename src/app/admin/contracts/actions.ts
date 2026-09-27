@@ -27,6 +27,7 @@ import {
     requireAdminAction,
     requireAdminActionOrRedirect,
 } from '@/lib/require-admin-session';
+import { setFlash } from '@/lib/flash-server';
 
 interface ContractFormResult {
     success: boolean;
@@ -126,6 +127,7 @@ export async function createContractFormAction(formData: FormData) {
         redirect(`/admin/contracts/create?${params.toString()}`);
     }
     revalidateContractPaths(contractId || undefined);
+    await setFlash('Contract created');
     redirect(`/admin/contracts/${contractId}`);
 }
 
@@ -150,6 +152,7 @@ export async function updateContractFormAction(formData: FormData) {
         redirect(`/admin/contracts/${id}/edit?${params.toString()}`);
     }
     revalidateContractPaths(id);
+    await setFlash('Contract saved');
     redirect(`/admin/contracts/${id}`);
 }
 

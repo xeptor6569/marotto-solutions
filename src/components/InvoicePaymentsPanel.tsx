@@ -30,6 +30,7 @@ import {
     type PaymentActionState,
 } from '@/app/admin/payments-actions';
 import type { DocumentData, PaymentEntry, PaymentKind } from '@/lib/types';
+import { useToast } from '@/components/ui/Toaster';
 
 const initialState: PaymentActionState = { success: false };
 
@@ -42,13 +43,6 @@ const KIND_LABEL: Record<PaymentKind, string> = {
 const nativeSelectStyle: React.CSSProperties = {
     width: '100%',
     minHeight: 36,
-    padding: '0 10px',
-    borderRadius: 'var(--radius-2)',
-    border: '1px solid var(--gray-a7)',
-    background: 'var(--color-surface)',
-    color: 'var(--gray-12)',
-    font: 'inherit',
-    fontSize: 'var(--font-size-2)',
 };
 
 function todayIso(): string {
@@ -73,15 +67,18 @@ function RecordPaymentDialog({
     const [state, formAction, isPending] = useActionState(recordPaymentAction, initialState);
     const [amount, setAmount] = useState(balanceDue.toFixed(2));
     const [kind, setKind] = useState<PaymentKind>('final');
+    const toast = useToast();
 
     // Close + refresh once the server confirms; the preview re-renders with
     // the new balance, status, and receipt link.
     useEffect(() => {
-        if (state.success) {
-            onOpenChange(false);
-            router.refresh();
-        }
-    }, [state, onOpenChange, router]);
+        if (!state.success) return;
+        onOpenChange(false);
+        router.refresh();
+        toast({ title: `Payment of ${money(Number(amount) || 0)} recorded`, description: 'A receipt was created and linked to this invoice.' });
+        // Only a new server result should fire this, not edits to the amount.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state]);
 
     const setFraction = (fraction: number) => {
         const next = Math.round(Math.min(balanceDue, Math.max(0, balanceDue * fraction)) * 100) / 100;
@@ -194,10 +191,13 @@ function RemovePaymentButton({ invoiceId, payment }: { invoiceId: string; paymen
     const router = useRouter();
     const { format: money } = useMoney();
     const [state, formAction, isPending] = useActionState(removePaymentAction, initialState);
+    const toast = useToast();
 
     useEffect(() => {
-        if (state.success) router.refresh();
-    }, [state, router]);
+        if (!state.success) return;
+        router.refresh();
+        toast({ title: `${money(payment.amount)} payment removed`, tone: 'info' });
+    }, [state, router, toast, money, payment.amount]);
 
     if (payment.stripeSessionId) {
         return (
@@ -244,18 +244,39 @@ function StatusActionForm({
     action,
     label,
     icon,
+    successTitle,
+    undoAction,
 }: {
     invoiceId: string;
     action: typeof markInvoicePaidAction;
     label: string;
     icon: React.ReactNode;
+    successTitle: string;
+    /** The inverse action, offered as Undo in the confirmation toast. */
+    undoAction?: typeof markInvoicePaidAction;
 }) {
     const router = useRouter();
     const [state, formAction, isPending] = useActionState(action, initialState);
+    const toast = useToast();
 
     useEffect(() => {
-        if (state.success) router.refresh();
-    }, [state, router]);
+        if (!state.success) return;
+        router.refresh();
+        toast({
+            title: successTitle,
+            action: undoAction
+                ? {
+                    label: 'Undo',
+                    onClick: async () => {
+                        const data = new FormData();
+                        data.set('invoiceId', invoiceId);
+                        await undoAction(initialState, data);
+                        router.refresh();
+                    },
+                }
+                : undefined,
+        });
+    }, [state, router, toast, successTitle, undoAction, invoiceId]);
 
     return (
         <form action={formAction} style={{ display: 'contents' }}>
@@ -342,6 +363,8 @@ export default function InvoicePaymentsPanel({
                                             action={reopenInvoiceAction}
                                             label="Reopen — status follows payments"
                                             icon={<Undo2 size={14} />}
+                                            successTitle="Invoice reopened"
+                                            undoAction={markInvoicePaidAction}
                                         />
                                     ) : (
                                         <StatusActionForm
@@ -349,6 +372,8 @@ export default function InvoicePaymentsPanel({
                                             action={markInvoicePaidAction}
                                             label="Mark paid without recording a payment"
                                             icon={<CheckCircle2 size={14} />}
+                                            successTitle="Invoice marked as paid"
+                                            undoAction={reopenInvoiceAction}
                                         />
                                     )}
                                 </Box>

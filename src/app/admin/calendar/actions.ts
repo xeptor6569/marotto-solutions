@@ -11,6 +11,7 @@ import {
 } from '@/lib/calendar';
 import type { CalendarEventInput } from '@/lib/types';
 import { requireAdminAction } from '@/lib/require-admin-session';
+import { setFlash } from '@/lib/flash-server';
 
 export interface CalendarActionResult {
     success: boolean;
@@ -32,6 +33,7 @@ export async function createCalendarEventAction(input: CalendarEventInput): Prom
         const event = await createEvent(input);
         revalidatePath('/admin/calendar');
         revalidatePath('/admin');
+        await setFlash('Event scheduled');
         redirect(`/admin/calendar/${event.id}`);
     } catch (error) {
         if (error && typeof error === 'object' && 'digest' in error) {

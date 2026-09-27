@@ -7,6 +7,9 @@ import "@/styles/admin-shell.css";
 import { Theme } from "@radix-ui/themes";
 import { EnvironmentBanner } from "@/components/EnvironmentBanner";
 import MoneyProvider from "@/components/MoneyProvider";
+import { ToastProvider } from "@/components/ui/Toaster";
+import FlashToaster from "@/components/ui/FlashToaster";
+import { Suspense } from "react";
 import { getAppearancePreference } from "@/lib/appearance";
 import { getBranding, getSiteUrl } from "@/lib/branding";
 import { fontVariables } from "./fonts";
@@ -127,7 +130,12 @@ export default async function RootLayout({
           data-look-scope={theme.lookId}
         >
           <MoneyProvider format={business.money}>
-            {children}
+            <ToastProvider>
+              {children}
+              <Suspense fallback={null}>
+                <FlashToaster />
+              </Suspense>
+            </ToastProvider>
           </MoneyProvider>
           <EnvironmentBanner />
         </Theme>

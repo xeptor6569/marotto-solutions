@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button, Dialog, Flex, Text, TextArea, TextField } from '@radix-ui/themes';
-import { Mail } from 'lucide-react';
-import { useFormState } from 'react-dom';
+import { Mail, Send } from 'lucide-react';
 import { sendDocumentEmailAction, type EmailDocumentState } from '@/app/email-document-action';
+import { useToast } from '@/components/ui/Toaster';
 
 const initialState: EmailDocumentState = { success: false };
 
@@ -29,9 +29,10 @@ function EmailSendFields({
     businessName?: string;
     onClose: () => void;
 }) {
-    const [state, formAction] = useFormState(sendDocumentEmailAction, initialState);
+    const [state, formAction, isPending] = useActionState(sendDocumentEmailAction, initialState);
     const [to, setTo] = useState(defaultTo || '');
     const [message, setMessage] = useState('');
+    const toast = useToast();
 
     // Reset fields when the target recipient changes (render-time adjustment
     // instead of a cascading setState-in-effect).
@@ -43,11 +44,12 @@ function EmailSendFields({
     }
 
     useEffect(() => {
-        if (state.success) {
-            const t = window.setTimeout(() => onClose(), 1600);
-            return () => window.clearTimeout(t);
-        }
-    }, [state.success, onClose]);
+        if (!state.success) return;
+        toast({ title: `${docTitle} ${documentId} sent`, description: to.trim() ? `Emailed to ${to.trim()}` : undefined });
+        onClose();
+        // Only react to a new successful result, not to typing in the form.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state]);
 
     const viewUrl = useMemo(() => {
         if (typeof window === 'undefined') return '';
@@ -78,11 +80,6 @@ function EmailSendFields({
                     {state.error}
                 </Text>
             ) : null}
-            {state.success ? (
-                <Text size="2" color="green" mb="3" as="p">
-                    Email sent.
-                </Text>
-            ) : null}
 
             <Flex direction="column" gap="3">
                 <BoxLabel label="To">
@@ -107,8 +104,8 @@ function EmailSendFields({
                             <input type="hidden" name="documentId" value={documentId} />
                             <input type="hidden" name="to" value={to} />
                             <input type="hidden" name="message" value={message} />
-                            <Button type="submit" disabled={state.success}>
-                                Send email
+                            <Button type="submit" loading={isPending} disabled={state.success || !to.trim()}>
+                                <Send size={14} /> Send email
                             </Button>
                         </form>
                     ) : null}

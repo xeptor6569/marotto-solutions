@@ -24,7 +24,8 @@ import {
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import { createJob, getJobById, getJobOptions } from '@/lib/jobs';
-import { suggestDocumentTitle } from '@/lib/document-labels';
+import { DOC_LABEL, suggestDocumentTitle } from '@/lib/document-labels';
+import { setFlash } from '@/lib/flash-server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
@@ -89,6 +90,7 @@ export async function createDepositInvoiceAction(input: {
         revalidatePath(`/admin/invoices/${doc.id}`);
         revalidatePath(`/admin/invoices/${doc.id}/edit`);
 
+        await setFlash(`Deposit invoice ${doc.id} created`, 'success', 'It is a draft. Review the amount, then issue it to the client.');
         redirect(`/admin/invoices/${doc.id}/edit`);
     } catch (error) {
         if (error && typeof error === 'object' && 'digest' in error) {
@@ -159,6 +161,7 @@ export async function createConvertedDocumentAction(input: {
         revalidatePath(`/admin/${input.targetType}s/${doc.id}`);
         revalidatePath(`/admin/${input.targetType}s/${doc.id}/edit`);
 
+        await setFlash(`Converted to ${DOC_LABEL[input.targetType].toLowerCase()} ${doc.id}`, 'success', 'It is a draft. Review it, then send it to the client.');
         redirect(`/admin/${input.targetType}s/${doc.id}/edit`);
     } catch (error) {
         if (error && typeof error === 'object' && 'digest' in error) {
@@ -385,6 +388,11 @@ export async function createInvoiceAction(formData: FormData) {
     if (createdReceiptId) {
         const separator = redirectTo.includes('?') ? '&' : '?';
         redirectTo = `${redirectTo}${separator}recorded=1&receipt=${encodeURIComponent(createdReceiptId)}`;
+    } else {
+        const label = DOC_LABEL[type] ?? 'Document';
+        await setFlash(
+            intent === 'save_and_send' ? `${label} ${doc.id} issued` : `${label} ${doc.id} ${documentId ? 'saved' : 'created'}`,
+        );
     }
 
     redirect(redirectTo);
@@ -440,6 +448,7 @@ export async function createLeadAction(formData: FormData) {
         revalidatePath('/admin/jobs');
         revalidatePath(`/admin/jobs/${selectedJobId}`);
     }
+    await setFlash(`${name} added`);
     redirect(`/admin/leads/${doc.id}`);
 }
 
@@ -593,6 +602,7 @@ export async function deleteAdminDocumentAction(input: {
     }
 
     let redirectTo: string | undefined;
+    let deletedLabel = 'Document';
     try {
         const existing = await getDocumentById(id);
         if (!existing || !DELETABLE_DOC_TYPES.includes(existing.type)) {
@@ -600,6 +610,7 @@ export async function deleteAdminDocumentAction(input: {
         }
 
         await deleteDocument(existing.type, id);
+        deletedLabel = `${DOC_LABEL[existing.type]} ${existing.id}`;
 
         const listPath = `/admin/${existing.type}s`;
         revalidatePath('/admin');
@@ -621,6 +632,7 @@ export async function deleteAdminDocumentAction(input: {
     }
 
     if (redirectTo) {
+        await setFlash(`${deletedLabel} deleted`);
         redirect(redirectTo);
     }
     return { success: true };
