@@ -1,4 +1,5 @@
 import type { PaymentKind } from './types';
+import { toMinorUnits } from './money';
 import { toMoneyAmount } from './payment-links';
 import { validateRecordPayment } from './document-save';
 
@@ -96,9 +97,9 @@ export function resolveStripeCheckoutAmount(input: StripeCheckoutAmountInput): S
     };
 }
 
-/** Stripe unit_amount is integer cents. */
-export function toStripeUnitAmount(dollars: number): number {
-    return Math.round(Number(toMoneyAmount(dollars)) * 100);
+/** Stripe unit_amount is in the currency's minor unit (cents for most; whole units for zero-decimal currencies). */
+export function toStripeUnitAmount(amount: number, currency: string = 'USD'): number {
+    return toMinorUnits(Number(toMoneyAmount(amount)), currency);
 }
 
 export function parseStripeCheckoutMode(raw: unknown): StripeCheckoutMode | null {

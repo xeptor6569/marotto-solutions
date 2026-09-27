@@ -1,12 +1,19 @@
 import type { MetadataRoute } from 'next';
+import { getBusiness } from '@/lib/branding';
 
-export default function manifest(): MetadataRoute.Manifest {
+// The manifest is built from user-configured branding at request time.
+export const dynamic = 'force-dynamic';
+
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+    const business = await getBusiness();
+    // Keep name + short_name identical and short so iOS Spotlight / home-screen
+    // search matches on the first characters instead of requiring the full name.
+    const shortName = business.name.split(/\s+/)[0] || business.name;
+
     return {
-        // Keep name + short_name identical and short so iOS Spotlight / home-screen
-        // search matches on "M" / "Ma" / "Mar…" instead of requiring "Marotto S…".
         id: '/admin',
-        name: 'Marotto',
-        short_name: 'Marotto',
+        name: shortName,
+        short_name: shortName,
         description: 'Admin for jobs, invoices, clients, and calendar.',
         start_url: '/admin',
         scope: '/',

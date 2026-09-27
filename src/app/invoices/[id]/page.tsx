@@ -9,7 +9,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         <DocumentPreview
             doc={doc}
             showBackButton
-            backHref="/dashboard"
+            backHref="/admin"
             editHref={doc.status === "draft" ? `/admin/invoices/${doc.id}/edit` : undefined}
         />
     );

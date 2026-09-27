@@ -3,21 +3,16 @@
 import { revalidatePath } from 'next/cache';
 import { getDocumentById, getNextNumber, saveNewDocument } from '@/lib/data';
 import { createTransportFromEnv, getPublicSiteUrl } from '@/lib/email';
-import { getFromAddress } from '@/lib/email-identity';
+import { getEmailBrand } from '@/lib/email-branding';
 import { buildDocumentShareUrl } from '@/lib/document-share-url';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import type { DocumentData, DocumentType } from '@/lib/types';
 import { requireAdminAction } from '@/lib/require-admin-session';
-
-const PREFIX: Record<DocumentType, string> = {
-    invoice: 'INV',
-    estimate: 'EST',
-    quote: 'QTE',
-    receipt: 'RCT',
-    lead: 'LEAD',
-};
+import { getMoneyFormatter } from '@/lib/branding';
+import { buildDocumentId } from '@/lib/document-numbering';
+import { getDocumentNumbering } from '@/lib/document-numbering-server';
 
 function escapeHtml(s: string) {
     return s
@@ -47,6 +42,7 @@ export async function duplicateDocumentsAction(ids: string[]): Promise<BulkDupli
 
     const newIds: string[] = [];
     const touchedTypes = new Set<DocumentType>();
+    const numbering = await getDocumentNumbering();
 
     try {
         for (const id of ids) {
@@ -54,7 +50,7 @@ export async function duplicateDocumentsAction(ids: string[]): Promise<BulkDupli
             if (!doc) continue;
 
             const number = await getNextNumber(doc.type);
-            const newId = `${PREFIX[doc.type]}-${String(number).padStart(4, '0')}`;
+            const newId = buildDocumentId(doc.type, number, numbering);
             const now = new Date().toISOString();
 
             const copy: DocumentData = {
@@ -148,7 +144,7 @@ export async function convertDocumentsAction(
     try {
         for (const doc of convertible) {
             const number = await getNextNumber(targetType);
-            const converted = buildConvertedDocument(doc, targetType, number);
+            const converted = buildConvertedDocument(doc, targetType, number, await getDocumentNumbering());
             await saveNewDocument(converted);
             newIds.push(converted.id);
         }
@@ -182,6 +178,7 @@ export interface BulkSendResult {
  * single email listing links to all of their selected documents.
  */
 export async function sendDocumentsAction(ids: string[], message?: string): Promise<BulkSendResult> {
+    const money = await getMoneyFormatter();
     const gate = await requireAdminAction();
     if (!gate.ok) return { success: false, error: 'You must be signed in to send email.' };
     const session = gate.session;
@@ -219,7 +216,8 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
         return { success: false, error: 'None of the selected documents have a recipient email.', skipped };
     }
 
-    const from = getFromAddress();
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const trimmedMessage = (message || '').trim();
     let documentsSent = 0;
 
@@ -227,8 +225,8 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
         for (const { email, name, docs } of groups.values()) {
             const greeting = name ? `Hi ${name},` : 'Hello,';
             const subject = docs.length === 1
-                ? `Marotto Solutions — ${DOC_LABEL[docs[0].type]} ${docs[0].id}`
-                : `Marotto Solutions — ${docs.length} documents`;
+                ? `${brand.name} — ${DOC_LABEL[docs[0].type]} ${docs[0].id}`
+                : `${brand.name} — ${docs.length} documents`;
 
             const siteBase = getPublicSiteUrl();
             const docsWithUrls = await Promise.all(
@@ -239,7 +237,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
             );
 
             const listText = docsWithUrls
-                .map(({ doc: d, url }) => `- ${DOC_LABEL[d.type]} ${d.id} ($${d.total.toFixed(2)}): ${url}`)
+                .map(({ doc: d, url }) => `- ${DOC_LABEL[d.type]} ${d.id} (${money(d.total)}): ${url}`)
                 .join('\n');
 
             const textBody = [
@@ -250,13 +248,13 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
                 listText,
                 '',
                 'Thank you,',
-                'Marotto Solutions',
+                brand.name,
             ].filter((line, i, arr) => !(line === '' && arr[i - 1] === '')).join('\n');
 
             const listHtml = docsWithUrls
                 .map(({ doc: d, url }) => {
                     const safeUrl = escapeHtml(url);
-                    return `<li style="margin: 0 0 8px;"><a href="${safeUrl}" style="color: #4f46e5;">${escapeHtml(DOC_LABEL[d.type])} ${escapeHtml(d.id)}</a> — $${d.total.toFixed(2)}</li>`;
+                    return `<li style="margin: 0 0 8px;"><a href="${safeUrl}" style="color: #4f46e5;">${escapeHtml(DOC_LABEL[d.type])} ${escapeHtml(d.id)}</a> — ${money(d.total)}</li>`;
                 })
                 .join('');
 
@@ -267,7 +265,7 @@ export async function sendDocumentsAction(ids: string[], message?: string): Prom
   ${trimmedMessage ? `<p style="margin: 0 0 16px; white-space: pre-line;">${escapeHtml(trimmedMessage)}</p>` : ''}
   <p style="margin: 0 0 8px;">${docs.length === 1 ? 'Here is your document:' : 'Here are your documents:'}</p>
   <ul style="margin: 0 0 16px; padding-left: 20px;">${listHtml}</ul>
-  <p style="margin: 24px 0 0;">Thank you,<br />Marotto Solutions</p>
+  <p style="margin: 24px 0 0;">Thank you,<br />${escapeHtml(brand.name)}</p>
 </body></html>`;
 
             await transport.sendMail({

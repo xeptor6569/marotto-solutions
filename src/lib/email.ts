@@ -2,7 +2,8 @@ import nodemailer from 'nodemailer';
 import type { DocumentData, CalendarEventRecord } from './types';
 import { formatInTimeZone } from 'date-fns-tz';
 import { buildDocumentShareUrl } from './document-share-url';
-import { getFromAddress } from './email-identity';
+import { getEmailBrand } from './email-branding';
+import { getMoneyFormatter } from '@/lib/branding';
 
 export function createTransportFromEnv() {
     const server = process.env.EMAIL_SERVER;
@@ -37,6 +38,7 @@ export interface SendInvoiceEmailResult {
  * when the document has a recipient email and EMAIL_SERVER is configured.
  */
 export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<SendInvoiceEmailResult> {
+    const money = await getMoneyFormatter();
     const transport = createTransportFromEnv();
     if (!transport) {
         return { ok: false, error: 'Email is not configured (EMAIL_SERVER missing).' };
@@ -45,23 +47,24 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
     if (!to) {
         return { ok: false, error: 'Customer has no email on file.' };
     }
-    const from = getFromAddress();
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const url = await buildDocumentShareUrl(invoice, getPublicSiteUrl());
     const cycleLabel = invoice.contractCycle ? `Cycle ${invoice.contractCycle}` : 'New invoice';
-    const subject = `Marotto Solutions — ${cycleLabel} ${invoice.id}`;
+    const subject = `${brand.name} — ${cycleLabel} ${invoice.id}`;
     const greeting = invoice.customer?.name ? `Hi ${invoice.customer.name},` : 'Hello,';
 
     const textBody = [
         greeting,
         '',
         `Your latest service invoice is ready.`,
-        `Amount due: $${invoice.total.toFixed(2)}.`,
+        `Amount due: ${money(invoice.total)}.`,
         invoice.dueDate ? `Due date: ${new Date(invoice.dueDate).toLocaleDateString()}.` : '',
         '',
         `View it online: ${url}`,
         '',
         'Thank you,',
-        'Marotto Solutions',
+        brand.name,
     ].filter(Boolean).join('\n');
 
     const safeUrl = escapeHtml(url);
@@ -71,12 +74,12 @@ export async function sendContractInvoiceEmail(invoice: DocumentData): Promise<S
   <p style="margin: 0 0 16px;">${escapeHtml(greeting)}</p>
   <p style="margin: 0 0 16px;">Your latest service invoice is ready.</p>
   <p style="margin: 0 0 16px;">
-    <strong>Amount due:</strong> $${invoice.total.toFixed(2)}<br />
+    <strong>Amount due:</strong> ${money(invoice.total)}<br />
     ${invoice.dueDate ? `<strong>Due date:</strong> ${new Date(invoice.dueDate).toLocaleDateString()}` : ''}
   </p>
   <p style="margin: 0 0 16px;"><a href="${safeUrl}" style="color: #4f46e5;">View invoice</a></p>
   <p style="margin: 0; color: #6b7280; font-size: 14px;">${safeUrl}</p>
-  <p style="margin: 24px 0 0;">Thank you,<br />Marotto Solutions</p>
+  <p style="margin: 24px 0 0;">Thank you,<br />${escapeHtml(brand.name)}</p>
 </body></html>`;
 
     try {
@@ -98,7 +101,8 @@ export async function sendCalendarEventReminderEmail(
         return { ok: false, error: 'Email is not configured (EMAIL_SERVER missing).' };
     }
 
-    const from = getFromAddress();
+    const brand = await getEmailBrand();
+    const from = brand.from;
     const to = process.env.OPERATOR_EMAIL || from;
     const startLocal = formatInTimeZone(new Date(event.start), businessTimezone, event.allDay ? 'MMMM d, yyyy' : 'MMMM d, yyyy h:mm a z');
 
@@ -118,7 +122,7 @@ export async function sendCalendarEventReminderEmail(
         '',
         ...lines,
         '',
-        '— Marotto Solutions Calendar',
+        `— ${brand.name} Calendar`,
     ].join('\n');
 
     const safeLines = lines.map((l) => `<p style="margin:0 0 8px;">${escapeHtml(l)}</p>`).join('\n');
@@ -127,7 +131,7 @@ export async function sendCalendarEventReminderEmail(
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.5;color:#111827;">
   <p style="margin:0 0 16px;">This is a reminder for an upcoming scheduled event.</p>
   ${safeLines}
-  <p style="margin:24px 0 0;color:#6b7280;">— Marotto Solutions Calendar</p>
+  <p style="margin:24px 0 0;color:#6b7280;">— ${escapeHtml(brand.name)} Calendar</p>
 </body></html>`;
 
     try {

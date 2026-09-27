@@ -1,4 +1,5 @@
 import type { DocumentData, DocumentType } from '@/lib/types';
+import { DEFAULT_MONEY_FORMAT, formatMoney, type MoneyFormat } from './money';
 
 export type DocumentSaveIntent =
     | 'save'
@@ -45,12 +46,17 @@ export function resolveDocumentStatus(input: {
     return formStatus;
 }
 
-export function validateRecordPayment(amount: number, balanceDue: number): string | null {
+export function validateRecordPayment(
+    amount: number,
+    balanceDue: number,
+    moneyFormat: MoneyFormat = DEFAULT_MONEY_FORMAT,
+): string | null {
+    const money = (value: number) => formatMoney(value, moneyFormat);
     if (!Number.isFinite(amount) || amount <= 0) {
         return 'Enter a payment amount greater than zero.';
     }
     if (amount > balanceDue + 0.001) {
-        return `Payment cannot exceed the balance due ($${balanceDue.toFixed(2)}).`;
+        return `Payment cannot exceed the balance due (${money(balanceDue)}).`;
     }
     return null;
 }

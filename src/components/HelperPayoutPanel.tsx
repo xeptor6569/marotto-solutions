@@ -24,6 +24,7 @@ import {
 } from '@/lib/helper-payouts';
 import type { HelperOption } from '@/lib/helpers';
 import type { JobOption } from '@/lib/types';
+import { useMoney } from '@/components/MoneyProvider';
 
 const nativeSelectStyle = {
     width: '100%',
@@ -51,6 +52,7 @@ export default function HelperPayoutPanel({
     jobs?: JobOption[];
     payouts: HelperPayoutRecord[];
 }) {
+    const { format: money } = useMoney();
     const router = useRouter();
     const [amount, setAmount] = useState('');
     const [paidAt, setPaidAt] = useState(() => new Date().toISOString().split('T')[0]);
@@ -112,7 +114,7 @@ export default function HelperPayoutPanel({
                 <Heading size="4">
                     {mode === 'helper' ? `Payouts${helperName ? ` to ${helperName}` : ''}` : 'Helper payouts'}
                 </Heading>
-                <Text size="2" color="gray">Total paid: <Text weight="bold">${total.toFixed(2)}</Text></Text>
+                <Text size="2" color="gray">Total paid: <Text weight="bold">{money(total)}</Text></Text>
             </Flex>
 
             <Box
@@ -148,6 +150,7 @@ export default function HelperPayoutPanel({
                             <Text as="label" size="2">Amount</Text>
                             <TextField.Root
                                 type="number"
+                                inputMode="decimal"
                                 min="0.01"
                                 step="0.01"
                                 value={amount}
@@ -224,7 +227,7 @@ export default function HelperPayoutPanel({
                             }}
                         >
                             <Box style={{ minWidth: 0, flex: 1 }}>
-                                <Text as="div" weight="bold">${Number(payout.amount).toFixed(2)}</Text>
+                                <Text as="div" weight="bold">{money(Number(payout.amount))}</Text>
                                 <Text as="div" size="1" color="gray">
                                     {formatPayoutPaidAt(payout.paidAt)}
                                     {payout.method ? ` · ${payout.method}` : ''}

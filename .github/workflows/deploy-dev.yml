@@ -4,6 +4,13 @@ name: Deploy to Dev
 # a fully separate stack (own containers, ports, volumes, database and secrets)
 # so a refactor branch can be exercised at dev.marottosolutions.com without
 # touching production.
+#
+# How to deploy a branch: Actions → Deploy to Dev → Run workflow → pick the
+# branch in the "Use workflow from" dropdown → Run. That dropdown IS the branch
+# selector: whatever it is set to is what gets built and deployed. (Branches
+# only appear there once they contain this workflow file.)
+
+run-name: "Deploy ${{ github.ref_name }} to dev${{ inputs.fresh_install && ' (fresh install)' || '' }}"
 
 on:
   push:
@@ -11,12 +18,11 @@ on:
       - develop
   workflow_dispatch:
     inputs:
-      ref:
-        description: "Branch, tag or SHA to deploy to dev"
+      fresh_install:
+        description: "Fresh install: wipe ALL dev data (database, documents, settings, uploads) first, so dev starts at the /setup wizard. Never touches prod."
+        type: boolean
         required: false
-        # main rather than develop: a develop branch may not exist, and
-        # checkout fails outright on a missing ref before anything else runs.
-        default: main
+        default: false
 
 # The runner and the Docker daemon are shared with the prod deploy, so builds
 # must not interleave. deploy.yml uses the same group.
@@ -39,10 +45,18 @@ jobs:
     runs-on: self-hosted
     environment: dev
     steps:
+      # github.ref is the branch chosen in the Run-workflow dropdown (or
+      # `develop` on push), so no separate ref input is needed.
       - name: Checkout code
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Announce what is being deployed
+        id: target
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse HEAD)"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Deploying to dev::${GITHUB_REF_NAME} @ ${sha:0:10}${{ inputs.fresh_install && ' — FRESH INSTALL (dev data will be wiped)' || '' }}"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -90,7 +104,9 @@ jobs:
             echo "APP_PORT=${APP_PORT}"
             echo "POSTGRES_PORT=${POSTGRES_PORT}"
             # Reported by /api/health, so you can confirm which branch dev is on.
-            echo "APP_COMMIT_SHA=${{ github.sha }}"
+            # Taken from the checkout, not github.sha, so it always matches the
+            # code that was actually built.
+            echo "APP_COMMIT_SHA=${{ steps.target.outputs.sha }}"
             echo "NEXTAUTH_URL=${{ vars.NEXTAUTH_URL }}"
             # Auth.js v5 prefers AUTH_URL / AUTH_SECRET / AUTH_TRUST_HOST in production.
             echo "AUTH_URL=${{ vars.NEXTAUTH_URL }}"
@@ -128,6 +144,17 @@ jobs:
               echo "DATABASE_URL=${{ secrets.DATABASE_URL }}"
             fi
           } > .env
+
+      # Opt-in from the Run-workflow dialog. Scoped to the dev compose project
+      # (COMPOSE_PROJECT_NAME=marotto-dev), so only dev containers and volumes
+      # are removed; prod's project is a different name and is never touched.
+      - name: Wipe dev data (fresh install requested)
+        if: ${{ inputs.fresh_install }}
+        run: |
+          set -euo pipefail
+          echo "Removing dev containers and volumes for project ${COMPOSE_PROJECT_NAME}…"
+          docker compose ${COMPOSE_FILES} down -v --remove-orphans
+          echo "Dev data wiped. Dev will come up at the /setup wizard."
 
       - name: Start Postgres
         run: docker compose ${COMPOSE_FILES} up -d postgres
@@ -168,8 +195,10 @@ jobs:
           echo "::error::'npm ci' failed 3 times"
           exit 1
 
-      # Not gating on `npm run lint`: the existing tree has pre-existing lint
-      # errors, so it would fail every dev deploy. Same reason deploy.yml omits it.
+      # Dev is where regressions should surface, so lint and tests both gate.
+      - name: Lint
+        run: npm run lint
+
       - name: Run tests
         run: npm test
 
@@ -259,6 +288,38 @@ jobs:
           done
           echo "Dev containers:"
           docker ps --filter "name=${STACK_NAME}" --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+      - name: Write deployment summary
+        if: always()
+        env:
+          DEV_URL: ${{ vars.NEXTAUTH_URL }}
+          FRESH: ${{ inputs.fresh_install }}
+        run: |
+          set -euo pipefail
+          health="$(curl -sS --max-time 5 "http://127.0.0.1:${APP_PORT}/api/health" || echo '{"ok":false}')"
+          {
+            echo "## Dev deployment"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Branch** | \`${GITHUB_REF_NAME}\` |"
+            echo "| **Commit** | \`${{ steps.target.outputs.sha }}\` |"
+            echo "| **URL** | ${DEV_URL:-http://<runner>:${APP_PORT}} |"
+            echo "| **Fresh install** | ${FRESH:-false} |"
+            echo "| **Status** | ${{ job.status }} |"
+            echo
+            echo "<details><summary>/api/health</summary>"
+            echo
+            echo '```json'
+            echo "${health}"
+            echo '```'
+            echo "</details>"
+            echo
+            if [ "${FRESH}" = "true" ]; then
+              echo "Dev data was wiped — open **${DEV_URL}/setup** to create the first admin."
+            fi
+            echo "Captured email: mailpit on the runner (see docs/dev-environment.md)."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prune unused images
         run: docker image prune -f

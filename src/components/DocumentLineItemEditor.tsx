@@ -4,6 +4,7 @@ import { Box, Button, Checkbox, Flex, Grid, Text, TextField } from '@radix-ui/th
 import { ChevronDown, ChevronUp, TrashIcon } from 'lucide-react';
 import type { LineItem } from '@/lib/types';
 import MarkdownEditor from '@/components/MarkdownEditor';
+import { useMoney } from '@/components/MoneyProvider';
 
 export function emptyLineItem(): LineItem {
     return {
@@ -55,6 +56,7 @@ export default function DocumentLineItemEditor({
     onRemove: () => void;
     canRemove?: boolean;
 }) {
+    const { format: money } = useMoney();
     return (
         <Box
             style={{
@@ -123,6 +125,7 @@ export default function DocumentLineItemEditor({
                         <Text as="label" size="2">Qty</Text>
                         <TextField.Root
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             value={item.quantity}
                             onChange={(e) => {
@@ -136,6 +139,7 @@ export default function DocumentLineItemEditor({
                         <Text as="label" size="2">{unitPriceLabel}</Text>
                         <TextField.Root
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             step="0.01"
                             value={item.unitPrice}
@@ -150,6 +154,7 @@ export default function DocumentLineItemEditor({
                         <Text as="label" size="2">% Off</Text>
                         <TextField.Root
                             type="number"
+                            inputMode="decimal"
                             min="0"
                             max="100"
                             step="1"
@@ -170,12 +175,12 @@ export default function DocumentLineItemEditor({
                             {item.discountPercent ? (
                                 <>
                                     <Text as="span" size="1" color="gray" style={{ textDecoration: 'line-through', marginRight: 6 }}>
-                                        ${((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toFixed(2)}
+                                        {money(((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)))}
                                     </Text>
-                                    ${item.total.toFixed(2)}
+                                    {money(item.total)}
                                 </>
                             ) : (
-                                `$${item.total.toFixed(2)}`
+                                `${money(item.total)}`
                             )}
                         </Text>
                     </Box>

@@ -9,6 +9,7 @@ import type {
     DocumentPackage,
 } from '@/lib/types';
 import { choiceTotal, packageTotal } from '@/lib/document-options';
+import { useMoney } from '@/components/MoneyProvider';
 
 export default function DocumentOptionSelectionForm({
     documentId,
@@ -21,6 +22,7 @@ export default function DocumentOptionSelectionForm({
     choiceGroups: DocumentChoiceGroup[];
     initialSelection?: DocumentOptionSelection;
 }) {
+    const { format: money } = useMoney();
     const [packageId, setPackageId] = useState<string>(initialSelection?.packageId || '');
     const [choices, setChoices] = useState<Record<string, string>>(initialSelection?.choices || {});
     const [error, setError] = useState('');
@@ -88,7 +90,7 @@ export default function DocumentOptionSelectionForm({
                                     <Flex align="center" gap="2" wrap="wrap">
                                         <Text size="2" weight="medium">{pkg.label}</Text>
                                         {pkg.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
-                                        <Text size="2" color="gray">${packageTotal(pkg).toFixed(2)}</Text>
+                                        <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
                                     </Flex>
                                     {pkg.description ? (
                                         <Text size="1" color="gray" as="p">{pkg.description}</Text>
@@ -137,7 +139,7 @@ export default function DocumentOptionSelectionForm({
                                 <Box>
                                     <Flex align="center" gap="2" wrap="wrap">
                                         <Text size="2" weight="medium">{choice.label}</Text>
-                                        <Text size="2" color="gray">${choiceTotal(choice).toFixed(2)}</Text>
+                                        <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                     </Flex>
                                     {choice.description ? (
                                         <Text size="1" color="gray" as="p">{choice.description}</Text>

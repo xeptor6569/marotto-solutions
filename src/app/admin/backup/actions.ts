@@ -41,7 +41,7 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
     if (lowerName.endsWith('.json')) {
         return {
             success: false,
-            error: 'That is a JSON document export. Restore expects the .tar.gz backup archive downloaded from this page; to import individual documents from JSON, use Import instead.',
+            error: 'That is a JSON document export. Restore expects the .tar.gz backup archive downloaded from this page; to import individual documents from JSON, use Tools → Import instead.',
         };
     }
     if (!lowerName.endsWith('.tar.gz') && !lowerName.endsWith('.tgz') && !lowerName.endsWith('.gz')) {
@@ -52,7 +52,7 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
     let scratchDir: string | undefined;
 
     try {
-        archivePath = path.join(os.tmpdir(), `marotto-restore-upload-${Date.now()}.tar.gz`);
+        archivePath = path.join(os.tmpdir(), `app-restore-upload-${Date.now()}.tar.gz`);
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(archivePath, buffer);
 

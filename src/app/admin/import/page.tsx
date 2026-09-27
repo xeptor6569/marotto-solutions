@@ -4,6 +4,7 @@ import { Container, Heading, Card, Button, Flex, Text, Callout, Code, Box, Separ
 import { Upload, Info, CheckCircle, XCircle, Users } from "lucide-react";
 import { importDocumentsAction, migrateLeadsToClientsAction } from "./actions";
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
 
@@ -67,6 +68,16 @@ export default function ImportPage() {
                 <BackButton />
             </Flex>
 
+            <Callout.Root color="blue" mb="4">
+                <Callout.Icon><Info size={16} /></Callout.Icon>
+                <Callout.Text>
+                    Have a <strong>backup archive</strong> (<code>.tar.gz</code> downloaded from Backup &amp; Restore)?
+                    That is restored under{' '}
+                    <Link href="/admin/backup" style={{ fontWeight: 600 }}>Tools → Backup &amp; Restore</Link>, not here.
+                    This page imports individual documents from a JSON file.
+                </Callout.Text>
+            </Callout.Root>
+
             <Card mb="4">
                 <Flex gap="3" align="start">
                     <Info size={20} style={{ marginTop: 2, flexShrink: 0 }} />
@@ -86,8 +97,8 @@ export default function ImportPage() {
                 <form onSubmit={handleSubmit}>
                     <Flex direction="column" gap="4">
                         <Box>
-                            <Text as="label" size="2" weight="bold">Select JSON File</Text>
-                            <input type="file" name="file" accept=".json" required style={{ display: 'block', marginTop: 5 }} />
+                            <Text as="label" size="2" weight="bold">Select JSON file (document export)</Text>
+                            <input type="file" name="file" accept=".json,application/json" required style={{ display: 'block', marginTop: 5 }} />
                         </Box>
 
                         {status && (

@@ -44,11 +44,11 @@ a redirect loop.
 ### 2. Email sender
 
 Decide the sender domain before switching, and authenticate it (SPF, DKIM,
-DMARC) with the SMTP provider. The current fallback in
-`src/lib/email-identity.ts` is `noreply@marotto-solutions.com` — a third,
-hyphenated domain that matches neither site. Production always sets the
-`EMAIL_FROM` secret, so the fallback is inert there, but it is the value to
-change if you want the code default to match the new brand.
+DMARC) with the SMTP provider. There is no brand-specific fallback sender in
+code anymore: outbound mail uses the `EMAIL_FROM` secret, then the business
+contact email from Settings → Business, then a neutral placeholder
+(`src/lib/email-branding.ts`). Production always sets `EMAIL_FROM`, so that is
+the one value to change for the new sender.
 
 ### 3. Flip the app to the new domain
 

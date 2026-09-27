@@ -44,9 +44,9 @@ export interface BackupManifest {
 // ─── Collect ─────────────────────────────────────────────────────────
 
 export async function collectBackupData(): Promise<string> {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'marotto-backup-'));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'app-backup-'));
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupDir = path.join(tmpDir, `marotto-backup-${timestamp}`);
+    const backupDir = path.join(tmpDir, `app-backup-${timestamp}`);
     await fs.mkdir(backupDir, { recursive: true });
 
     const config = await getAppConfig();
@@ -185,7 +185,7 @@ export async function createBackupArchiveFile(backupDir: string, outputPath: str
 
 export function getBackupFilename(): string {
     const ts = new Date().toISOString().replace(/[:.]/g, '-');
-    return `marotto-backup-${ts}.tar.gz`;
+    return `app-backup-${ts}.tar.gz`;
 }
 
 // ─── Extract ─────────────────────────────────────────────────────────
@@ -209,13 +209,12 @@ async function fileExists(filePath: string): Promise<boolean> {
 /**
  * Extract an archive and locate the backup root by its manifest.
  *
- * Archives are written with archive.directory(dir, false), which places the
- * backup's contents at the tar root (no wrapper folder), so the manifest is
- * normally found directly in tmpDir. A wrapper folder is tolerated too, for
- * archives that were re-packed by hand.
+ * Archives are written with the backup's contents at the tar root (no wrapper
+ * folder), so the manifest is normally found directly in tmpDir. A wrapper
+ * folder is tolerated too, for archives that were re-packed by hand.
  */
 export async function extractBackupArchive(archivePath: string): Promise<ExtractedBackup> {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'marotto-restore-'));
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'app-restore-'));
     try {
         await tar.x({
             file: archivePath,
@@ -484,8 +483,9 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
             settingsContent.webdavPassword = '';
             stats.remoteStorageStripped = true;
         }
-        // Exact copy (no merge) so the restored instance ends up with precisely
-        // the archived settings rather than a blend with whatever was there.
+        // Exact copy (no merge) so the restored file takes the same migration
+        // path the original install does — e.g. a pre-white-label file is
+        // still seeded with the legacy branding at read time.
         await replaceAppConfig(settingsContent);
         stats.settingsRestored = true;
     } catch { }
@@ -504,7 +504,7 @@ export async function cleanupExtracted(tmpDir: string): Promise<void> {
     // argument must never turn into `rm -rf` of the system temp directory.
     const resolved = path.resolve(tmpDir);
     const tmpRoot = path.resolve(os.tmpdir());
-    const isOurs = path.dirname(resolved) === tmpRoot && path.basename(resolved).startsWith('marotto-restore-');
+    const isOurs = path.dirname(resolved) === tmpRoot && path.basename(resolved).startsWith('app-restore-');
     if (!isOurs) {
         console.warn(`cleanupExtracted refused to remove ${resolved}`);
         return;

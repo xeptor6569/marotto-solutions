@@ -4,7 +4,10 @@ import { Button, Card, Flex, Text, TextArea, TextField, Select } from "@radix-ui
 import { submitQuoteRequest } from "../actions";
 import { useFormStatus } from "react-dom";
 
-const SERVICE_VALUES = ['general', 'it', 'pc', 'programming', 'other'] as const;
+export interface QuoteServiceOption {
+    value: string;
+    label: string;
+}
 
 function SubmitButton() {
     const { pending } = useFormStatus();
@@ -15,10 +18,20 @@ function SubmitButton() {
     );
 }
 
-export default function QuoteForm({ defaultService = 'general' }: { defaultService?: string }) {
-    const selectedService = SERVICE_VALUES.includes(defaultService as (typeof SERVICE_VALUES)[number])
-        ? defaultService
-        : 'general';
+export default function QuoteForm({
+    defaultService,
+    services = [],
+}: {
+    defaultService?: string;
+    services?: QuoteServiceOption[];
+}) {
+    const options: QuoteServiceOption[] = [
+        ...services.filter((s) => s.value && s.label),
+        { value: 'other', label: 'Other' },
+    ];
+    const selectedService = options.some((s) => s.value === defaultService)
+        ? (defaultService as string)
+        : options[0].value;
 
     return (
         <Card size="3">
@@ -43,7 +56,7 @@ export default function QuoteForm({ defaultService = 'general' }: { defaultServi
                             type="tel"
                             inputMode="tel"
                             autoComplete="tel"
-                            placeholder="(570) 555-0123"
+                            placeholder="(555) 555-0123"
                             required
                         />
                     </Flex>
@@ -53,11 +66,11 @@ export default function QuoteForm({ defaultService = 'general' }: { defaultServi
                         <Select.Root name="service" defaultValue={selectedService}>
                             <Select.Trigger />
                             <Select.Content>
-                                <Select.Item value="general">General Contracting</Select.Item>
-                                <Select.Item value="it">IT / Networking</Select.Item>
-                                <Select.Item value="pc">PC Building</Select.Item>
-                                <Select.Item value="programming">Programming / Dev</Select.Item>
-                                <Select.Item value="other">Other</Select.Item>
+                                {options.map((option) => (
+                                    <Select.Item key={option.value} value={option.value}>
+                                        {option.label}
+                                    </Select.Item>
+                                ))}
                             </Select.Content>
                         </Select.Root>
                     </Flex>

@@ -1,4 +1,6 @@
 import { Prisma } from '@prisma/client';
+import { buildDocumentId } from './document-numbering';
+import { getDocumentNumbering } from './document-numbering-server';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { getNextNumber, saveNewDocument, getDocuments } from '@/lib/data';
 import { generateShareToken, withContractShareToken } from '@/lib/share-token';
@@ -484,7 +486,7 @@ export async function issueInvoiceFromContract(
     const dueDate = defaultDueDateFromTerms(invoiceDate, contract.paymentTerms);
 
     const number = await getNextNumber('invoice');
-    const id = `INV-${String(number).padStart(4, '0')}`;
+    const id = buildDocumentId('invoice', number, await getDocumentNumbering());
     const noteParts: string[] = [];
     noteParts.push(`Cycle ${cycle}${contract.termCycles ? ` of ${contract.termCycles}` : ''} for contract ${contract.displayId} (${contract.title}).`);
     if (contract.notes) noteParts.push(contract.notes);

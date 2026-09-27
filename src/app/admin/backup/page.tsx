@@ -5,6 +5,7 @@ import { Container, Heading, Card, Button, Flex, Text, Callout, Box, Separator, 
 import { Download, Upload, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
 import { restoreBackupAction, type RestoreResult } from './actions';
 import BackButton from '@/components/BackButton';
+import HelpLink from '@/components/HelpLink';
 
 export default function BackupPage() {
     const [restoring, setRestoring] = useState(false);
@@ -40,9 +41,12 @@ export default function BackupPage() {
 
     return (
         <Container size="2" p="5">
-            <Flex justify="between" align="center" mb="4">
+            <Flex justify="between" align="center" mb="4" gap="2">
                 <Heading>Backup & Restore</Heading>
-                <BackButton />
+                <Flex gap="2" align="center">
+                    <HelpLink topic="storage-backups" />
+                    <BackButton />
+                </Flex>
             </Flex>
 
             <Card mb="4">
@@ -80,8 +84,10 @@ export default function BackupPage() {
                     <Flex direction="column" gap="4">
                         <Heading size="4">Restore from Backup</Heading>
                         <Text as="p" size="2" color="gray">
-                            Upload a backup archive to restore all data. This will replace ALL existing data —
-                            clients, jobs, contracts, documents, calendar events, and settings.
+                            Upload a backup archive (the <code>.tar.gz</code> file downloaded above, e.g.{' '}
+                            <code>app-backup-2026-….tar.gz</code>) to restore all data. This will replace ALL
+                            existing data — clients, jobs, contracts, documents, calendar events, and settings.
+                            Archives from earlier versions of the app restore too.
                         </Text>
 
                         <Box>

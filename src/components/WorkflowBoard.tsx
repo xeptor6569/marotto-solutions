@@ -9,6 +9,7 @@ import { WORKFLOW_STATUSES, workflowStatusLabel, workflowStatusColor } from '@/l
 import { updateWorkflowStatusAction } from '@/app/actions';
 import WorkflowStatusSelect from '@/components/WorkflowStatusSelect';
 import { documentListLabel } from '@/lib/document-labels';
+import { useMoney } from '@/components/MoneyProvider';
 
 interface WorkflowBoardProps {
     docs: DocumentData[];
@@ -27,6 +28,7 @@ function badgeColor(status: DocumentData['status']): string {
 }
 
 export default function WorkflowBoard({ docs, type }: WorkflowBoardProps) {
+    const { format: money } = useMoney();
     const base = adminBase(type);
     const [isPending, startTransition] = useTransition();
 
@@ -102,7 +104,7 @@ export default function WorkflowBoard({ docs, type }: WorkflowBoardProps) {
                                                 {doc.customer.name}
                                             </Text>
                                             <Flex justify="between" align="center" gap="2">
-                                                <Text weight="bold" size="2">${doc.total.toFixed(2)}</Text>
+                                                <Text weight="bold" size="2">{money(doc.total)}</Text>
                                                 <Box onClick={(e) => e.stopPropagation()}>
                                                     <WorkflowStatusSelect
                                                         value={doc.workflowStatus}

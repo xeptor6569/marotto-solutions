@@ -2,11 +2,10 @@ import path from 'path';
 import fs from 'fs/promises';
 import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { getAppConfig } from '@/lib/config';
-import { getWebDAVClient } from '@/lib/webdav';
+import { DEFAULT_WEBDAV_ROOT_PATH, getAppConfig } from '@/lib/config';
+import { getWebDAVClient, normalizeWebdavRootPath } from '@/lib/webdav';
 
 const LOCAL_ATTACHMENTS_DIR = path.join(process.cwd(), 'data', 'job-attachments');
-const WEBDAV_ATTACHMENTS_ROOT = '/MarottoSolutions/job-attachments';
 const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = new Set([
     'image/jpeg',
@@ -61,9 +60,12 @@ async function saveAttachmentBinary(jobId: string, file: File): Promise<string> 
 
     if (webdavUrl && webdavUsername) {
         const client = getWebDAVClient(webdavUrl, webdavUsername, webdavPassword);
-        const folder = `${WEBDAV_ATTACHMENTS_ROOT}/${jobId}`;
-        if ((await client.exists(WEBDAV_ATTACHMENTS_ROOT)) === false) {
-            await client.createDirectory(WEBDAV_ATTACHMENTS_ROOT);
+        // Stored paths in the DB are absolute (webdav:/Root/...), so changing
+        // the configured root only affects where *new* uploads land.
+        const attachmentsRoot = `${normalizeWebdavRootPath(config.webdavRootPath, DEFAULT_WEBDAV_ROOT_PATH)}/job-attachments`;
+        const folder = `${attachmentsRoot}/${jobId}`;
+        if ((await client.exists(attachmentsRoot)) === false) {
+            await client.createDirectory(attachmentsRoot);
         }
         if ((await client.exists(folder)) === false) {
             await client.createDirectory(folder);

@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getDocumentByShareToken } from '@/lib/data';
 import { getAppConfig } from '@/lib/config';
+import { resolveBrandingFromConfig } from '@/lib/branding';
+import { formatMoney } from '@/lib/money';
 import {
     parseStripeCheckoutMode,
     resolveStripeCheckoutAmount,
@@ -72,10 +74,13 @@ export async function POST(request: NextRequest) {
         return badRequest(resolved.error);
     }
 
-    const unitAmount = toStripeUnitAmount(resolved.amount);
-    if (unitAmount < 50) {
-        // Stripe Card payments require at least $0.50 USD.
-        return badRequest('Stripe requires a minimum charge of $0.50.');
+    const { business } = resolveBrandingFromConfig(config);
+    const currency = business.money.currency;
+    const unitAmount = toStripeUnitAmount(resolved.amount, currency);
+    // Stripe's minimum charge is roughly 0.50 USD-equivalent; enforce the
+    // USD figure directly and let Stripe reject other currencies' edge cases.
+    if (currency === 'USD' && unitAmount < 50) {
+        return badRequest(`Stripe requires a minimum charge of ${formatMoney(0.5, business.money)}.`);
     }
 
     const baseUrl = getAppBaseUrl();
@@ -108,7 +113,7 @@ export async function POST(request: NextRequest) {
                 {
                     quantity: 1,
                     price_data: {
-                        currency: 'usd',
+                        currency: currency.toLowerCase(),
                         unit_amount: unitAmount,
                         product_data: {
                             name: `Invoice ${doc.id}`,

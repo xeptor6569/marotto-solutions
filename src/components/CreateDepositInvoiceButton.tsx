@@ -13,6 +13,7 @@ import {
 import { FileText } from 'lucide-react';
 import { createDepositInvoiceAction } from '@/app/actions';
 import { computeDepositAmount, type DepositMode } from '@/lib/deposit-invoice';
+import { useMoney } from '@/components/MoneyProvider';
 
 export default function CreateDepositInvoiceButton({
     sourceDocumentId,
@@ -23,6 +24,7 @@ export default function CreateDepositInvoiceButton({
     billingBase: number;
     sourceLabel: string;
 }) {
+    const { format: money } = useMoney();
     const [open, setOpen] = useState(false);
     const [mode, setMode] = useState<DepositMode>('percent');
     const [value, setValue] = useState('50');
@@ -70,7 +72,7 @@ export default function CreateDepositInvoiceButton({
             <Dialog.Content maxWidth="420px">
                 <Dialog.Title>Create deposit invoice</Dialog.Title>
                 <Dialog.Description size="2" color="gray" mb="3">
-                    From {sourceLabel} {sourceDocumentId}. Billing base: ${billingBase.toFixed(2)}
+                    From {sourceLabel} {sourceDocumentId}. Billing base: {money(billingBase)}
                     {billingBase <= 0 ? ' — add line items to the source document first.' : '.'}
                 </Dialog.Description>
 
@@ -113,9 +115,9 @@ export default function CreateDepositInvoiceButton({
 
                     {previewAmount !== null ? (
                         <Text size="2" color="gray">
-                            Invoice total: <Text weight="bold">${previewAmount.toFixed(2)}</Text>
+                            Invoice total: <Text weight="bold">{money(previewAmount)}</Text>
                             {mode === 'percent' && Number.isFinite(parsedValue)
-                                ? ` (${parsedValue}% of $${billingBase.toFixed(2)})`
+                                ? ` (${parsedValue}% of ${money(billingBase)})`
                                 : null}
                         </Text>
                     ) : null}

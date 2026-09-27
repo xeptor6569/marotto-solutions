@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { DocumentData } from '@/lib/types';
 import {
     generateShareToken,
     buildSharePath,
@@ -49,7 +50,7 @@ describe('withDocumentShareToken', () => {
     });
 
     it('mints a token when missing', () => {
-        const { doc, minted } = withDocumentShareToken({ id: 'INV-0201' });
+        const { doc, minted } = withDocumentShareToken<Pick<DocumentData, 'id' | 'shareToken'>>({ id: 'INV-0201' });
         expect(minted).toBe(true);
         expect(doc.shareToken).toMatch(/^[A-Za-z0-9_-]+$/);
         expect(doc.shareToken.length).toBeGreaterThanOrEqual(40);

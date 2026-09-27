@@ -83,9 +83,27 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 
 ## Deploying a branch to dev
 
-Pushing to `develop` deploys automatically. To deploy any other branch, run the
-**Deploy to Dev** workflow manually and set the `ref` input to the branch, tag
-or SHA. Confirm what landed:
+Pushing to `develop` deploys automatically. To deploy any other branch:
+
+1. GitHub → **Actions** → **Deploy to Dev** → **Run workflow**.
+2. In the **"Use workflow from"** dropdown, pick the branch (or tag) to deploy —
+   that dropdown *is* the branch selector; whatever it shows is what gets built.
+3. Optionally tick **Fresh install** to wipe all dev data (database, documents,
+   settings, uploads) first, so dev comes up at the `/setup` wizard. This only
+   removes the `marotto-dev` compose project's containers and volumes; prod is
+   never touched.
+4. **Run workflow**. The run is titled "Deploy `<branch>` to dev", and its
+   summary page shows the branch, commit, URL, and the `/api/health` response.
+
+Branches only appear in the dropdown once they contain the workflow file
+(anything branched from `main` after the dev stack landed). From the CLI:
+
+```bash
+gh workflow run deploy-dev.yml --ref cursor/my-branch            # deploy a branch
+gh workflow run deploy-dev.yml --ref cursor/my-branch -f fresh_install=true
+```
+
+Confirm what landed:
 
 ```bash
 curl -s https://dev.marottosolutions.com/api/health
@@ -154,6 +172,21 @@ split in one archive:
 That copies the Prisma records and the JSON document store together. Restoring
 also wipes whatever was in dev first. Mail is captured either way, so restored
 customer records cannot be contacted.
+
+Two safeguards apply when the instance is not production (`APP_ENV` ≠
+`production`):
+
+- **WebDAV credentials in the archive are not applied**, and any remote store
+  dev was previously pointed at is detached before the restore starts. The
+  documents are restored to dev's local volume instead. Without this, dev
+  would read from — and write new invoices into — prod's document store.
+- **Settings are restored as an exact copy**, not merged with dev's current
+  settings, so dev takes the same migration path prod will (for example, a
+  pre-white-label `settings.json` is seeded with the legacy branding at read
+  time exactly as it would be on prod).
+
+This makes "restore a fresh prod backup on dev, then deploy the branch" a
+faithful rehearsal of a production upgrade.
 
 ## Guardrails
 
