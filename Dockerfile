@@ -16,8 +16,14 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci
-# Maintenance scripts for the compose `migrate` service (e.g. seed-admin.js).
-COPY scripts ./scripts/
+
+# Just the Prisma CLI (same version as the lockfile) so the runtime image can
+# apply migrations on startup without carrying the full dev dependency tree.
+FROM base AS prisma-cli
+WORKDIR /opt/prisma-cli
+COPY --from=deps /app/node_modules/prisma/package.json /tmp/prisma-package.json
+RUN npm install --no-save --no-audit --no-fund --omit=dev \
+      "prisma@$(node -p "require('/tmp/prisma-package.json').version")"
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -61,6 +67,12 @@ RUN mkdir .next && chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=prisma-cli /opt/prisma-cli /opt/prisma-cli
+# scripts/seed-admin.js (admin create / password reset via `docker compose exec`)
+# needs bcryptjs as a real module; the app bundles it, so standalone omits it.
+COPY --chown=nextjs:nodejs scripts ./scripts
+COPY --from=deps /app/node_modules/bcryptjs ./node_modules/bcryptjs
+COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 # Create data directory (and persistent config subdir) with correct permissions
 RUN mkdir -p data/config && chown -R nextjs:nodejs data
@@ -73,4 +85,5 @@ ENV PORT=3000
 # set hostname to localhost
 ENV HOSTNAME="0.0.0.0"
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server.js"]
