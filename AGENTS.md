@@ -102,6 +102,7 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 ## Docker
 
 - `docker compose up -d --build` — full stack (app on `APP_PORT`, Postgres on 5433, cron sidecar)
+- Image base is `node:26-slim` (Debian/glibc), not Alpine: the Next.js TypeScript build worker segfaults under musl once the type program is large enough, and Prisma engines need glibc. Keep it Debian.
 - App runs as unprivileged `nextjs` user; `data/` dir pre-created with correct ownership
 - `output: "standalone"` in `next.config.ts` for Docker tracing
 - Persistent volumes: `marotto_data` (`/app/data`), `postgres_data`

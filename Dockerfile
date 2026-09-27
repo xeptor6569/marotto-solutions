@@ -1,9 +1,15 @@
-FROM node:26-alpine AS base
+# Debian (glibc) rather than Alpine (musl): Next.js' TypeScript build worker
+# segfaults under musl as the type program grows, and Prisma/sharp need the
+# libc6-compat shim there. The slim image is ~120MB larger and boringly reliable.
+FROM node:26-slim AS base
+# OpenSSL for Prisma's query engine, CA certificates for outbound TLS (SMTP,
+# Stripe, WebDAV). Both are present by default on Alpine but not on slim.
+RUN apt-get update -qq \
+    && apt-get install -y -qq --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -19,8 +25,7 @@ COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # next.config.ts decides at build time whether to emit browser source maps, so
 # the dev/prod distinction has to be known here and not only at runtime.
@@ -33,23 +38,21 @@ RUN npm run build
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Which commit this image was built from, surfaced by /api/health so you can
 # tell which branch a running dev instance is actually serving.
 ARG APP_COMMIT_SHA=""
 ENV APP_COMMIT_SHA=$APP_COMMIT_SHA
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs \
+    && useradd --system --uid 1001 --gid nodejs --home /app --shell /usr/sbin/nologin nextjs
 
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir .next && chown nextjs:nodejs .next
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
@@ -64,8 +67,8 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
 # set hostname to localhost
-ENV HOSTNAME "0.0.0.0"
+ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
