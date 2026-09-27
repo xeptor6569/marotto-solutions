@@ -51,7 +51,7 @@ If documents are stored on WebDAV/Nextcloud, back up that server too. The data v
 - **Sign-in accounts on this server are kept**, so you stay signed in.
 - Archives from older versions of the app restore too.
 
-**Moving to a new server:** install fresh ([Getting started](getting-started.md) steps 1–5), create an admin in the setup wizard, then restore the archive. Your business name, branding, and data all come back. Update DNS last.
+**Moving to a new server:** install fresh ([Getting started](getting-started.md) steps 1–4), create an admin in the setup wizard, then restore the archive. Your business name, branding, and data all come back. Update DNS last.
 
 **From host-level backups:**
 

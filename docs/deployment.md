@@ -18,7 +18,7 @@ This guide assumes you've completed [Getting started](getting-started.md) at lea
 
 Any Linux VPS or home server that can run Docker works: Hetzner, DigitalOcean, Linode, a Synology NAS, a spare mini PC. Building the image needs roughly 2 GB of memory. If your server has 1 GB, add swap before the first build.
 
-Install Docker using the [official instructions](https://docs.docker.com/engine/install/) for your distribution, then follow steps 1–4 of [Getting started](getting-started.md) on the server.
+Install Docker using the [official instructions](https://docs.docker.com/engine/install/) for your distribution, then follow steps 1–3 of [Getting started](getting-started.md) on the server.
 
 ## HTTPS and your domain
 
