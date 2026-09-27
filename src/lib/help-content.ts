@@ -193,7 +193,7 @@ The app uses two stores:
 
 ## Backups
 
-**Tools → Backup** downloads a single \`.tar.gz\` containing database tables, all document files, job attachments, and settings. Restoring uploads the same archive back — existing records with matching ids are updated.
+**Tools → Backup** downloads a single \`.tar.gz\` containing database tables, all document files, job attachments, and settings. Restoring uploads the same archive back and **replaces** all business data (clients, jobs, contracts, calendar, documents, attachments, settings) with the archive's contents. Sign-in accounts on this server are kept.
 
 Take a backup before upgrades, and store copies somewhere other than the server itself.
 
