@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { Box, Card, Container, Flex, Grid, Heading, Text } from '@radix-ui/themes';
 import { ChevronRight, ExternalLink } from 'lucide-react';
 import { HELP_TOPICS } from '@/lib/help-content';
-import { getHelpIcon } from './help-icons';
+import { getHelpIcon } from '@/lib/help-icons';
 
 export const metadata = { title: 'Help' };
 

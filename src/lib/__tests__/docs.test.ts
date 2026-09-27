@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { DOC_PAGES, DOCS_REPO_URL, isDocsHost, parseDoc, rewriteDocHref, slugifyHeading } from '@/lib/docs';
+import {
+    DOC_PAGES,
+    DOCS_REPO_URL,
+    isDocsHost,
+    parseDoc,
+    resolveDocLink,
+    rewriteDocHref,
+    rewriteHelpHref,
+    slugifyHeading,
+    type DocDir,
+} from '@/lib/docs';
+import { HELP_TOPICS, helpTopicFile, MANUAL_DIR } from '@/lib/help-content';
 
 describe('isDocsHost', () => {
     it('detects a docs.* hostname by default, ignoring port and case', () => {
@@ -56,28 +67,69 @@ describe('parseDoc', () => {
     });
 });
 
-describe('guides', () => {
+describe('manual links', () => {
+    it('resolve relative to docs/manual on the site and in the app', () => {
+        expect(rewriteDocHref('payments.md#recording-payments', '', 'manual')).toBe('/manual/payments#recording-payments');
+        expect(rewriteDocHref('../deployment.md#scheduled-jobs', '/docs', 'manual')).toBe('/docs/deployment#scheduled-jobs');
+        expect(rewriteDocHref('manual/first-job.md', '')).toBe('/manual/first-job');
+        expect(rewriteDocHref('README.md#user-manual', '/docs')).toBe('/docs#user-manual');
+        expect(rewriteHelpHref('first-job.md')).toBe('/admin/help/first-job');
+        expect(rewriteHelpHref('../configuration.md#email')).toBe('/docs/configuration#email');
+        expect(rewriteHelpHref('../../README.md')).toBe(`${DOCS_REPO_URL}/blob/main/README.md`);
+    });
+
+    it('keep in-page and absolute links untouched', () => {
+        expect(resolveDocLink('#events', 'manual')).toEqual({ kind: 'external', href: '#events' });
+        expect(rewriteHelpHref('/admin/settings')).toBe('/admin/settings');
+    });
+});
+
+describe('markdown files', () => {
     const docsDir = path.join(process.cwd(), 'docs');
+    const files: Array<{ file: string; dir: DocDir }> = [
+        { file: 'README.md', dir: '' },
+        ...DOC_PAGES.map((page): { file: string; dir: DocDir } => ({ file: page.file, dir: '' })),
+        ...HELP_TOPICS.map((topic): { file: string; dir: DocDir } => ({ file: helpTopicFile(topic), dir: MANUAL_DIR })),
+    ];
+    const read = (file: string) => fs.readFileSync(path.join(docsDir, file), 'utf-8');
+    const headingIds = (md: string) =>
+        new Set([...md.matchAll(/^#{2,4} (.+)$/gm)].map((m) => slugifyHeading(m[1].replace(/`/g, '').replace(/\*\*/g, ''))));
 
     it('every registered guide exists and has a title', () => {
         for (const page of DOC_PAGES) {
-            const doc = parseDoc(fs.readFileSync(path.join(docsDir, page.file), 'utf-8'));
-            expect(doc.title, page.file).not.toBe('');
+            expect(parseDoc(read(page.file)).title, page.file).not.toBe('');
         }
     });
 
-    it('cross-links between guides point at headings that exist', () => {
-        const anchors = new Map(
-            DOC_PAGES.map((page) => {
-                const md = fs.readFileSync(path.join(docsDir, page.file), 'utf-8');
-                const ids = [...md.matchAll(/^#{2,4} (.+)$/gm)].map((m) => slugifyHeading(m[1].replace(/`/g, '')));
-                return [page.file, new Set(ids)];
-            }),
-        );
-        for (const page of DOC_PAGES) {
-            const md = fs.readFileSync(path.join(docsDir, page.file), 'utf-8');
-            for (const [, file, hash] of md.matchAll(/\]\(([a-z-]+\.md)#([^)]+)\)/g)) {
-                expect(anchors.get(file)?.has(hash), `${page.file} → ${file}#${hash}`).toBe(true);
+    it('every manual topic has a file whose title matches the registry', () => {
+        for (const topic of HELP_TOPICS) {
+            expect(parseDoc(read(helpTopicFile(topic))).title, topic.slug).toBe(topic.title);
+        }
+        expect(fs.readdirSync(path.join(docsDir, MANUAL_DIR)).sort())
+            .toEqual(HELP_TOPICS.map((topic) => `${topic.slug}.md`).sort());
+    });
+
+    it('relative links point at pages and headings that exist', () => {
+        const byTarget = new Map<string, Set<string>>();
+        for (const { file } of files) byTarget.set(file, headingIds(read(file)));
+
+        for (const { file, dir } of files) {
+            for (const [, href] of read(file).matchAll(/\]\(([^)\s]+)\)/g)) {
+                const target = resolveDocLink(href, dir);
+                const label = `${file} → ${href}`;
+                if (target.kind === 'external') continue;
+                if (target.kind === 'repo') {
+                    expect(fs.existsSync(path.join(process.cwd(), target.path)), label).toBe(true);
+                    continue;
+                }
+                const targetFile = target.kind === 'index'
+                    ? 'README.md'
+                    : target.kind === 'guide'
+                        ? DOC_PAGES.find((page) => page.slug === target.slug)!.file
+                        : `${MANUAL_DIR}/${target.slug}.md`;
+                if (target.hash) {
+                    expect(byTarget.get(targetFile)?.has(target.hash.slice(1)), label).toBe(true);
+                }
             }
         }
     });

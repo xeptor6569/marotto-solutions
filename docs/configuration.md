@@ -101,7 +101,7 @@ The payment methods shown on invoices (cash, check, Zelle, Cash App, PayPal, Ven
 ### Documents
 
 - **Editor style:** guided (step by step, good on phones) or full page
-- **Numbering** per document type: prefix, starting number, and digit width. Example: prefix `INV-`, start `1042`, width `5` → `INV-01042`. Numbers never go backwards; the starting number only applies when it's higher than what's already been issued.
+- **Numbering** per document type: prefix, starting number, and digit width. Example: prefix `INV`, start `1042`, width `5` → `INV-01042`. Numbers never go backwards; the starting number only applies when it's higher than what's already been issued.
 
 ### Account
 

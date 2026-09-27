@@ -120,7 +120,8 @@ The home-screen icon and name come from your logo and business name.
 
 ## Where to find help
 
-- **In the app:** **Tools → Help** is the user manual (documents, payments, contracts, calendar, branding). **Tools → System** shows live diagnostics with fix hints.
+- **User manual:** start with [Your first job, start to finish](manual/first-job.md) for the everyday workflow; the [full manual](README.md#user-manual) covers every feature. It's also built into the app under **Tools → Help**, and the **?** icons next to labels explain individual fields.
+- **In the app:** **Tools → System** shows live diagnostics with fix hints.
 - **These docs:** [Configuration](configuration.md) · [Deploying to production](deployment.md) · [Backups & upgrades](operations.md) · [Troubleshooting](troubleshooting.md)
 
 ## Next step

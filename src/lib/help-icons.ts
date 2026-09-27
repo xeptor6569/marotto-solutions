@@ -5,9 +5,11 @@ import {
     CalendarDays,
     CreditCard,
     FileText,
+    Inbox,
     LifeBuoy,
     Paintbrush,
     Repeat,
+    Route,
     Sparkles,
     Users,
 } from 'lucide-react';
@@ -17,9 +19,11 @@ const HELP_ICONS: Record<string, LucideIcon> = {
     calendar: CalendarDays,
     creditCard: CreditCard,
     fileText: FileText,
+    inbox: Inbox,
     lifeBuoy: LifeBuoy,
     paintbrush: Paintbrush,
     repeat: Repeat,
+    route: Route,
     sparkles: Sparkles,
     users: Users,
 };

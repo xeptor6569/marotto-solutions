@@ -5,7 +5,8 @@ import { Box, Button, Card, Container, Flex, Heading, Text } from '@radix-ui/the
 import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import HelpContent from '@/components/HelpContent';
 import { getAdjacentTopics, getHelpTopic, HELP_TOPICS } from '@/lib/help-content';
-import { getHelpIcon } from '../help-icons';
+import { getHelpIcon } from '@/lib/help-icons';
+import { readHelpTopic } from '@/lib/docs-server';
 
 export function generateStaticParams() {
     return HELP_TOPICS.map((topic) => ({ slug: topic.slug }));
@@ -23,6 +24,7 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
     if (!topic) notFound();
 
     const { prev, next } = getAdjacentTopics(slug);
+    const { body } = await readHelpTopic(topic);
 
     return (
         <Container size="2" p={{ initial: '3', sm: '5' }}>
@@ -53,7 +55,7 @@ export default async function HelpTopicPage({ params }: { params: Promise<{ slug
                 </Flex>
 
                 <Card size="3">
-                    <HelpContent>{topic.body}</HelpContent>
+                    <HelpContent>{body}</HelpContent>
                 </Card>
 
                 <Flex justify="between" gap="3" wrap="wrap">

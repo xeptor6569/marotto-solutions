@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/docs": ["./docs/*.md"],
     "/docs/[slug]": ["./docs/*.md"],
+    "/docs/manual/[slug]": ["./docs/manual/*.md"],
+    "/admin/help/[slug]": ["./docs/manual/*.md"],
   },
   experimental: {
     serverActions: {

@@ -1,9 +1,15 @@
 /**
- * Public documentation site: the self-hoster guides in `docs/*.md`, served at
- * `/docs` on every install and at the root of any `docs.*` hostname (or the
- * host named by DOCS_HOST). Pure helpers only — file reading lives in
- * docs-server.ts so this module stays importable from client components.
+ * Public documentation site: the self-hoster guides in `docs/*.md` plus the
+ * user manual in `docs/manual/*.md`, served at `/docs` on every install and at
+ * the root of any `docs.*` hostname (or the host named by DOCS_HOST). Pure
+ * helpers only — file reading lives in docs-server.ts so this module stays
+ * importable from client components.
  */
+
+import { HELP_TOPICS, helpTopicFile, MANUAL_DIR } from './help-content';
+
+/** Directory under `docs/` a markdown file lives in; relative links resolve from it. */
+export type DocDir = '' | typeof MANUAL_DIR;
 
 export const DOCS_REPO_URL = 'https://github.com/xeptor6569/marotto-solutions';
 
@@ -91,28 +97,83 @@ export function slugifyHeading(text: string): string {
         .replace(/\s/g, '-');
 }
 
+export function manualHref(base: string, slug: string, hash = ''): string {
+    return docsHref(base, `${MANUAL_DIR}/${slug}`, hash);
+}
+
+export type DocLinkTarget =
+    | { kind: 'external'; href: string }
+    | { kind: 'index'; hash: string }
+    | { kind: 'guide'; slug: string; hash: string }
+    | { kind: 'manual'; slug: string; hash: string }
+    | { kind: 'repo'; path: string; hash: string };
+
 /**
- * Maps links written for GitHub (relative `.md` files) onto the docs site:
- * guides become site routes, the docs index becomes the site root, and
- * anything else in the repo points at GitHub.
+ * Classifies a link written for GitHub (relative `.md` paths) from a file in
+ * `docs/` (`fromDir` '') or `docs/manual/` (`fromDir` 'manual').
  */
-export function rewriteDocHref(href: string, base: string): string {
+export function resolveDocLink(href: string, fromDir: DocDir = ''): DocLinkTarget {
     if (!href || /^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('#') || href.startsWith('/')) {
-        return href;
+        return { kind: 'external', href };
     }
     const [pathPart, hashPart] = href.split('#', 2);
     const hash = hashPart !== undefined ? `#${hashPart}` : '';
-    const normalized = pathPart.replace(/^\.\//, '');
 
-    if (normalized.startsWith('../')) {
-        return `${DOCS_REPO_URL}/blob/main/${normalized.replace(/^(\.\.\/)+/, '')}${hash}`;
+    const segments: string[] = fromDir ? [fromDir] : [];
+    let escaped = 0;
+    for (const segment of pathPart.split('/')) {
+        if (segment === '' || segment === '.') continue;
+        if (segment === '..') {
+            if (segments.length > 0) segments.pop();
+            else escaped += 1;
+        } else {
+            segments.push(segment);
+        }
     }
-    if (normalized === 'README.md' || normalized === '') {
-        return docsHref(base, undefined, hash);
+    const resolved = segments.join('/');
+
+    if (escaped > 0) return { kind: 'repo', path: resolved, hash };
+    if (resolved === '' || resolved === 'README.md') return { kind: 'index', hash };
+    const page = DOC_PAGES.find((p) => p.file === resolved);
+    if (page) return { kind: 'guide', slug: page.slug, hash };
+    const manual = HELP_TOPICS.find((topic) => helpTopicFile(topic) === resolved);
+    if (manual) return { kind: 'manual', slug: manual.slug, hash };
+    return { kind: 'repo', path: `docs/${resolved}`, hash };
+}
+
+function repoUrl(path: string, hash: string): string {
+    return `${DOCS_REPO_URL}/blob/main/${path}${hash}`;
+}
+
+/**
+ * Maps links written for GitHub onto the docs site: guides and manual pages
+ * become site routes, the docs index becomes the site root, and anything else
+ * in the repo points at GitHub.
+ */
+export function rewriteDocHref(href: string, base: string, fromDir: DocDir = ''): string {
+    const target = resolveDocLink(href, fromDir);
+    switch (target.kind) {
+        case 'external': return target.href;
+        case 'index': return docsHref(base, undefined, target.hash);
+        case 'guide': return docsHref(base, target.slug, target.hash);
+        case 'manual': return manualHref(base, target.slug, target.hash);
+        case 'repo': return repoUrl(target.path, target.hash);
     }
-    const page = DOC_PAGES.find((p) => p.file === normalized);
-    if (page) return docsHref(base, page.slug, hash);
-    return `${DOCS_REPO_URL}/blob/main/docs/${normalized}${hash}`;
+}
+
+/**
+ * Same links as seen from the in-app Help: manual pages stay in the app, and
+ * the self-hosting guides open on this install's `/docs` site.
+ */
+export function rewriteHelpHref(href: string): string {
+    const target = resolveDocLink(href, MANUAL_DIR);
+    switch (target.kind) {
+        case 'external': return target.href;
+        case 'index': return docsHref('/docs', undefined, target.hash);
+        case 'guide': return docsHref('/docs', target.slug, target.hash);
+        case 'manual': return `/admin/help/${target.slug}${target.hash}`;
+        case 'repo': return repoUrl(target.path, target.hash);
+    }
 }
 
 export interface DocHeading {

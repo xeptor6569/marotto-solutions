@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { rewriteDocHref, slugifyHeading } from '@/lib/docs';
+import { rewriteDocHref, slugifyHeading, type DocDir } from '@/lib/docs';
 
-function textOf(node: ReactNode): string {
+export function textOf(node: ReactNode): string {
     if (node === null || node === undefined || typeof node === 'boolean') return '';
     if (typeof node === 'string' || typeof node === 'number') return String(node);
     if (Array.isArray(node)) return node.map(textOf).join('');
@@ -25,7 +25,16 @@ function AnchoredHeading({ level, children }: { level: 2 | 3 | 4; children: Reac
     );
 }
 
-export default function DocsMarkdown({ children, base }: { children: string; base: string }) {
+export default function DocsMarkdown({
+    children,
+    base,
+    fromDir = '',
+}: {
+    children: string;
+    base: string;
+    /** Directory under `docs/` the markdown came from, for resolving relative links. */
+    fromDir?: DocDir;
+}) {
     return (
         <div className="docs-content">
             <ReactMarkdown
@@ -36,7 +45,7 @@ export default function DocsMarkdown({ children, base }: { children: string; bas
                     h3: ({ children: c }) => <AnchoredHeading level={3}>{c}</AnchoredHeading>,
                     h4: ({ children: c }) => <AnchoredHeading level={4}>{c}</AnchoredHeading>,
                     a: ({ href, children: c }) => {
-                        const target = rewriteDocHref(href || '', base);
+                        const target = rewriteDocHref(href || '', base, fromDir);
                         const external = /^https?:/i.test(target);
                         return (
                             <a href={target} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
