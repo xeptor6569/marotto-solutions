@@ -11,6 +11,21 @@ const nextConfig: NextConfig = {
   // Readable client stack traces on non-production instances. Left off in prod
   // so the maps are not published alongside the bundles.
   productionBrowserSourceMaps: !isProductionEnv,
+  // The docs site reads docs/*.md at request time, so the standalone output
+  // has to carry them.
+  outputFileTracingIncludes: {
+    "/docs": ["./docs/*.md"],
+    "/docs/[slug]": ["./docs/*.md"],
+    "/docs/manual/[slug]": ["./docs/manual/*.md"],
+    "/admin/help/[slug]": ["./docs/manual/*.md"],
+  },
+  experimental: {
+    serverActions: {
+      // Uploads go through server actions: logos (2 MB), job attachments
+      // (20 MB), and full backup archives on restore. The default is 1 MB.
+      bodySizeLimit: "200mb",
+    },
+  },
 };
 
 export default nextConfig;

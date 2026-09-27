@@ -6,6 +6,7 @@ import {
 } from '@radix-ui/themes';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { createCalendarEventAction, updateCalendarEventAction } from '@/app/admin/calendar/actions';
+import HelpTip, { LabelWithHelp } from '@/components/HelpTip';
 import type { CalendarEventInput, CalendarEventStatus, RecurrenceFrequency, RecurrenceRule } from '@/lib/types';
 
 const STATUS_OPTIONS: { value: CalendarEventStatus; label: string }[] = [
@@ -167,7 +168,11 @@ export default function CalendarEventForm({
             </Box>
 
             <Box>
-                <Text as="label" size="2" weight="bold">Status</Text>
+                <Text as="label" size="2" weight="bold">
+                    <LabelWithHelp help="Scheduled → Confirmed once the client agrees → Completed when done. Cancelled and completed events stop sending reminders." topic="calendar">
+                        Status
+                    </LabelWithHelp>
+                </Text>
                 <Select.Root value={status} onValueChange={(v) => setStatus(v as CalendarEventStatus)}>
                     <Select.Trigger mt="1" style={{ width: '100%' }} />
                     <Select.Content>
@@ -238,6 +243,11 @@ export default function CalendarEventForm({
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                     <Checkbox checked={hasReminder} onCheckedChange={(v) => setHasReminder(v === true)} />
                     Email reminder
+                    <HelpTip label="Email reminder" topic="calendar">
+                        Emails you (the operator address set on the server), not the client. Reminders are checked
+                        hourly, so one can arrive up to an hour after the chosen time. Recurring events don&apos;t send
+                        reminders.
+                    </HelpTip>
                 </label>
                 {hasReminder ? (
                     <Box pl="4">

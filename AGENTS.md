@@ -69,7 +69,8 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 - `src/lib/calendar.ts` — calendar event logic, recurrence math (host-timezone independent)
 - `src/lib/auth.ts` — NextAuth v5 beta setup
 - `src/lib/health.ts` — diagnostics shared by `/api/health` and `/admin/system`
-- `src/lib/help-content.ts` — in-app manual content (`/admin/help`)
+- `docs/manual/*.md` — user manual, rendered by the in-app Help (`/admin/help`) and the docs site (`/docs/manual`); `src/lib/help-content.ts` is its topic registry (order, descriptions, icons; titles must match the files)
+- `src/components/HelpTip.tsx` — the "?" contextual help icon (hover on desktop, tap on touch); `Field` in settings takes `help`/`helpTopic` props
 - `src/app/setup/` — first-run wizard (only while zero users exist)
 
 ### Cron endpoints
@@ -107,6 +108,16 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 - `output: "standalone"` in `next.config.ts` for Docker tracing
 - Persistent volumes: `marotto_data` (`/app/data`), `postgres_data`
 - Container names and the Postgres host port come from `STACK_NAME` / `POSTGRES_PORT`; the defaults reproduce the prod values, so plain `docker compose` is unchanged
+- The web container's entrypoint (`docker-entrypoint.sh`) runs `prisma migrate deploy` before starting the server (CLI installed in its own Dockerfile stage at `/opt/prisma-cli`, pinned to the lockfile version); a failed migration stops the container. `SKIP_MIGRATIONS=1` opts out. Prod/dev deploy workflows still migrate from the host first (duplicate-init quirk), so the container's run is a no-op there
+- Admin create/password reset in Docker: `docker compose exec -e ADMIN_EMAIL=… -e ADMIN_PASSWORD=… web node scripts/seed-admin.js`
+- `POSTGRES_PASSWORD` overrides the bundled DB password (default `marotto_password`, only read when the volume is created). `env.example` leaves `DATABASE_URL` commented out so containers use the in-network default
+- `experimental.serverActions.bodySizeLimit` is raised in `next.config.ts` because logo, attachment, and backup-restore uploads go through server actions
+
+## User docs
+
+Self-hoster guides live in `docs/` (index `docs/README.md`: getting-started, configuration, deployment, operations, troubleshooting). Keep them in sync when changing env vars, compose services, Settings tabs, or upgrade steps.
+
+They are also rendered as a public docs site: `src/app/docs/` (routes), `src/lib/docs.ts` (page registry, link rewriting, `docs.*` host detection), `src/proxy.ts` (rewrites the docs host's `/x` to `/docs/x`). A new guide must be added to `DOC_PAGES`; `docs.test.ts` checks every registered file exists and every cross-guide `#anchor` resolves. Relative `.md` links are rewritten to site routes, other repo files to GitHub.
 
 ## Dev instance
 

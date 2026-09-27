@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { Box, Button, Callout, Flex, Text } from '@radix-ui/themes';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { LabelWithHelp } from '@/components/HelpTip';
 import {
     saveSettingsSectionAction,
     type SettingsActionState,
@@ -51,15 +52,22 @@ export default function SettingsSectionForm({
 export function Field({
     label,
     hint,
+    help,
+    helpTopic,
     children,
 }: {
     label: string;
     hint?: string;
+    /** Longer explanation behind a "?" icon next to the label. */
+    help?: ReactNode;
+    helpTopic?: string;
     children: ReactNode;
 }) {
     return (
         <Flex direction="column" gap="1">
-            <Text as="label" size="2" weight="bold">{label}</Text>
+            <Text as="label" size="2" weight="bold">
+                <LabelWithHelp help={help} topic={helpTopic}>{label}</LabelWithHelp>
+            </Text>
             {children}
             {hint ? <Text size="1" color="gray">{hint}</Text> : null}
         </Flex>

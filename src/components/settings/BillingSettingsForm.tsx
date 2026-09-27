@@ -46,14 +46,21 @@ export default function BillingSettingsForm({ config }: { config: Partial<AppCon
 
     return (
         <SettingsSectionForm section="billing">
-            <Field label="Checks Payable To">
+            <Field
+                label="Checks Payable To"
+                help="Printed next to the Check payment method on invoices, e.g. your legal business name. Leave empty to leave it off."
+            >
                 <TextField.Root
                     name="checkPayableTo"
                     defaultValue={config.billing?.checkPayableTo || ''}
                     placeholder="Your business name"
                 />
             </Field>
-            <Field label="General Payment Instructions">
+            <Field
+                label="General Payment Instructions"
+                help="Shown on every invoice under the payment methods, e.g. late-fee terms or what to put in the payment memo."
+                helpTopic="payments"
+            >
                 <TextArea
                     name="paymentInstructions"
                     defaultValue={config.billing?.paymentInstructions || ''}

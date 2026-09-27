@@ -9,6 +9,7 @@ import DocumentLineItemEditor, {
 } from '@/components/DocumentLineItemEditor';
 import { choiceTotal, packageTotal } from '@/lib/document-options';
 import { useMoney } from '@/components/MoneyProvider';
+import HelpTip from '@/components/HelpTip';
 
 function emptyPackage(): DocumentPackage {
     return {
@@ -102,7 +103,14 @@ export default function DocumentOptionsEditor({
             <Card>
                 <Flex justify="between" align="center" gap="3" wrap="wrap" mb="2">
                     <Box>
-                        <Heading size="3">Packages</Heading>
+                        <Flex align="center" gap="1">
+                            <Heading size="3">Packages</Heading>
+                            <HelpTip title="Packages" topic="documents">
+                                Offer alternative versions of the job, e.g. Basic vs Premium. The shared document shows every
+                                package with its own total. When the client decides, mark their choice under
+                                &ldquo;Select options&rdquo; on the document page — Convert and deposit invoices bill only that package.
+                            </HelpTip>
+                        </Flex>
                         <Text size="2" color="gray" as="p" mt="1">
                             Mutually exclusive ways to do the project (Option A / B). Client picks one.
                         </Text>
@@ -244,7 +252,13 @@ export default function DocumentOptionsEditor({
             <Card>
                 <Flex justify="between" align="center" gap="3" wrap="wrap" mb="2">
                     <Box>
-                        <Heading size="3">Material / method choices</Heading>
+                        <Flex align="center" gap="1">
+                            <Heading size="3">Material / method choices</Heading>
+                            <HelpTip title="Material / method choices" topic="documents">
+                                Smaller either/or decisions inside the job, e.g. Flooring: Hardwood or Laminate. Each group adds
+                                the chosen option&apos;s price on top of the base scope and the selected package.
+                            </HelpTip>
+                        </Flex>
                         <Text size="2" color="gray" as="p" mt="1">
                             Per-section alternatives (e.g. Flooring: Hardwood vs Laminate) applied on top of base scope and the selected package.
                         </Text>

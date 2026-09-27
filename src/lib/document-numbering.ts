@@ -4,8 +4,8 @@ import type { DocumentNumberingConfig, DocumentType, NumberedDocumentType } from
  * Document ID scheme: `${prefix}-${zero-padded number}` per type. Prefixes and
  * starting numbers are business settings (Settings → Documents) so a new
  * install can start at INV-0001 while an existing one keeps its sequence.
- * Numbers only ever move forward; the start number applies when a type has
- * no documents yet.
+ * Numbers only ever move forward; the start number takes effect whenever it
+ * is higher than the last number issued.
  */
 
 export const NUMBERED_DOCUMENT_TYPES: NumberedDocumentType[] = ['invoice', 'estimate', 'quote', 'receipt'];

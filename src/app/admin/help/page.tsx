@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Box, Card, Container, Flex, Grid, Heading, Text } from '@radix-ui/themes';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, ExternalLink } from 'lucide-react';
 import { HELP_TOPICS } from '@/lib/help-content';
-import { getHelpIcon } from './help-icons';
+import { getHelpIcon } from '@/lib/help-icons';
 
 export const metadata = { title: 'Help' };
 
@@ -52,6 +52,14 @@ export default function HelpIndexPage() {
                     );
                 })}
             </Grid>
+
+            <Text as="p" size="2" color="gray" mt="5">
+                Installing, upgrading, or moving servers? See the{' '}
+                <Link href="/docs" target="_blank" style={{ color: 'var(--accent-11)' }}>
+                    self-hosting guides <ExternalLink size={12} style={{ verticalAlign: '-1px' }} />
+                </Link>
+                .
+            </Text>
 
             <style>{`
                 .admin-stat-card {

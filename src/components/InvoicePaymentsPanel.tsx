@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import Link from 'next/link';
+import HelpTip, { LabelWithHelp } from '@/components/HelpTip';
 import { useRouter } from 'next/navigation';
 import {
     AlertDialog,
@@ -151,7 +152,11 @@ function RecordPaymentDialog({
                                 )}
                             </Flex>
                             <Flex direction="column" gap="1">
-                                <Text as="label" size="2" weight="bold">Type</Text>
+                                <Text as="label" size="2" weight="bold">
+                                    <LabelWithHelp help="A label shown on the payment and its receipt so you and your client can tell a deposit from the final payment. The balance is always the invoice total minus all payments, whatever the type.">
+                                        Type
+                                    </LabelWithHelp>
+                                </Text>
                                 <select
                                     name="kind"
                                     value={kind}
@@ -292,6 +297,10 @@ export default function InvoicePaymentsPanel({
                 <Box>
                     <Flex align="center" gap="2" mb="1">
                         <Heading size="3">Payments</Heading>
+                        <HelpTip title="Payments" topic="payments">
+                            Record money as it comes in; each payment creates a receipt and lowers the balance. Delete a
+                            payment to undo it. Card payments made through a share link are recorded automatically.
+                        </HelpTip>
                         {fullyPaid || status === 'paid' ? (
                             <Badge color="green" variant="soft">Paid</Badge>
                         ) : isVoid ? (

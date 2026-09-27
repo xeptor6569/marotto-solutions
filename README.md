@@ -14,7 +14,7 @@ Everything brand-specific is configuration: set your business name, logo, colors
 - **Recurring contracts:** cadence-based invoice generation with auto-send, usage lines with a review queue, and printable service agreements
 - **Calendar:** timed/all-day/recurring events tied to clients and jobs, business-timezone aware, with email reminders
 - **Sharing:** every document gets an unguessable share link clients can view, print, and pay from — no client accounts needed
-- **Operations:** dashboard with money KPIs (outstanding, overdue, collected), full backup/restore as one archive, JSON import, System Health diagnostics, API reference, and an in-app manual (`/admin/help`)
+- **Operations:** dashboard with money KPIs (outstanding, overdue, collected), full backup/restore as one archive, JSON import, System Health diagnostics, API reference, an in-app user manual (`/admin/help`), and **?** help tips beside labels throughout the admin
 - **Mobile-first PWA:** installable on a phone home screen, bottom navigation, card layouts, and no iOS focus-zoom
 - **Auth:** email one-time codes or email/password; set or change your password under Settings → Account (deploys can also seed an admin via `ADMIN_EMAIL`/`ADMIN_PASSWORD` secrets)
 
@@ -25,28 +25,41 @@ Everything brand-specific is configuration: set your business name, logo, colors
 - **Appearance:** light/dark/system per visitor, six theme presets (or custom accent/gray/radius), logo upload, letterhead text, and document accent color
 - **Public site:** optional marketing homepage with configurable hero, selling points, service catalog (each service gets its own page + quote-form option), testimonials, and SEO metadata — or switch it off for a minimal sign-in card
 
+## Documentation
+
+New here? Start with **[Getting started](docs/getting-started.md)**. The full guide set lives in [`docs/`](docs/README.md):
+
+- [Getting started](docs/getting-started.md): requirements, install, setup wizard, first configuration
+- [Configuration](docs/configuration.md): every environment variable and Settings tab
+- [Deploying to production](docs/deployment.md): domain + HTTPS, email, Stripe, scheduled jobs, monitoring
+- [Backups & upgrades](docs/operations.md): backup/restore, moving servers, upgrading, rollback
+- [Troubleshooting](docs/troubleshooting.md)
+
+The same guides are served as a website by the app itself, at `/docs` or at the root of a `docs.` subdomain (see [Deploying → Documentation site](docs/deployment.md#documentation-site-optional)). Day-to-day usage is covered by the [user manual](docs/README.md#user-manual), which is also built into the app at **Tools → Help**.
+
 ## Quick start (Docker)
 
 ```bash
-git clone <this repo> && cd <repo>
-cp env.example .env        # fill in NEXTAUTH_SECRET, NEXTAUTH_URL, EMAIL_SERVER, CRON_SECRET
-docker compose up -d --build
+git clone <this repo> backoffice && cd backoffice
+cp env.example .env           # set NEXTAUTH_SECRET, NEXTAUTH_URL, CRON_SECRET, POSTGRES_PASSWORD, EMAIL_*
+docker compose up -d --build  # database tables are created/updated automatically on startup
 ```
 
-Then open the app (default `http://localhost:3081`) — you'll land on the **first-run wizard** (`/setup`) to create your admin account, name your business, and pick a theme. After that, fill in the rest under **Settings**.
+Then open `http://localhost:3081/admin` (your `NEXTAUTH_URL` + `/admin`). You'll be sent to the **first-run wizard** (`/setup`) to create your admin account, name your business, and pick a theme. After that, fill in the rest under **Settings**. The [Getting started](docs/getting-started.md) guide walks through each step.
 
 Default compose behavior:
 
 - app on host port `APP_PORT` (default `3081`), Postgres on `POSTGRES_PORT` (default `5433`)
 - persistent volumes for the database and the `data/` directory (documents, settings, logo, attachments)
 - a cron sidecar that triggers the contract scheduler daily and calendar reminders hourly
+- the app applies pending database migrations on every start (set `SKIP_MIGRATIONS=1` to opt out)
 - container names prefixed by `STACK_NAME`, so a second instance can run on the same host
 
 ## Local development
 
 ```bash
 npm install
-cp env.example .env               # set DATABASE_URL to the host port (5433)
+cp env.example .env               # uncomment DATABASE_URL (host port 5433)
 docker compose up -d postgres
 npm run prisma:migrate:dev
 npm run dev
@@ -62,9 +75,10 @@ Verification order: `npm run lint` → `npm test` → `npm run build`. Note: `ne
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | yes | Postgres (clients, jobs, contracts, calendar, accounts, numbering) |
+| `DATABASE_URL` | compose default | Postgres connection; leave unset with the bundled database, set for `npm run dev` or an external Postgres |
+| `POSTGRES_PASSWORD` | recommended | Bundled Postgres password (set before first start) |
 | `NEXTAUTH_SECRET` | yes | Auth.js session secret |
-| `NEXTAUTH_URL` | yes | Exact public URL of the app (must match `APP_PORT`) |
+| `NEXTAUTH_URL` | yes | Exact public URL of the app (scheme, host, and port if non-standard) |
 | `APP_PORT` | compose | Published host port (default `3081`) |
 | `EMAIL_SERVER` | recommended | SMTP for sign-in codes, notifications, invoice sending |
 | `EMAIL_FROM` | optional | From address (falls back to the configured business email) |
@@ -99,7 +113,7 @@ Two stores, by design:
 | Invoices, estimates, quotes, receipts, leads | JSON files: local `data/` or WebDAV (`src/lib/data.ts`) |
 | Settings, uploaded logo | `data/config/settings.json`, `data/branding/` |
 
-Document numbering is atomic via the database when `DATABASE_URL` is set, with a filesystem-scan fallback otherwise. **Tools → Backup** exports everything (DB tables + documents + attachments + settings) as one `.tar.gz` and restores from the same archive.
+Document numbering is atomic via the database when `DATABASE_URL` is set, with a filesystem-scan fallback otherwise. **Tools → Backup & Restore** exports everything (DB tables + documents + attachments + settings) as one `.tar.gz` and restores from the same archive.
 
 ## Integrations & monitoring
 
@@ -128,7 +142,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Radix Themes · NextAuth v5
 - `npm run dev` / `npm run build` / `npm run start`
 - `npm run lint` / `npm test` / `npm run test:watch`
 - `npm run prisma:generate` / `prisma:migrate:dev` / `prisma:migrate:deploy` / `prisma:studio`
-- `node scripts/seed-admin.js` — scripted admin creation (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `ADMIN_NAME`)
+- `node scripts/seed-admin.js`: scripted admin creation or password reset (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `ADMIN_NAME`); in Docker: `docker compose exec -e ADMIN_EMAIL=… -e ADMIN_PASSWORD=… web node scripts/seed-admin.js`
 
 ## License
 

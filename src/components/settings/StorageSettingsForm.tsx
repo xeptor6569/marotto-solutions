@@ -12,7 +12,11 @@ export default function StorageSettingsForm({ config }: { config: Partial<AppCon
                 them on this server&apos;s local <code>data/</code> volume, or connect Nextcloud/WebDAV to store them remotely.
             </Text>
 
-            <Field label="Nextcloud WebDAV URL">
+            <Field
+                label="Nextcloud WebDAV URL"
+                help="In Nextcloud: Files → Settings (bottom left) → WebDAV. Any WebDAV server works. When set, documents are read from and saved to that server instead of this one."
+                helpTopic="storage-backups"
+            >
                 <TextField.Root
                     name="webdavUrl"
                     defaultValue={config.webdavUrl || ''}
@@ -27,7 +31,10 @@ export default function StorageSettingsForm({ config }: { config: Partial<AppCon
                     autoComplete="off"
                 />
             </Field>
-            <Field label="Password / App Token">
+            <Field
+                label="Password / App Token"
+                help="Use an app password (Nextcloud: Personal settings → Security → Create new app password) rather than your main password, so you can revoke it on its own."
+            >
                 <TextField.Root
                     name="webdavPassword"
                     type="password"
@@ -38,6 +45,8 @@ export default function StorageSettingsForm({ config }: { config: Partial<AppCon
             <Field
                 label="Remote folder"
                 hint="Folder on the WebDAV server where documents are kept. Changing this does not move existing files."
+                help="To move documents to a new folder or server: take a backup, change the storage settings, then restore the backup."
+                helpTopic="storage-backups"
             >
                 <TextField.Root
                     name="webdavRootPath"

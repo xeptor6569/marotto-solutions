@@ -50,6 +50,7 @@ import DocumentLineItemEditor, {
 } from '@/components/DocumentLineItemEditor';
 import DocumentOptionsEditor from '@/components/DocumentOptionsEditor';
 import SaveAsPresetButton from '@/components/SaveAsPresetButton';
+import HelpTip, { LabelWithHelp } from '@/components/HelpTip';
 import { useMoney } from '@/components/MoneyProvider';
 
 const nativeSelectStyle = {
@@ -544,11 +545,22 @@ export default function NewDocumentForm({
                                     <TextField.Root name="date" type="date" defaultValue={initialData?.date?.split('T')[0] || new Date().toISOString().split('T')[0]} required />
                                 </Box>
                                 <Box>
-                                    <Text as="label" size="2">Due Date</Text>
+                                    <Text as="label" size="2">
+                                        <LabelWithHelp help={type === 'invoice'
+                                            ? 'Unpaid invoices past this date count as overdue on the dashboard. Leave empty for no due date.'
+                                            : 'Optional. For estimates and quotes, use it as a "valid until" date.'}
+                                        >
+                                            Due Date
+                                        </LabelWithHelp>
+                                    </Text>
                                     <TextField.Root name="dueDate" type="date" defaultValue={initialData?.dueDate?.split('T')[0]} />
                                 </Box>
                                 <Box>
-                                    <Text as="label" size="1" color="gray">Status</Text>
+                                    <Text as="label" size="1" color="gray">
+                                        <LabelWithHelp help="Where the document stands with the client. For invoices, payments update this automatically — record them from the invoice page instead of setting Paid here." topic="documents">
+                                            Status
+                                        </LabelWithHelp>
+                                    </Text>
                                     <select
                                         value={docStatus}
                                         onChange={(e) => setDocStatus(e.target.value as DocumentData['status'])}
@@ -561,7 +573,11 @@ export default function NewDocumentForm({
                                 </Box>
                                 {(type === 'estimate' || type === 'quote') ? (
                                     <Box>
-                                        <Text as="label" size="1" color="gray">Workflow</Text>
+                                        <Text as="label" size="1" color="gray">
+                                            <LabelWithHelp help="Your own progress tracking, separate from the client-facing status. It sets which column the document appears in on the board view." topic="documents">
+                                                Workflow
+                                            </LabelWithHelp>
+                                        </Text>
                                         <select
                                             value={workflowStatus || ''}
                                             onChange={(e) => setWorkflowStatus(e.target.value as WorkflowStatus || undefined)}
@@ -627,7 +643,11 @@ export default function NewDocumentForm({
                             <Heading size="3">{showDocumentOptions ? 'Base scope' : 'Items'}</Heading>
                             {!isEditing && applicablePresets.length > 0 ? (
                                 <Box style={{ minWidth: 220, flex: '1 1 220px', maxWidth: 360 }}>
-                                    <Text as="label" size="1" color="gray">Apply preset</Text>
+                                    <Text as="label" size="1" color="gray">
+                                        <LabelWithHelp help="Replaces the line items — and the title and notes, if the preset has them — with a saved template. Manage presets under Tools → Presets, or use Save as preset on any document." topic="documents">
+                                            Apply preset
+                                        </LabelWithHelp>
+                                    </Text>
                                     <select
                                         value={selectedPresetId}
                                         onChange={(e) => applyPreset(e.target.value)}
@@ -725,7 +745,13 @@ export default function NewDocumentForm({
                     {type === 'invoice' ? (
                         <Card mb="4">
                             <Flex justify="between" align="center" gap="3" wrap="wrap" mb="2">
-                                <Heading size="3">Warranty</Heading>
+                                <Flex align="center" gap="1">
+                                    <Heading size="3">Warranty</Heading>
+                                    <HelpTip title="Warranty">
+                                        Adds a titled warranty section to the printed invoice, e.g. a workmanship guarantee
+                                        and its terms. It applies to this invoice only.
+                                    </HelpTip>
+                                </Flex>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, minHeight: 44 }}>
                                     <input
                                         type="checkbox"
