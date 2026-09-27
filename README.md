@@ -9,7 +9,7 @@ Everything brand-specific is configuration: set your business name, logo, colors
 ### Back-office (`/admin`)
 
 - **Documents:** estimates → quotes → invoices → receipts, with conversion, deposit invoices, per-line discounts, packages/option groups, warranty text, presets, and print-ready letterhead output
-- **Payments:** configurable payment methods (cash, check, Zelle, Cash App, PayPal, Venmo, Apple Pay, Stripe), payment recording with automatic receipts, and Stripe Checkout on shared invoices (full balance, amount, percent, or split)
+- **Payments:** configurable, renameable payment methods (cash, check, Zelle, Cash App, PayPal, Venmo, Apple Pay, Stripe), a one-tap Payments panel on every invoice (record with automatic receipt, undo mistakes, mark paid/reopen), and Stripe Checkout on shared invoices (full balance, amount, percent, or split)
 - **Clients & jobs:** client records (public quote requests become prospects automatically), job hubs linking documents, attachments, and time tracking, plus field helpers with payout tracking
 - **Recurring contracts:** cadence-based invoice generation with auto-send, usage lines with a review queue, and printable service agreements
 - **Calendar:** timed/all-day/recurring events tied to clients and jobs, business-timezone aware, with email reminders
