@@ -116,7 +116,7 @@ Second isolated stack at `dev.marottosolutions.com`. Full guide: `docs/dev-envir
 - `APP_ENV` (not `NODE_ENV`) marks an instance non-production — dev runs a production build on purpose. See `src/lib/app-env.ts`
 - Non-production effects: DEV banner, `Disallow: /` robots, browser source maps, live Stripe keys rejected
 - All dev email goes to a mailpit sink; nothing reaches real clients
-- Deploy via `.github/workflows/deploy-dev.yml` (`develop` branch, or `workflow_dispatch` with a `ref` input). Shares the `self-hosted-deploy` concurrency group with prod
+- Deploy via `.github/workflows/deploy-dev.yml`: pushes to `develop`, or **Run workflow** with the branch chosen in the "Use workflow from" dropdown (`gh workflow run deploy-dev.yml --ref <branch>`); a `fresh_install` checkbox wipes dev data first. Shares the `self-hosted-deploy` concurrency group with prod
 - Env template is `env.dev.example` — not a dotfile, because `.env*` is gitignored
 
 ## Health endpoint

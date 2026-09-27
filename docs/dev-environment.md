@@ -83,9 +83,27 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml \
 
 ## Deploying a branch to dev
 
-Pushing to `develop` deploys automatically. To deploy any other branch, run the
-**Deploy to Dev** workflow manually and set the `ref` input to the branch, tag
-or SHA. Confirm what landed:
+Pushing to `develop` deploys automatically. To deploy any other branch:
+
+1. GitHub → **Actions** → **Deploy to Dev** → **Run workflow**.
+2. In the **"Use workflow from"** dropdown, pick the branch (or tag) to deploy —
+   that dropdown *is* the branch selector; whatever it shows is what gets built.
+3. Optionally tick **Fresh install** to wipe all dev data (database, documents,
+   settings, uploads) first, so dev comes up at the `/setup` wizard. This only
+   removes the `marotto-dev` compose project's containers and volumes; prod is
+   never touched.
+4. **Run workflow**. The run is titled "Deploy `<branch>` to dev", and its
+   summary page shows the branch, commit, URL, and the `/api/health` response.
+
+Branches only appear in the dropdown once they contain the workflow file
+(anything branched from `main` after the dev stack landed). From the CLI:
+
+```bash
+gh workflow run deploy-dev.yml --ref cursor/my-branch            # deploy a branch
+gh workflow run deploy-dev.yml --ref cursor/my-branch -f fresh_install=true
+```
+
+Confirm what landed:
 
 ```bash
 curl -s https://dev.marottosolutions.com/api/health
