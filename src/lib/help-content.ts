@@ -69,6 +69,12 @@ Use the **Create** menu (top bar on desktop, center button on the phone nav). Th
 
 Document numbers are issued automatically. With a database connected, numbering is atomic and safe across concurrent saves; without one, the app scans existing files for the highest number.
 
+The ID format is a prefix plus a zero-padded number (e.g. \`INV-0001\`). Set the prefix, starting number, and digit width per document type in **Settings → Documents**. Changing a prefix only affects new documents, and numbers never go backwards.
+
+## Currency
+
+Every amount — on screen, on printed documents, in emails, and in Stripe charges — uses the currency and number format chosen in **Settings → Business**.
+
 ## Sharing and printing
 
 Every document has an unguessable **share link** (\`/d/{token}\`). Use **Share** to copy or send it — clients can view, print, and (for invoices) pay online without signing in. Use **Email** to send the link from the app when email is configured, or through your own mail app.
