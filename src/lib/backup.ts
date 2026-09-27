@@ -191,21 +191,56 @@ export function getBackupFilename(): string {
 
 // ─── Extract ─────────────────────────────────────────────────────────
 
-export async function extractBackupArchive(archivePath: string): Promise<string> {
-    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'app-restore-'));
-    await tar.x({
-        file: archivePath,
-        cwd: tmpDir,
-        gzip: true,
-    });
+export interface ExtractedBackup {
+    /** Scratch directory owning everything extracted; remove with cleanupExtracted(). */
+    tmpDir: string;
+    /** Directory containing manifest.json (the backup root). */
+    backupDir: string;
+}
 
-    const entries = await fs.readdir(tmpDir);
-    // Accept archives from older builds that used the branded prefix.
-    const backupDir = entries.find((e) => e.startsWith('app-backup-') || e.startsWith('marotto-backup-'));
-    if (!backupDir) {
-        throw new Error('Archive does not contain a valid backup directory.');
+async function fileExists(filePath: string): Promise<boolean> {
+    try {
+        await fs.access(filePath);
+        return true;
+    } catch {
+        return false;
     }
-    return path.join(tmpDir, backupDir);
+}
+
+/**
+ * Extract an archive and locate the backup root by its manifest.
+ *
+ * Archives are written with the backup's contents at the tar root (no wrapper
+ * folder), so the manifest is normally found directly in tmpDir. A wrapper
+ * folder is tolerated too, for archives that were re-packed by hand.
+ */
+export async function extractBackupArchive(archivePath: string): Promise<ExtractedBackup> {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'app-restore-'));
+    try {
+        await tar.x({
+            file: archivePath,
+            cwd: tmpDir,
+            gzip: true,
+        });
+    } catch (error) {
+        await cleanupExtracted(tmpDir);
+        const detail = error instanceof Error ? error.message : 'unknown error';
+        throw new Error(`Could not read the archive as a .tar.gz file (${detail}). Make sure it is the backup downloaded from Backup & Restore.`);
+    }
+
+    if (await fileExists(path.join(tmpDir, 'manifest.json'))) {
+        return { tmpDir, backupDir: tmpDir };
+    }
+
+    const entries = await fs.readdir(tmpDir, { withFileTypes: true });
+    for (const entry of entries) {
+        if (entry.isDirectory() && await fileExists(path.join(tmpDir, entry.name, 'manifest.json'))) {
+            return { tmpDir, backupDir: path.join(tmpDir, entry.name) };
+        }
+    }
+
+    await cleanupExtracted(tmpDir);
+    throw new Error('Archive does not contain a backup manifest (manifest.json). Make sure this is the .tar.gz downloaded from Backup & Restore, not a JSON document export.');
 }
 
 // ─── Validate ────────────────────────────────────────────────────────
@@ -466,7 +501,16 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
 }
 
 export async function cleanupExtracted(tmpDir: string): Promise<void> {
+    // Only ever remove a scratch directory we created ourselves; a bad caller
+    // argument must never turn into `rm -rf` of the system temp directory.
+    const resolved = path.resolve(tmpDir);
+    const tmpRoot = path.resolve(os.tmpdir());
+    const isOurs = path.dirname(resolved) === tmpRoot && path.basename(resolved).startsWith('app-restore-');
+    if (!isOurs) {
+        console.warn(`cleanupExtracted refused to remove ${resolved}`);
+        return;
+    }
     try {
-        await fs.rm(tmpDir, { recursive: true, force: true });
+        await fs.rm(resolved, { recursive: true, force: true });
     } catch { }
 }

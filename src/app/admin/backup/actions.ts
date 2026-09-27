@@ -49,21 +49,22 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
     }
 
     let archivePath: string | undefined;
-    let extractDir: string | undefined;
+    let scratchDir: string | undefined;
 
     try {
-        archivePath = path.join(os.tmpdir(), `app-restore-${Date.now()}.tar.gz`);
+        archivePath = path.join(os.tmpdir(), `app-restore-upload-${Date.now()}.tar.gz`);
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(archivePath, buffer);
 
-        extractDir = await extractBackupArchive(archivePath);
+        const extracted = await extractBackupArchive(archivePath);
+        scratchDir = extracted.tmpDir;
 
-        const validation = await validateBackup(extractDir);
+        const validation = await validateBackup(extracted.backupDir);
         if (!validation.valid) {
             return { success: false, error: validation.error };
         }
 
-        const stats = await restoreFromBackup(extractDir);
+        const stats = await restoreFromBackup(extracted.backupDir);
 
         revalidatePath('/admin');
         revalidatePath('/admin/jobs');
@@ -85,10 +86,6 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
         return { success: false, error: `Restore failed: ${message}` };
     } finally {
         if (archivePath) await fs.unlink(archivePath).catch(() => {});
-        if (extractDir) {
-            // extractBackupArchive returns <tmpBase>/<backup-dir>, so the
-            // parent is the mkdtemp directory to clean up.
-            await cleanupExtracted(path.dirname(extractDir));
-        }
+        if (scratchDir) await cleanupExtracted(scratchDir);
     }
 }
