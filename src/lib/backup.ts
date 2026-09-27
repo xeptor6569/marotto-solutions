@@ -17,6 +17,7 @@ const BACKUP_VERSION = 1;
 const DOCUMENT_TYPES: DocumentType[] = ['invoice', 'estimate', 'quote', 'receipt', 'lead'];
 const LOCAL_DATA_DIR = path.join(process.cwd(), 'data');
 const LOCAL_ATTACHMENTS_DIR = path.join(LOCAL_DATA_DIR, 'job-attachments');
+const LOCAL_BRANDING_DIR = path.join(LOCAL_DATA_DIR, 'branding');
 
 // ─── Manifest ────────────────────────────────────────────────────────
 
@@ -156,6 +157,8 @@ export async function collectBackupData(): Promise<string> {
         await fs.writeFile(path.join(cfgDir, 'presets.json'), JSON.stringify({ presets }, null, 2));
     }
 
+    await copyBrandingFiles(LOCAL_BRANDING_DIR, path.join(backupDir, 'branding'));
+
     const manifest: BackupManifest = {
         version: BACKUP_VERSION,
         timestamp: new Date().toISOString(),
@@ -165,6 +168,29 @@ export async function collectBackupData(): Promise<string> {
     await fs.writeFile(path.join(backupDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
     return backupDir;
+}
+
+/**
+ * Copies the uploaded logo (and any other branding assets) between the data
+ * volume and a backup directory. Only top-level regular files are copied —
+ * on restore the source is an untrusted archive, so no subdirectories or
+ * symlinks are followed.
+ */
+export async function copyBrandingFiles(fromDir: string, toDir: string): Promise<number> {
+    let entries;
+    try {
+        entries = await fs.readdir(fromDir, { withFileTypes: true });
+    } catch {
+        return 0;
+    }
+    let copied = 0;
+    for (const entry of entries) {
+        if (!entry.isFile()) continue;
+        await fs.mkdir(toDir, { recursive: true });
+        await fs.copyFile(path.join(fromDir, entry.name), path.join(toDir, entry.name));
+        copied++;
+    }
+    return copied;
 }
 
 // ─── Archive ─────────────────────────────────────────────────────────
@@ -282,6 +308,7 @@ export interface RestoreStats {
     documents: number;
     attachmentsRestored: number;
     settingsRestored: boolean;
+    brandingFilesRestored: number;
     /** True when WebDAV credentials in the archive were dropped because this is not production. */
     remoteStorageStripped: boolean;
     presetsRestored: number;
@@ -332,6 +359,7 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
         documents: 0,
         attachmentsRestored: 0,
         settingsRestored: false,
+        brandingFilesRestored: 0,
         remoteStorageStripped: false,
         presetsRestored: 0,
     };
@@ -469,6 +497,8 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
             }
         } catch { }
     }
+
+    stats.brandingFilesRestored = await copyBrandingFiles(path.join(backupDir, 'branding'), LOCAL_BRANDING_DIR);
 
     const settingsPath = path.join(backupDir, 'config', 'settings.json');
     try {

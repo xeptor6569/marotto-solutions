@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import os from 'os';
 import path from 'path';
 import * as tar from 'tar';
-import { cleanupExtracted, createBackupArchiveFile, extractBackupArchive } from '@/lib/backup';
+import { cleanupExtracted, copyBrandingFiles, createBackupArchiveFile, extractBackupArchive } from '@/lib/backup';
 
 async function makeBackupDir(): Promise<{ root: string; backupDir: string }> {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), 'backup-test-'));
@@ -53,6 +53,22 @@ describe('backup archive round trip', () => {
         const notArchive = path.join(root, 'export.json');
         await fs.writeFile(notArchive, '[]');
         await expect(extractBackupArchive(notArchive)).rejects.toThrow(/Could not read the archive/);
+        await fs.rm(root, { recursive: true, force: true });
+    });
+
+    it('copies branding files but not subdirectories or symlinks', async () => {
+        const root = await fs.mkdtemp(path.join(os.tmpdir(), 'backup-test-'));
+        const from = path.join(root, 'from');
+        const to = path.join(root, 'to');
+        await fs.mkdir(path.join(from, 'nested'), { recursive: true });
+        await fs.writeFile(path.join(from, 'logo-1.png'), 'png');
+        await fs.writeFile(path.join(from, 'nested', 'x.png'), 'x');
+        await fs.writeFile(path.join(root, 'secret.txt'), 'secret');
+        await fs.symlink(path.join(root, 'secret.txt'), path.join(from, 'link.png'));
+
+        expect(await copyBrandingFiles(from, to)).toBe(1);
+        expect(await fs.readdir(to)).toEqual(['logo-1.png']);
+        expect(await copyBrandingFiles(path.join(root, 'missing'), to)).toBe(0);
         await fs.rm(root, { recursive: true, force: true });
     });
 
