@@ -16,6 +16,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci
+# Maintenance scripts for the compose `migrate` service (e.g. seed-admin.js).
+COPY scripts ./scripts/
 
 # Rebuild the source code only when needed
 FROM base AS builder
