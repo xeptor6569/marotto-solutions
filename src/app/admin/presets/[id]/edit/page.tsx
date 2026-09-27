@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Button, Container, Flex } from '@radix-ui/themes';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import DeletePresetButton from '@/components/DeletePresetButton';
 import PresetForm from '@/components/PresetForm';
 import { getPresetById } from '@/lib/presets';
@@ -23,7 +22,7 @@ export default async function EditPresetPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title={`Edit preset: ${preset.name}`}
                 actions={(
                     <Flex gap="2" wrap="wrap">
@@ -31,7 +30,6 @@ export default async function EditPresetPage({
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/presets">All presets</Link>
                         </Button>
-                        <BackButton href="/admin/presets" />
                     </Flex>
                 )}
             />

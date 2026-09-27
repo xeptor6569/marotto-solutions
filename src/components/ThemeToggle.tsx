@@ -14,7 +14,7 @@ import type { ThemeAppearance } from '@/lib/types';
 
 const COOKIE = 'appearance';
 
-// Cookies are not reactive, so preference changes made through this component
+// Cookies are not reactive, so preference changes made through this module
 // notify subscribers manually (also keeps multiple toggles on a page in sync).
 const listeners = new Set<() => void>();
 
@@ -41,7 +41,14 @@ function applyAppearance(pref: ThemeAppearance) {
     root.style.colorScheme = resolved;
 }
 
-export default function ThemeToggle({ size = '2' }: { size?: '1' | '2' | '3' }) {
+function selectAppearance(next: ThemeAppearance) {
+    document.cookie = `${COOKIE}=${next};path=/;max-age=31536000;samesite=lax`;
+    applyAppearance(next);
+    for (const listener of listeners) listener();
+}
+
+/** Current light/dark/system preference plus a setter that persists it. */
+export function useAppearancePreference(): [ThemeAppearance, (next: ThemeAppearance) => void] {
     const pref = useSyncExternalStore(subscribe, readPreference, () => 'system' as ThemeAppearance);
 
     // Follow live OS appearance changes while in system mode.
@@ -53,11 +60,34 @@ export default function ThemeToggle({ size = '2' }: { size?: '1' | '2' | '3' }) 
         return () => media.removeEventListener('change', onChange);
     }, [pref]);
 
-    const select = (next: ThemeAppearance) => {
-        document.cookie = `${COOKIE}=${next};path=/;max-age=31536000;samesite=lax`;
-        applyAppearance(next);
-        for (const listener of listeners) listener();
-    };
+    return [pref, selectAppearance];
+}
+
+/** Radio items for a DropdownMenu, shared by the toggle and the account menu. */
+export function AppearanceRadioItems({
+    value,
+    onChange,
+}: {
+    value: ThemeAppearance;
+    onChange: (next: ThemeAppearance) => void;
+}) {
+    return (
+        <DropdownMenu.RadioGroup value={value} onValueChange={(v) => onChange(v as ThemeAppearance)}>
+            <DropdownMenu.RadioItem value="light">
+                <Sun size={14} /> Light
+            </DropdownMenu.RadioItem>
+            <DropdownMenu.RadioItem value="dark">
+                <Moon size={14} /> Dark
+            </DropdownMenu.RadioItem>
+            <DropdownMenu.RadioItem value="system">
+                <Monitor size={14} /> System
+            </DropdownMenu.RadioItem>
+        </DropdownMenu.RadioGroup>
+    );
+}
+
+export default function ThemeToggle({ size = '2' }: { size?: '1' | '2' | '3' }) {
+    const [pref, select] = useAppearancePreference();
 
     // SunMoon in system mode: reads as "theme" at a glance (a monitor icon does not).
     const Icon = pref === 'system' ? SunMoon : pref === 'dark' ? Moon : Sun;
@@ -70,20 +100,7 @@ export default function ThemeToggle({ size = '2' }: { size?: '1' | '2' | '3' }) 
                 </IconButton>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="end">
-                <DropdownMenu.RadioGroup
-                    value={pref}
-                    onValueChange={(value) => select(value as ThemeAppearance)}
-                >
-                    <DropdownMenu.RadioItem value="light">
-                        <Sun size={14} /> Light
-                    </DropdownMenu.RadioItem>
-                    <DropdownMenu.RadioItem value="dark">
-                        <Moon size={14} /> Dark
-                    </DropdownMenu.RadioItem>
-                    <DropdownMenu.RadioItem value="system">
-                        <Monitor size={14} /> System
-                    </DropdownMenu.RadioItem>
-                </DropdownMenu.RadioGroup>
+                <AppearanceRadioItems value={pref} onChange={select} />
             </DropdownMenu.Content>
         </DropdownMenu.Root>
     );

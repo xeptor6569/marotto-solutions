@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Button, Callout, Container } from '@radix-ui/themes';
 import { XCircle } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import HelperForm from '@/components/HelperForm';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import { requireAdminPage } from '@/lib/require-admin-session';
@@ -18,14 +17,13 @@ export default async function CreateHelperPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Add helper"
                 actions={(
                     <>
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/helpers">All helpers</Link>
                         </Button>
-                        <BackButton href="/admin/helpers" />
                     </>
                 )}
             />

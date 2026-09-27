@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Button, Container } from '@radix-ui/themes';
 import { notFound } from 'next/navigation';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import ContractForm from '@/components/ContractForm';
 import { getDocumentFormPickers } from '@/lib/document-form-pickers';
 import { getContractById } from '@/lib/contracts';
@@ -26,14 +25,13 @@ export default async function EditContractPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title={`Edit ${contract.displayId}`}
                 actions={(
                     <>
                         <Button asChild size="2" variant="soft">
                             <Link href={`/admin/contracts/${contract.id}`}>Back to contract</Link>
                         </Button>
-                        <BackButton href="/admin/contracts" />
                     </>
                 )}
             />

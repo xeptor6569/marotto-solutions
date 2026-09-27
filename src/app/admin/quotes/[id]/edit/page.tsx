@@ -2,9 +2,8 @@ import { Container } from "@radix-ui/themes";
 import { getDocumentById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import NewDocumentForm from "@/components/NewInvoiceForm";
-import BackButton from "@/components/BackButton";
 import { getDocumentFormPickers } from "@/lib/document-form-pickers";
-import AdminListPageHeader from "@/components/AdminListPageHeader";
+import PageHeader from '@/components/ui/PageHeader';
 import { parseDocumentRouteSeed } from "@/lib/document-route-seed";
 
 export default async function EditQuotePage({
@@ -31,9 +30,9 @@ export default async function EditQuotePage({
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Edit quote"
-                actions={<BackButton href={backHref} />}
+                back={{ href: backHref, label: "Back" }}
             />
             <NewDocumentForm
                 nextNumber={doc.number}

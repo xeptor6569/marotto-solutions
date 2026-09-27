@@ -14,6 +14,267 @@
   border: 0;
 }
 
+/* Components here are also used outside the admin shell (setup, sign-in, client pages). */
+:where(.choice-card, .choice-chip, .empty-state, .filter-chip, .list-row-card, .theme-preview, .theme-preview *, .preset-swatch, .icon-tile) {
+  box-sizing: border-box;
+}
+
+/* ── Status badge ── */
+.status-badge {
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ── Icon tile ── */
+.icon-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: var(--radius-3);
+}
+
+/* ── Page header ── */
+.page-header-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  color: var(--gray-11);
+  font-size: var(--font-size-2);
+  text-decoration: none;
+}
+
+.page-header-back:hover {
+  color: var(--gray-12);
+}
+
+.page-header-eyebrow {
+  margin-bottom: 4px;
+}
+
+.page-header-description {
+  max-width: 68ch;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  padding: 48px 20px;
+  text-align: center;
+  border-radius: var(--radius-4);
+  border: 1px dashed var(--gray-a6);
+  background: color-mix(in oklab, var(--color-panel-solid) 60%, transparent);
+}
+
+.empty-state--compact {
+  padding: 28px 16px;
+}
+
+.empty-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-4);
+  background: var(--accent-a3);
+  color: var(--accent-11);
+}
+
+.empty-state--compact .empty-state-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.empty-state-description {
+  max-width: 440px;
+}
+
+/* ── Filter chips ── */
+.filter-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.filter-chips-track {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px;
+  margin: -2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.filter-chips-track::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--gray-a3);
+  color: var(--gray-12);
+  font: inherit;
+  font-size: var(--font-size-2);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+@media (hover: hover) {
+  .filter-chip:hover {
+    background: var(--gray-a4);
+  }
+}
+
+.filter-chip[data-active] {
+  background: var(--accent-9);
+  color: var(--accent-contrast);
+}
+
+.filter-chip:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+.filter-chip-count {
+  font-size: var(--font-size-1);
+  opacity: 0.7;
+}
+
+@media (pointer: coarse) {
+  .filter-chip {
+    min-height: 36px;
+  }
+}
+
+/* ── Responsive list switch: cards on phones, table from 768px ── */
+.list-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list-desktop {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .list-mobile {
+    display: none !important;
+  }
+
+  .list-desktop {
+    display: block !important;
+  }
+}
+
+.list-table-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.list-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.row-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.row-link:hover {
+  color: var(--accent-11);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Tappable card row on phones: whole card links, trailing actions stay separate. */
+.list-row-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-4);
+  background: var(--color-panel-solid);
+  box-shadow: var(--base-card-surface-box-shadow);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.list-row-card:active {
+  background: var(--gray-a2);
+}
+
+.list-row-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-row-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.list-row-card-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.list-row-card-link:focus-visible {
+  outline: none;
+}
+
+.list-row-card:has(.list-row-card-link:focus-visible) {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+.list-row-card-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.list-row-card-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+}
+
+.list-bulk-toolbar {
+  position: sticky;
+  top: calc(var(--admin-topbar-h, 56px) + 8px);
+  z-index: 10;
+  box-shadow: 0 0 0 1px var(--accent-a7), 0 8px 24px -12px var(--black-a5);
+}
+
 /* ── Selectable cards / chips (radio inputs inside a label) ── */
 .choice-card,
 .choice-chip {
@@ -253,4 +514,70 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--doc-accent);
+}
+
+.list-row-card--stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.contact-actions > * {
+  flex: 1 1 calc(50% - 6px);
+}
+
+.contact-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gray-12);
+  font-size: var(--font-size-2);
+  text-decoration: none;
+}
+
+.contact-link svg {
+  color: var(--gray-10);
+}
+
+.contact-link:hover {
+  color: var(--accent-11);
+}
+
+.clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Native <select>s (used where a searchable/long list beats Radix Select)
+   styled to sit alongside Radix fields. :where keeps inline styles in charge. */
+:where(.radix-themes) :where(select:not([multiple]):not([size])) {
+  box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: var(--space-6);
+  padding: 0 32px 0 10px;
+  border: none;
+  border-radius: var(--radius-2);
+  background-color: var(--color-surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b8d98' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  box-shadow: inset 0 0 0 1px var(--gray-a7);
+  color: var(--gray-12);
+  font: inherit;
+  font-size: var(--font-size-2);
+  cursor: pointer;
+}
+
+:where(.radix-themes) :where(select:not([multiple]):not([size])):focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: -1px;
 }

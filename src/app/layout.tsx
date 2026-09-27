@@ -3,6 +3,7 @@ import "@radix-ui/themes/styles.css";
 import "./globals.css";
 import "@/styles/looks.css";
 import "@/styles/ui.css";
+import "@/styles/admin-shell.css";
 import { Theme } from "@radix-ui/themes";
 import { EnvironmentBanner } from "@/components/EnvironmentBanner";
 import MoneyProvider from "@/components/MoneyProvider";

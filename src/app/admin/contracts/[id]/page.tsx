@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Box, Button, Card, Container, Flex, Grid, Heading, Table, Text } from '@radix-ui/themes';
 import { Edit, ExternalLink } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import ContractStatusButtons from '@/components/ContractStatusButtons';
 import {
     ensureContractShareToken,
@@ -15,13 +14,7 @@ import {
 } from '@/lib/contracts';
 import { buildSharePath } from '@/lib/share-token';
 import { getMoneyFormatter } from '@/lib/branding';
-
-function statusColor(status: string) {
-    if (status === 'active') return 'green' as const;
-    if (status === 'paused') return 'amber' as const;
-    if (status === 'ended') return 'gray' as const;
-    return 'red' as const;
-}
+import StatusBadge from '@/components/ui/StatusBadge';
 
 export default async function AdminContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const money = await getMoneyFormatter();
@@ -40,7 +33,7 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title={contract.title}
                 actions={(
                     <>
@@ -50,7 +43,6 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
                         <Button asChild size="2" variant="soft">
                             <Link href={publicSharePath}><ExternalLink size={14} /> Public preview</Link>
                         </Button>
-                        <BackButton href="/admin/contracts" />
                     </>
                 )}
             />
@@ -63,7 +55,7 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
                             <Heading size="4">{contract.displayId}</Heading>
                             <Text as="div" size="2" color="gray">{contract.title}</Text>
                         </Box>
-                        <Badge size="2" color={statusColor(contract.status)}>{contract.status}</Badge>
+                        <StatusBadge size="2" kind="contract" status={contract.status} />
                     </Flex>
                     <Box mt="3">
                         <ContractStatusButtons
@@ -202,9 +194,7 @@ export default async function AdminContractDetailPage({ params }: { params: Prom
                                             <Table.Cell>{new Date(invoice.date).toLocaleDateString()}</Table.Cell>
                                             <Table.Cell align="right">{money(invoice.total)}</Table.Cell>
                                             <Table.Cell>
-                                                <Badge color={invoice.status === 'paid' ? 'green' : invoice.status === 'sent' ? 'blue' : invoice.status === 'void' ? 'red' : 'orange'}>
-                                                    {invoice.status}
-                                                </Badge>
+                                                <StatusBadge doc={invoice} />
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Button asChild size="2" variant="soft">

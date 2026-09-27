@@ -3,28 +3,23 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Badge, Box, Button, Callout, Card, Checkbox, Dialog, Flex, Select, Table, Text, TextArea, TextField } from "@radix-ui/themes";
-import { ArrowRightLeft, CheckCircle, Copy, Edit, Search, Send, X, XCircle } from "lucide-react";
+import { Box, Button, Callout, Card, Checkbox, Dialog, Flex, IconButton, Select, Table, Text, TextArea, TextField } from "@radix-ui/themes";
+import { ArrowRightLeft, CheckCircle, Copy, Edit, Pencil, Plus, Search, Send, X, XCircle } from "lucide-react";
 import type { DocumentData, DocumentType, WorkflowStatus } from "@/lib/types";
 import LeadEditDialog from "@/components/LeadEditDialog";
 import DeleteLeadButton from "@/components/DeleteLeadButton";
 import EmptyState from "@/components/EmptyState";
 import FilterChips, { type FilterChipOption } from "@/components/FilterChips";
+import StatusBadge from "@/components/ui/StatusBadge";
 import { convertDocumentsAction, duplicateDocumentsAction, sendDocumentsAction } from "@/app/admin/document-bulk-actions";
 import { convertTargets } from "@/lib/convert-document";
 import { DOC_LABEL, documentListLabel } from "@/lib/document-labels";
 import { hasPendingApprovalLines } from "@/lib/pending-client-approval";
-import { WORKFLOW_STATUSES, workflowStatusLabel, workflowStatusColor } from "@/lib/workflow-status";
+import { WORKFLOW_STATUSES, workflowStatusLabel } from "@/lib/workflow-status";
+import { documentDisplayStatus, type DocumentStatusFilter } from "@/lib/status-display";
 import { useMoney } from '@/components/MoneyProvider';
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
-
-function badgeColor(status: DocumentData["status"]) {
-    if (status === "paid") return "green";
-    if (status === "void") return "red";
-    if (status === "sent") return "blue";
-    return "orange";
-}
 
 function adminPluralPath(type: AdminDocumentListType): string {
     const paths: Record<AdminDocumentListType, string> = {
@@ -41,17 +36,9 @@ function adminBase(type: AdminDocumentListType): string {
     return `/admin/${adminPluralPath(type)}`;
 }
 
-function docNumberLabel(type: AdminDocumentListType) {
-    if (type === "invoice") return "Invoice #";
-    if (type === "quote") return "Quote #";
-    if (type === "estimate") return "Estimate #";
-    if (type === "receipt") return "Receipt #";
-    return "Lead #";
-}
-
 function searchPlaceholder(type: AdminDocumentListType) {
     if (type === "lead") return "Search leads by id, number, name, email, notes…";
-    return `Search ${type}s by number, id, customer…`;
+    return `Search by number, title, or customer…`;
 }
 
 function typePluralLabel(type: AdminDocumentListType): string {
@@ -60,6 +47,18 @@ function typePluralLabel(type: AdminDocumentListType): string {
 }
 
 const STATUS_ORDER: DocumentData["status"][] = ["draft", "sent", "paid", "void"];
+const INVOICE_STATUS_FILTERS: DocumentStatusFilter[] = ["open", "overdue", "draft", "paid", "void"];
+
+const STATUS_FILTER_LABELS: Record<DocumentStatusFilter, string> = {
+    all: "All",
+    open: "Open",
+    overdue: "Overdue",
+    partial: "Part paid",
+    draft: "Draft",
+    sent: "Sent",
+    paid: "Paid",
+    void: "Void",
+};
 
 const UNDATED = "undated";
 
@@ -71,11 +70,6 @@ const SORT_LABELS: Record<SortKey, string> = {
     "total-desc": "Highest total",
     "total-asc": "Lowest total",
 };
-
-function statusFilterLabel(status: "all" | DocumentData["status"]): string {
-    if (status === "all") return "All";
-    return status.charAt(0).toUpperCase() + status.slice(1);
-}
 
 function documentTime(doc: DocumentData): number {
     const time = new Date(doc.date).getTime();
@@ -89,17 +83,29 @@ function documentYear(doc: DocumentData): string {
     return String(parsed.getFullYear());
 }
 
+function matchesStatusFilter(doc: DocumentData, filter: DocumentStatusFilter, now: Date): boolean {
+    if (filter === "all") return true;
+    if (filter === "open") return doc.status === "sent";
+    return documentDisplayStatus(doc, now) === filter;
+}
+
 export default function AdminDocumentList({
     type,
     docs,
+    initialStatus = "all",
+    initialQuery = "",
 }: {
     type: AdminDocumentListType;
     docs: DocumentData[];
+    /** Seeded from the URL, e.g. /admin/invoices?status=overdue from the dashboard. */
+    initialStatus?: DocumentStatusFilter;
+    initialQuery?: string;
 }) {
     const { format: money } = useMoney();
     const router = useRouter();
-    const [query, setQuery] = useState("");
-    const [status, setStatus] = useState<"all" | DocumentData["status"]>("all");
+    const [now] = useState(() => new Date());
+    const [query, setQuery] = useState(initialQuery);
+    const [status, setStatus] = useState<DocumentStatusFilter>(initialStatus);
     const [workflowFilter, setWorkflowFilter] = useState<"all" | WorkflowStatus>("all");
     const [period, setPeriod] = useState("all");
     const [sort, setSort] = useState<SortKey>("newest");
@@ -139,12 +145,11 @@ export default function AdminDocumentList({
                 || (doc.customer.name || "").toLowerCase().includes(q)
                 || (doc.customer.email || "").toLowerCase().includes(q)
                 || (doc.notes || "").toLowerCase().includes(q);
-            const matchesStatus = status === "all" || doc.status === status;
             const matchesWorkflow = workflowFilter === "all"
                 || doc.workflowStatus === workflowFilter
                 || (workflowFilter === "backlog" && !doc.workflowStatus);
             const matchesPeriod = period === "all" || documentYear(doc) === period;
-            return matchesQuery && matchesStatus && matchesWorkflow && matchesPeriod;
+            return matchesQuery && matchesStatusFilter(doc, status, now) && matchesWorkflow && matchesPeriod;
         });
 
         return matched.sort((a, b) => {
@@ -153,23 +158,22 @@ export default function AdminDocumentList({
             if (sort === "total-asc") return a.total - b.total;
             return documentTime(b) - documentTime(a) || b.number - a.number;
         });
-    }, [docs, query, status, workflowFilter, period, sort]);
+    }, [docs, query, status, workflowFilter, period, sort, now]);
 
-    const numberLabel = docNumberLabel(type);
     const plural = typePluralLabel(type);
+    const singular = type === "lead" ? "client" : type;
 
-    const statusOptions = useMemo<FilterChipOption<"all" | DocumentData["status"]>[]>(() => {
-        const counts = new Map<DocumentData["status"], number>();
-        for (const doc of docs) counts.set(doc.status, (counts.get(doc.status) || 0) + 1);
-        return [
-            { value: "all" as const, label: statusFilterLabel("all"), count: docs.length },
-            ...STATUS_ORDER.filter((s) => counts.has(s)).map((s) => ({
-                value: s,
-                label: statusFilterLabel(s),
-                count: counts.get(s),
-            })),
-        ];
-    }, [docs]);
+    const statusOptions = useMemo<FilterChipOption<DocumentStatusFilter>[]>(() => {
+        const candidates: DocumentStatusFilter[] = type === "invoice" ? INVOICE_STATUS_FILTERS : STATUS_ORDER;
+        const options = candidates
+            .map((value) => ({
+                value,
+                label: STATUS_FILTER_LABELS[value],
+                count: docs.filter((doc) => matchesStatusFilter(doc, value, now)).length,
+            }))
+            .filter((option) => option.count > 0 || option.value === status);
+        return [{ value: "all", label: "All", count: docs.length }, ...options];
+    }, [docs, type, now, status]);
 
     const workflowOptions = useMemo<FilterChipOption<"all" | WorkflowStatus>[]>(() => {
         const counts = new Map<WorkflowStatus, number>();
@@ -316,27 +320,35 @@ export default function AdminDocumentList({
         });
     };
 
+    const dateLabel = (doc: DocumentData) => new Date(doc.date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
     return (
         <Flex direction="column" gap="4" className="admin-document-list">
-            <Card>
-                <Flex gap="3" wrap="wrap" align="end">
-                    <Box style={{ flex: 1, minWidth: "min(100%, 200px)" }}>
-                        <Text as="label" size="2">Search</Text>
-                        <TextField.Root
-                            placeholder={searchPlaceholder(type)}
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                        >
-                            <TextField.Slot>
-                                <Search size={14} />
-                            </TextField.Slot>
-                        </TextField.Root>
-                    </Box>
-
-                    <Box style={{ minWidth: 160 }}>
-                        <Text as="label" size="2">Sort</Text>
-                        <Box mt="1">
-                            <Select.Root value={sort} onValueChange={(value) => setSort(value as SortKey)}>
+            <Card size="2">
+                <Flex direction="column" gap="3">
+                    <Flex gap="3" wrap="wrap" align="end">
+                        <Box style={{ flex: 1, minWidth: "min(100%, 220px)" }}>
+                            <TextField.Root
+                                size="3"
+                                placeholder={searchPlaceholder(type)}
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                aria-label={`Search ${plural}`}
+                            >
+                                <TextField.Slot>
+                                    <Search size={16} />
+                                </TextField.Slot>
+                                {query ? (
+                                    <TextField.Slot>
+                                        <IconButton size="1" variant="ghost" color="gray" onClick={() => setQuery("")} aria-label="Clear search">
+                                            <X size={14} />
+                                        </IconButton>
+                                    </TextField.Slot>
+                                ) : null}
+                            </TextField.Root>
+                        </Box>
+                        <Box style={{ minWidth: 160 }}>
+                            <Select.Root value={sort} onValueChange={(value) => setSort(value as SortKey)} size="3">
                                 <Select.Trigger aria-label="Sort documents" style={{ width: "100%" }} />
                                 <Select.Content>
                                     {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
@@ -345,26 +357,25 @@ export default function AdminDocumentList({
                                 </Select.Content>
                             </Select.Root>
                         </Box>
-                    </Box>
-
-                    <FilterChips label="Status" options={statusOptions} value={status} onChange={setStatus} />
-
-                    {showWorkflow ? (
-                        <FilterChips
-                            label="Workflow"
-                            options={workflowOptions}
-                            value={workflowFilter}
-                            onChange={setWorkflowFilter}
-                        />
-                    ) : null}
-
-                    <FilterChips label="Period" options={periodOptions} value={period} onChange={setPeriod} />
+                    </Flex>
+                    <Flex gap="4" wrap="wrap">
+                        <FilterChips label="Status" options={statusOptions} value={status} onChange={setStatus} />
+                        {showWorkflow ? (
+                            <FilterChips
+                                label="Workflow"
+                                options={workflowOptions}
+                                value={workflowFilter}
+                                onChange={setWorkflowFilter}
+                            />
+                        ) : null}
+                        <FilterChips label="Period" options={periodOptions} value={period} onChange={setPeriod} />
+                    </Flex>
                 </Flex>
             </Card>
 
             <Flex align="center" justify="between" gap="3" wrap="wrap">
                 <Text size="2" color="gray">
-                    Showing {filteredDocs.length} of {docs.length} {docs.length === 1 ? plural.slice(0, -1) : plural}
+                    Showing <span className="ui-figure">{filteredDocs.length}</span> of <span className="ui-figure">{docs.length}</span> {docs.length === 1 ? plural.slice(0, -1) : plural}
                 </Text>
                 {filtersActive ? (
                     <Button size="1" variant="ghost" color="gray" onClick={clearFilters}>Clear filters</Button>
@@ -379,7 +390,7 @@ export default function AdminDocumentList({
             ) : null}
 
             {enableBulk && selectedIds.size > 0 ? (
-                <Card className="admin-doc-list-toolbar">
+                <Card className="list-bulk-toolbar">
                     <Flex align="center" justify="between" gap="3" wrap="wrap">
                         <Text size="2" weight="bold">{selectedIds.size} selected</Text>
                         <Flex gap="2" wrap="wrap">
@@ -474,103 +485,68 @@ export default function AdminDocumentList({
             </Dialog.Root>
 
             {filteredDocs.length === 0 ? (
-                <EmptyState
-                    title={docs.length === 0 ? `No ${plural} yet.` : `No ${plural} match your filters.`}
-                    description={docs.length === 0
-                        ? undefined
-                        : "Older documents stay in this list — try clearing the search, status, or period filters."}
-                    action={docs.length === 0 || !filtersActive
-                        ? undefined
-                        : <Button size="2" variant="soft" onClick={clearFilters}>Clear filters</Button>}
-                />
+                docs.length === 0 ? (
+                    <EmptyState
+                        title={`No ${plural} yet`}
+                        description={isLead
+                            ? "Leads from the public quote form show up here."
+                            : `Create your first ${singular} and it will show up here, ready to preview, send, and track.`}
+                        action={isLead ? undefined : (
+                            <Button asChild size="3">
+                                <Link href={`${base}/new`}><Plus size={16} /> New {singular}</Link>
+                            </Button>
+                        )}
+                    />
+                ) : (
+                    <EmptyState
+                        compact
+                        icon={Search}
+                        title={`No ${plural} match your filters`}
+                        description="Older documents stay in this list. Try clearing the search, status, or period filters."
+                        action={filtersActive ? <Button size="2" variant="soft" onClick={clearFilters}>Clear filters</Button> : undefined}
+                    />
+                )
             ) : (
                 <>
-                    {/* Mobile: stacked cards */}
-                    <Flex direction="column" gap="3" className="admin-doc-list-mobile">
+                    <div className="list-mobile">
                         {filteredDocs.map((doc) => (
-                            <Card key={doc.id}>
-                                <Flex direction="column" gap="3">
-                                    <Flex justify="between" align="start" gap="2" wrap="wrap">
-                                        <Flex gap="2" align="start" style={{ minWidth: 0, flex: "1 1 140px" }}>
-                                            {enableBulk ? (
-                                                <Box pt="1">
-                                                    <Checkbox
-                                                        checked={selectedIds.has(doc.id)}
-                                                        onCheckedChange={() => toggleOne(doc.id)}
-                                                        aria-label={`Select ${doc.id}`}
-                                                    />
-                                                </Box>
-                                            ) : null}
-                                            <Box style={{ minWidth: 0 }}>
-                                                <Text size="1" color="gray" weight="bold">{numberLabel}</Text>
-                                                <Text as="div" weight="bold" size="3">{documentListLabel(doc)}</Text>
-                                                <Text as="div" size="1" color="gray">{doc.id}</Text>
-                                            </Box>
-                                        </Flex>
-                                        <Badge color={badgeColor(doc.status)}>{doc.status}</Badge>
-                                    </Flex>
-                                    <Box>
-                                        <Text size="1" color="gray" weight="bold">{type === "lead" ? "Contact" : "Customer"}</Text>
-                                        <Text as="div" weight="medium">{doc.customer.name}</Text>
-                                        {doc.customer.email ? (
-                                            <Text as="div" size="2" color="gray" style={{ wordBreak: "break-word" }}>{doc.customer.email}</Text>
-                                        ) : null}
-                                        {type === "lead" ? (
-                                            <Text as="div" size="1" color="gray">
-                                                Stage: {doc.customer.clientStage === "potential_client" ? "Potential Client" : "Lead"}
-                                            </Text>
-                                        ) : null}
+                            <div key={doc.id} className="list-row-card">
+                                {enableBulk ? (
+                                    <Box pt="1" className="list-row-card-actions">
+                                        <Checkbox
+                                            checked={selectedIds.has(doc.id)}
+                                            onCheckedChange={() => toggleOne(doc.id)}
+                                            aria-label={`Select ${doc.id}`}
+                                        />
                                     </Box>
-                                    <Flex justify="between" align="center" gap="2" wrap="wrap">
-                                        <Box>
-                                            <Text size="1" color="gray">Date</Text>
-                                            <Text size="2">{new Date(doc.date).toLocaleDateString()}</Text>
-                                        </Box>
-                                        <Box style={{ textAlign: "right" }}>
-                                            <Text size="1" color="gray">Total</Text>
-                                            <Text weight="bold" size="3">{money(doc.total)}</Text>
-                                        </Box>
-                                    </Flex>
-                                    <Flex gap="2" wrap="wrap" style={{ width: "100%" }}>
-                                        <Button asChild size="2" variant="soft" style={{ flex: 1, minWidth: 110 }}>
-                                            <Link href={`${base}/${doc.id}`}>Preview</Link>
-                                        </Button>
-                                        {showEdit ? (
-                                            <Button asChild size="2" style={{ flex: 1, minWidth: 110 }}>
-                                                <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
-                                            </Button>
-                                        ) : null}
-                                        {isLead ? (
-                                            <>
-                                                <Box style={{ flex: 1, minWidth: 110 }}>
-                                                    <LeadEditDialog
-                                                        lead={doc}
-                                                        trigger={
-                                                            <Button size="2" variant="soft" style={{ width: "100%" }}>
-                                                                <Edit size={14} /> Edit
-                                                            </Button>
-                                                        }
-                                                    />
-                                                </Box>
-                                                <Box style={{ flex: 1, minWidth: 110 }}>
-                                                    <DeleteLeadButton
-                                                        leadId={doc.id}
-                                                        leadName={doc.customer.name}
-                                                        size="2"
-                                                        fullWidth
-                                                    />
-                                                </Box>
-                                            </>
-                                        ) : null}
-                                    </Flex>
-                                </Flex>
-                            </Card>
+                                ) : null}
+                                <div className="list-row-card-main">
+                                    <Link href={`${base}/${doc.id}`} className="list-row-card-link">
+                                        <Text as="div" size="2" weight="bold" truncate>{doc.title?.trim() || doc.customer.name || "Untitled"}</Text>
+                                    </Link>
+                                    <Text as="div" size="1" color="gray" truncate>
+                                        {doc.title?.trim() ? `${doc.customer.name} · ` : ""}<span className="ui-figure">{doc.id}</span> · {dateLabel(doc)}
+                                    </Text>
+                                    {isLead ? (
+                                        <Flex gap="2" mt="2" className="list-row-card-actions">
+                                            <LeadEditDialog
+                                                lead={doc}
+                                                trigger={<Button size="1" variant="soft"><Edit size={12} /> Edit</Button>}
+                                            />
+                                            <DeleteLeadButton leadId={doc.id} leadName={doc.customer.name} size="1" />
+                                        </Flex>
+                                    ) : null}
+                                </div>
+                                <div className="list-row-card-aside">
+                                    <Text size="3" weight="bold" className="ui-figure">{money(doc.total)}</Text>
+                                    <StatusBadge doc={doc} />
+                                </div>
+                            </div>
                         ))}
-                    </Flex>
+                    </div>
 
-                    {/* Desktop: table */}
-                    <Card className="admin-doc-list-desktop" style={{ padding: 0, overflow: "hidden" }}>
-                        <Box style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+                    <Card className="list-desktop list-table-card">
+                        <div className="list-table-scroll">
                             <Table.Root style={{ minWidth: (showEdit ? 640 : 520) + (enableBulk ? 44 : 0) }}>
                                 <Table.Header>
                                     <Table.Row>
@@ -583,20 +559,18 @@ export default function AdminDocumentList({
                                                 />
                                             </Table.ColumnHeaderCell>
                                         ) : null}
-                                        <Table.ColumnHeaderCell>
-                                            {numberLabel}
-                                        </Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell>{DOC_LABEL[type]}</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>{type === "lead" ? "Contact" : "Customer"}</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Date</Table.ColumnHeaderCell>
-                                        <Table.ColumnHeaderCell align="right">Total</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
                                         {showWorkflow ? <Table.ColumnHeaderCell>Workflow</Table.ColumnHeaderCell> : null}
-                                        <Table.ColumnHeaderCell>Actions</Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell align="right">Total</Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell style={{ width: 1 }}><span className="visually-hidden">Actions</span></Table.ColumnHeaderCell>
                                     </Table.Row>
                                 </Table.Header>
                                 <Table.Body>
                                     {filteredDocs.map((doc) => (
-                                        <Table.Row key={doc.id}>
+                                        <Table.Row key={doc.id} align="center">
                                             {enableBulk ? (
                                                 <Table.Cell>
                                                     <Checkbox
@@ -607,11 +581,11 @@ export default function AdminDocumentList({
                                                 </Table.Cell>
                                             ) : null}
                                             <Table.Cell>
-                                                <Text weight="bold">{documentListLabel(doc)}</Text>
-                                                <Text as="div" size="1" color="gray">{doc.id}</Text>
+                                                <Link href={`${base}/${doc.id}`} className="row-link">{documentListLabel(doc)}</Link>
+                                                <Text as="div" size="1" color="gray" className="ui-figure">{doc.id}</Text>
                                             </Table.Cell>
                                             <Table.Cell>
-                                                <Text weight="bold">{doc.customer.name}</Text>
+                                                <Text as="div" weight="medium">{doc.customer.name}</Text>
                                                 {doc.customer.email ? <Text as="div" size="1" color="gray">{doc.customer.email}</Text> : null}
                                                 {type === "lead" ? (
                                                     <Text as="div" size="1" color="gray">
@@ -619,31 +593,26 @@ export default function AdminDocumentList({
                                                     </Text>
                                                 ) : null}
                                             </Table.Cell>
-                                            <Table.Cell>{new Date(doc.date).toLocaleDateString()}</Table.Cell>
-                                            <Table.Cell align="right">{money(doc.total)}</Table.Cell>
-                                            <Table.Cell>
-                                                <Badge color={badgeColor(doc.status)}>{doc.status}</Badge>
-                                            </Table.Cell>
+                                            <Table.Cell><Text size="2" className="ui-figure">{dateLabel(doc)}</Text></Table.Cell>
+                                            <Table.Cell><StatusBadge doc={doc} /></Table.Cell>
                                             {showWorkflow ? (
                                                 <Table.Cell>
                                                     {doc.workflowStatus ? (
-                                                        <Badge color={workflowStatusColor(doc.workflowStatus) as 'gray' | 'orange' | 'blue' | 'green'}>
-                                                            {workflowStatusLabel(doc.workflowStatus)}
-                                                        </Badge>
+                                                        <StatusBadge kind="workflow" status={doc.workflowStatus} />
                                                     ) : (
                                                         <Text size="1" color="gray">—</Text>
                                                     )}
                                                 </Table.Cell>
                                             ) : null}
+                                            <Table.Cell align="right">
+                                                <Text weight="medium" className="ui-figure">{money(doc.total)}</Text>
+                                            </Table.Cell>
                                             <Table.Cell>
-                                                <Flex gap="2" wrap="wrap">
-                                                    <Button asChild size="2" variant="soft">
-                                                        <Link href={`${base}/${doc.id}`}>Preview</Link>
-                                                    </Button>
+                                                <Flex gap="1" justify="end">
                                                     {showEdit ? (
-                                                        <Button asChild size="2">
-                                                            <Link href={`${base}/${doc.id}/edit`}>Edit</Link>
-                                                        </Button>
+                                                        <IconButton asChild size="2" variant="ghost" color="gray">
+                                                            <Link href={`${base}/${doc.id}/edit`} aria-label={`Edit ${doc.id}`}><Pencil size={15} /></Link>
+                                                        </IconButton>
                                                     ) : null}
                                                     {isLead ? (
                                                         <>
@@ -667,25 +636,10 @@ export default function AdminDocumentList({
                                     ))}
                                 </Table.Body>
                             </Table.Root>
-                        </Box>
+                        </div>
                     </Card>
                 </>
             )}
-
-            <style>{`
-                .admin-doc-list-mobile { display: flex; }
-                .admin-doc-list-desktop { display: none; }
-                .admin-doc-list-toolbar {
-                    position: sticky;
-                    top: 8px;
-                    z-index: 10;
-                    border: 1px solid var(--accent-7);
-                }
-                @media (min-width: 768px) {
-                    .admin-doc-list-mobile { display: none !important; }
-                    .admin-doc-list-desktop { display: block !important; }
-                }
-            `}</style>
         </Flex>
     );
 }

@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Badge, Box, Button, Card, Container, Flex, Heading, Text } from '@radix-ui/themes';
 import { notFound } from 'next/navigation';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import JobAttachmentsPanel from '@/components/JobAttachmentsPanel';
 import JobTimePanel from '@/components/JobTimePanel';
 import HelperPayoutPanel from '@/components/HelperPayoutPanel';
@@ -46,7 +45,7 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title={job.name}
                 actions={(
                     <>
@@ -56,7 +55,6 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                             redirectTo={jobRedirect}
                             documentsOnly
                         />
-                        <BackButton href="/admin/jobs" />
                     </>
                 )}
             />

@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Badge, Box, Button, Callout, Card, Container, Flex, Heading, Text } from '@radix-ui/themes';
 import { CheckCircle, XCircle } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import DeleteHelperButton from '@/components/DeleteHelperButton';
 import HelperForm from '@/components/HelperForm';
 import HelperPayoutPanel from '@/components/HelperPayoutPanel';
@@ -31,7 +30,7 @@ export default async function HelperDetailPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title={helper.name}
                 actions={(
                     <Flex gap="2" wrap="wrap">
@@ -39,7 +38,6 @@ export default async function HelperDetailPage({
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/helpers">All helpers</Link>
                         </Button>
-                        <BackButton href="/admin/helpers" />
                     </Flex>
                 )}
             />

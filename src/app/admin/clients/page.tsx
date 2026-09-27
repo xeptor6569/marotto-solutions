@@ -1,10 +1,9 @@
 import { Container, Button } from "@radix-ui/themes";
-import { Plus } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { getClients } from "./actions";
 import ClientForm from "./ClientForm";
-import BackButton from "@/components/BackButton";
 import AdminClientsList from "@/components/AdminClientsList";
-import AdminListPageHeader from "@/components/AdminListPageHeader";
+import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from "@/components/EmptyState";
 
 export default async function ClientsPage() {
@@ -17,7 +16,7 @@ export default async function ClientsPage() {
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Clients"
                 description={description}
                 actions={
@@ -29,13 +28,13 @@ export default async function ClientsPage() {
                                 </Button>
                             }
                         />
-                        <BackButton href="/admin" />
                     </>
                 }
             />
 
             {clients.length === 0 ? (
                 <EmptyState
+                    icon={Users}
                     title="No clients yet"
                     description="Add your first client to start creating estimates, invoices, and receipts for them."
                     action={(

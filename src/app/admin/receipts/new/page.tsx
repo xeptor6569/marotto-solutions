@@ -1,9 +1,8 @@
 import { Container } from "@radix-ui/themes";
 import NewDocumentForm from "@/components/NewInvoiceForm";
 import { getNextNumber } from "@/lib/data";
-import BackButton from "@/components/BackButton";
 import { getDocumentFormPickers } from "@/lib/document-form-pickers";
-import AdminListPageHeader from "@/components/AdminListPageHeader";
+import PageHeader from '@/components/ui/PageHeader';
 import { parseDocumentRouteSeed } from "@/lib/document-route-seed";
 
 export default async function NewReceiptPage({
@@ -19,7 +18,7 @@ export default async function NewReceiptPage({
 
     return (
         <Container size="3" p={{ initial: "3", sm: "5" }}>
-            <AdminListPageHeader title="New receipt" actions={<BackButton href={backHref} />} />
+            <PageHeader title="New receipt" back={{ href: backHref, label: "Back" }} />
             <NewDocumentForm
                 nextNumber={nextNumber}
                 type="receipt"

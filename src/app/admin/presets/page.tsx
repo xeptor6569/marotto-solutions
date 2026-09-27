@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Badge, Box, Button, Callout, Card, Container, Flex, Table, Text } from '@radix-ui/themes';
 import { Plus, XCircle } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/EmptyState';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { listPresets } from '@/lib/presets';
@@ -22,14 +21,13 @@ export default async function AdminPresetsPage({
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Document presets"
                 actions={(
                     <>
                         <Button asChild size="2" variant="solid">
                             <Link href="/admin/presets/create"><Plus size={14} /> New preset</Link>
                         </Button>
-                        <BackButton href="/admin" />
                     </>
                 )}
             />

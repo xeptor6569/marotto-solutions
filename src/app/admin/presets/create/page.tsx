@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { Button, Container } from '@radix-ui/themes';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import PresetForm from '@/components/PresetForm';
 import { requireAdminPage } from '@/lib/require-admin-session';
 
@@ -15,14 +14,13 @@ export default async function CreatePresetPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="New document preset"
                 actions={(
                     <>
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/presets">All presets</Link>
                         </Button>
-                        <BackButton href="/admin/presets" />
                     </>
                 )}
             />
