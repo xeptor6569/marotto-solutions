@@ -88,3 +88,14 @@ export async function saveAppConfig(config: Partial<AppConfig>) {
     await fs.writeFile(CONFIG_PATH, JSON.stringify(newConfig, null, 2));
     return newConfig;
 }
+
+/**
+ * Write the settings file exactly as given, without merging in the current
+ * config. Used by backup restore so the restored instance ends up with
+ * precisely the archived settings.
+ */
+export async function replaceAppConfig(config: Partial<AppConfig>) {
+    await ensureConfigDir();
+    await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+    return config;
+}

@@ -23,6 +23,7 @@ export interface RestoreResult {
         documents: number;
         attachmentsRestored: number;
         settingsRestored: boolean;
+        remoteStorageStripped: boolean;
         presetsRestored: number;
     };
 }
@@ -36,26 +37,34 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
         return { success: false, error: 'No file uploaded.' };
     }
 
-    if (!file.name.endsWith('.tar.gz') && !file.name.endsWith('.tgz')) {
-        return { success: false, error: 'File must be a .tar.gz archive.' };
+    const lowerName = file.name.toLowerCase();
+    if (lowerName.endsWith('.json')) {
+        return {
+            success: false,
+            error: 'That is a JSON document export. Restore expects the .tar.gz backup archive downloaded from this page; to import individual documents from JSON, use Import instead.',
+        };
+    }
+    if (!lowerName.endsWith('.tar.gz') && !lowerName.endsWith('.tgz') && !lowerName.endsWith('.gz')) {
+        return { success: false, error: 'File must be the .tar.gz backup archive downloaded from this page.' };
     }
 
     let archivePath: string | undefined;
-    let extractDir: string | undefined;
+    let scratchDir: string | undefined;
 
     try {
-        archivePath = path.join(os.tmpdir(), `marotto-restore-${Date.now()}.tar.gz`);
+        archivePath = path.join(os.tmpdir(), `marotto-restore-upload-${Date.now()}.tar.gz`);
         const buffer = Buffer.from(await file.arrayBuffer());
         await fs.writeFile(archivePath, buffer);
 
-        extractDir = await extractBackupArchive(archivePath);
+        const extracted = await extractBackupArchive(archivePath);
+        scratchDir = extracted.tmpDir;
 
-        const validation = await validateBackup(extractDir);
+        const validation = await validateBackup(extracted.backupDir);
         if (!validation.valid) {
             return { success: false, error: validation.error };
         }
 
-        const stats = await restoreFromBackup(extractDir);
+        const stats = await restoreFromBackup(extracted.backupDir);
 
         revalidatePath('/admin');
         revalidatePath('/admin/jobs');
@@ -77,9 +86,6 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
         return { success: false, error: `Restore failed: ${message}` };
     } finally {
         if (archivePath) await fs.unlink(archivePath).catch(() => {});
-        if (extractDir) {
-            const tmpBase = extractDir.substring(0, extractDir.lastIndexOf(path.sep + 'marotto-backup-'));
-            await cleanupExtracted(tmpBase);
-        }
+        if (scratchDir) await cleanupExtracted(scratchDir);
     }
 }

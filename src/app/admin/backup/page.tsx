@@ -85,12 +85,14 @@ export default function BackupPage() {
                         </Text>
 
                         <Box>
-                            <Text as="label" size="2" weight="bold">Select Backup Archive</Text>
+                            <Text as="label" size="2" weight="bold">Select backup archive (.tar.gz)</Text>
+                            {/* Pickers key on the last extension (".gz") and iOS filters by MIME
+                                type, so list all of them or the archive can appear greyed out. */}
                             <input
                                 ref={fileRef}
                                 type="file"
                                 name="file"
-                                accept=".tar.gz,.tgz"
+                                accept=".tar.gz,.tgz,.gz,application/gzip,application/x-gzip,application/x-tar,application/x-compressed-tar"
                                 required
                                 style={{ display: 'block', marginTop: 5 }}
                             />
@@ -139,6 +141,9 @@ export default function BackupPage() {
                                         {result.stats.helperPayouts
                                             ? `, ${result.stats.helperPayouts} helper payouts`
                                             : ''}.
+                                        {result.stats.remoteStorageStripped
+                                            ? ' The archive\u2019s WebDAV credentials were not applied because this is not a production instance — documents were restored to local storage so nothing here can touch the production document store.'
+                                            : ''}
                                     </Callout.Text>
                                 ) : (
                                     <Callout.Text>{result.error || 'Restore failed.'}</Callout.Text>
