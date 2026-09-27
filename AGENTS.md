@@ -107,6 +107,13 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 - `output: "standalone"` in `next.config.ts` for Docker tracing
 - Persistent volumes: `marotto_data` (`/app/data`), `postgres_data`
 - Container names and the Postgres host port come from `STACK_NAME` / `POSTGRES_PORT`; the defaults reproduce the prod values, so plain `docker compose` is unchanged
+- `docker compose run --rm --build migrate` — one-shot `migrate` service (profile `tools`, never started by `up`) runs `prisma migrate deploy` for Docker-only installs; also runs `scripts/seed-admin.js`. Prod/dev deploy workflows still migrate from the host
+- `POSTGRES_PASSWORD` overrides the bundled DB password (default `marotto_password`, only read when the volume is created). `env.example` leaves `DATABASE_URL` commented out so containers use the in-network default
+- `experimental.serverActions.bodySizeLimit` is raised in `next.config.ts` because logo, attachment, and backup-restore uploads go through server actions
+
+## User docs
+
+Self-hoster guides live in `docs/` (index `docs/README.md`: getting-started, configuration, deployment, operations, troubleshooting). Keep them in sync when changing env vars, compose services, Settings tabs, or upgrade steps.
 
 ## Dev instance
 
