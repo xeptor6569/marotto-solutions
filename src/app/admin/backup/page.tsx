@@ -141,6 +141,7 @@ export default function BackupPage() {
                                         {result.stats.contracts} contracts, {result.stats.documents} documents,
                                         {result.stats.calendarEvents} events, {result.stats.attachmentsRestored} attachments
                                         {result.stats.settingsRestored ? ', settings restored' : ''}
+                                        {result.stats.brandingFilesRestored ? ', logo restored' : ''}
                                         {result.stats.presetsRestored
                                             ? `, ${result.stats.presetsRestored} presets`
                                             : ''}

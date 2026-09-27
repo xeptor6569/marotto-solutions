@@ -23,6 +23,7 @@ export interface RestoreResult {
         documents: number;
         attachmentsRestored: number;
         settingsRestored: boolean;
+        brandingFilesRestored: number;
         remoteStorageStripped: boolean;
         presetsRestored: number;
     };

@@ -9,7 +9,7 @@
 - every database table: clients, jobs, helpers, contracts, calendar events, document counters, presets
 - every document file: invoices, estimates, quotes, receipts, leads
 - job attachments
-- your settings and branding
+- your settings, presets, and uploaded logo
 
 Store copies somewhere other than the server: your laptop, cloud storage, or a NAS. Take one before every upgrade.
 
