@@ -135,19 +135,19 @@ export default function BackupPage() {
                                 </Callout.Icon>
                                 {result.success && result.stats ? (
                                     <Callout.Text>
-                                        Restore complete: {result.stats.clients} clients,
-                                        {result.stats.helpers ? ` ${result.stats.helpers} helpers,` : ''}
-                                        {result.stats.jobs} jobs,
-                                        {result.stats.contracts} contracts, {result.stats.documents} documents,
-                                        {result.stats.calendarEvents} events, {result.stats.attachmentsRestored} attachments
-                                        {result.stats.settingsRestored ? ', settings restored' : ''}
-                                        {result.stats.brandingFilesRestored ? ', logo restored' : ''}
-                                        {result.stats.presetsRestored
-                                            ? `, ${result.stats.presetsRestored} presets`
-                                            : ''}
-                                        {result.stats.helperPayouts
-                                            ? `, ${result.stats.helperPayouts} helper payouts`
-                                            : ''}.
+                                        Restore complete: {[
+                                            `${result.stats.clients} clients`,
+                                            result.stats.helpers ? `${result.stats.helpers} helpers` : '',
+                                            `${result.stats.jobs} jobs`,
+                                            `${result.stats.contracts} contracts`,
+                                            `${result.stats.documents} documents`,
+                                            `${result.stats.calendarEvents} events`,
+                                            `${result.stats.attachmentsRestored} attachments`,
+                                            result.stats.settingsRestored ? 'settings restored' : '',
+                                            result.stats.brandingFilesRestored ? 'logo restored' : '',
+                                            result.stats.presetsRestored ? `${result.stats.presetsRestored} presets` : '',
+                                            result.stats.helperPayouts ? `${result.stats.helperPayouts} helper payouts` : '',
+                                        ].filter(Boolean).join(', ')}.
                                         {result.stats.remoteStorageStripped
                                             ? ' The archive\u2019s WebDAV credentials were not applied because this is not a production instance — documents were restored to local storage so nothing here can touch the production document store.'
                                             : ''}
@@ -169,9 +169,10 @@ export default function BackupPage() {
                     <Box>
                         <Text as="p" size="2" weight="bold" mb="1">What is not included in backups</Text>
                         <Text as="p" size="2" color="gray">
-                            Authentication data (user accounts, sessions, tokens) is excluded from backups.
-                            After restoring, you will need to re-create your admin account.
-                            If WebDAV was configured in the backup, document data is included but restored locally.
+                            Sign-in accounts, sessions, and tokens are not part of backups. Restoring keeps the
+                            accounts that already exist on this server, so on a new server create an admin in the
+                            setup wizard first, then restore. Documents stored on WebDAV are included in the archive;
+                            on non-production instances they are restored to local storage.
                         </Text>
                     </Box>
                 </Flex>
