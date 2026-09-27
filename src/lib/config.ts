@@ -192,3 +192,15 @@ export async function saveAppConfig(config: Partial<AppConfig>) {
     await fs.writeFile(CONFIG_PATH, JSON.stringify(newConfig, null, 2));
     return newConfig;
 }
+
+/**
+ * Write the settings file exactly as given, without merging in the current
+ * resolved config. Used by backup restore so a restored pre-white-label file
+ * still lacks its `business` section and takes the same legacy-seeding path
+ * the original install would.
+ */
+export async function replaceAppConfig(config: Partial<AppConfig>) {
+    await ensureConfigDir();
+    await fs.writeFile(CONFIG_PATH, JSON.stringify(config, null, 2));
+    return config;
+}

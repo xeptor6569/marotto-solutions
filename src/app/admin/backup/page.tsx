@@ -143,6 +143,9 @@ export default function BackupPage() {
                                         {result.stats.helperPayouts
                                             ? `, ${result.stats.helperPayouts} helper payouts`
                                             : ''}.
+                                        {result.stats.remoteStorageStripped
+                                            ? ' The archive\u2019s WebDAV credentials were not applied because this is not a production instance — documents were restored to local storage so nothing here can touch the production document store.'
+                                            : ''}
                                     </Callout.Text>
                                 ) : (
                                     <Callout.Text>{result.error || 'Restore failed.'}</Callout.Text>

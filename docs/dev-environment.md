@@ -173,6 +173,21 @@ That copies the Prisma records and the JSON document store together. Restoring
 also wipes whatever was in dev first. Mail is captured either way, so restored
 customer records cannot be contacted.
 
+Two safeguards apply when the instance is not production (`APP_ENV` ≠
+`production`):
+
+- **WebDAV credentials in the archive are not applied**, and any remote store
+  dev was previously pointed at is detached before the restore starts. The
+  documents are restored to dev's local volume instead. Without this, dev
+  would read from — and write new invoices into — prod's document store.
+- **Settings are restored as an exact copy**, not merged with dev's current
+  settings, so dev takes the same migration path prod will (for example, a
+  pre-white-label `settings.json` is seeded with the legacy branding at read
+  time exactly as it would be on prod).
+
+This makes "restore a fresh prod backup on dev, then deploy the branch" a
+faithful rehearsal of a production upgrade.
+
 ## Guardrails
 
 - The deploy workflow fails if the dev `NEXTAUTH_SECRET` is missing, or if

@@ -7,7 +7,9 @@ import { pipeline } from 'stream/promises';
 import * as tar from 'tar';
 import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { getDocuments, saveNewDocument } from '@/lib/data';
-import { getAppConfig, saveAppConfig } from '@/lib/config';
+import { getAppConfig, replaceAppConfig, saveAppConfig } from '@/lib/config';
+import { isProductionEnvironment } from '@/lib/app-env';
+import type { AppConfig } from '@/lib/types';
 import { listPresets, replaceAllPresets } from '@/lib/presets';
 import { readAttachmentBinary } from '@/lib/job-attachments';
 import type { DocumentData, DocumentType } from '@/lib/types';
@@ -246,6 +248,8 @@ export interface RestoreStats {
     documents: number;
     attachmentsRestored: number;
     settingsRestored: boolean;
+    /** True when WebDAV credentials in the archive were dropped because this is not production. */
+    remoteStorageStripped: boolean;
     presetsRestored: number;
 }
 
@@ -294,8 +298,20 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
         documents: 0,
         attachmentsRestored: 0,
         settingsRestored: false,
+        remoteStorageStripped: false,
         presetsRestored: 0,
     };
+
+    // Documents below are written through the *current* storage settings, so a
+    // non-production instance that was previously pointed at a remote store
+    // must be detached before anything is restored.
+    if (!isProductionEnvironment()) {
+        const current = await getAppConfig();
+        if (current.webdavUrl?.trim() || current.webdavUsername?.trim()) {
+            await saveAppConfig({ webdavUrl: '', webdavUsername: '', webdavPassword: '' });
+            stats.remoteStorageStripped = true;
+        }
+    }
 
     await clearExistingData();
 
@@ -422,8 +438,21 @@ export async function restoreFromBackup(backupDir: string): Promise<RestoreStats
 
     const settingsPath = path.join(backupDir, 'config', 'settings.json');
     try {
-        const settingsContent = JSON.parse(await fs.readFile(settingsPath, 'utf-8'));
-        await saveAppConfig(settingsContent);
+        const settingsContent = JSON.parse(await fs.readFile(settingsPath, 'utf-8')) as Partial<AppConfig>;
+        // A prod archive carries prod's WebDAV credentials. Applying them on a
+        // dev/local instance would make it read from — and write new documents
+        // into — the production document store, so outside production the
+        // documents restored above stay on the local volume instead.
+        if (!isProductionEnvironment() && (settingsContent.webdavUrl?.trim() || settingsContent.webdavUsername?.trim())) {
+            settingsContent.webdavUrl = '';
+            settingsContent.webdavUsername = '';
+            settingsContent.webdavPassword = '';
+            stats.remoteStorageStripped = true;
+        }
+        // Exact copy (no merge) so the restored file takes the same migration
+        // path the original install does — e.g. a pre-white-label file is
+        // still seeded with the legacy branding at read time.
+        await replaceAppConfig(settingsContent);
         stats.settingsRestored = true;
     } catch { }
 
