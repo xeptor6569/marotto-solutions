@@ -41,9 +41,8 @@ Day-to-day usage is covered by the in-app manual at **Tools → Help**.
 
 ```bash
 git clone <this repo> backoffice && cd backoffice
-cp env.example .env                       # set NEXTAUTH_SECRET, NEXTAUTH_URL, CRON_SECRET, POSTGRES_PASSWORD, EMAIL_*
-docker compose run --rm --build migrate   # create the database tables (repeat after every upgrade)
-docker compose up -d --build
+cp env.example .env           # set NEXTAUTH_SECRET, NEXTAUTH_URL, CRON_SECRET, POSTGRES_PASSWORD, EMAIL_*
+docker compose up -d --build  # database tables are created/updated automatically on startup
 ```
 
 Then open `http://localhost:3081/admin` (your `NEXTAUTH_URL` + `/admin`). You'll be sent to the **first-run wizard** (`/setup`) to create your admin account, name your business, and pick a theme. After that, fill in the rest under **Settings**. The [Getting started](docs/getting-started.md) guide walks through each step.
@@ -53,7 +52,7 @@ Default compose behavior:
 - app on host port `APP_PORT` (default `3081`), Postgres on `POSTGRES_PORT` (default `5433`)
 - persistent volumes for the database and the `data/` directory (documents, settings, logo, attachments)
 - a cron sidecar that triggers the contract scheduler daily and calendar reminders hourly
-- a one-shot `migrate` service (not started by `up`) that applies database migrations and runs maintenance scripts
+- the app applies pending database migrations on every start (set `SKIP_MIGRATIONS=1` to opt out)
 - container names prefixed by `STACK_NAME`, so a second instance can run on the same host
 
 ## Local development
@@ -143,7 +142,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Radix Themes · NextAuth v5
 - `npm run dev` / `npm run build` / `npm run start`
 - `npm run lint` / `npm test` / `npm run test:watch`
 - `npm run prisma:generate` / `prisma:migrate:dev` / `prisma:migrate:deploy` / `prisma:studio`
-- `node scripts/seed-admin.js`: scripted admin creation or password reset (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `ADMIN_NAME`); in Docker: `docker compose run --rm migrate node scripts/seed-admin.js`
+- `node scripts/seed-admin.js`: scripted admin creation or password reset (`ADMIN_EMAIL`, `ADMIN_PASSWORD`, optional `ADMIN_NAME`); in Docker: `docker compose exec -e ADMIN_EMAIL=… -e ADMIN_PASSWORD=… web node scripts/seed-admin.js`
 
 ## License
 

@@ -4,17 +4,18 @@ Start with **Tools → System** in the app. It checks the database, document sto
 
 ## Installation
 
-**`/setup` says the database is unavailable, or the app shows database errors**
+**The app container keeps restarting, or `/setup` says the database is unavailable**
 
-The tables haven't been created. Run:
+The app applies database migrations every time it starts and refuses to start if that fails. The reason is in the log:
 
 ```bash
-docker compose run --rm --build migrate
+docker compose logs --tail 50 web
 ```
 
-If that fails with "Can't reach database server", check `docker compose ps`: `postgres` should be `healthy`. If you set `DATABASE_URL` in `.env` to a `localhost` address, remove it; inside containers the database is reached at `postgres:5432`, which is the default.
+- **"Can't reach database server"**: check `docker compose ps`; `postgres` should be `healthy`. If you set `DATABASE_URL` in `.env` to a `localhost` address, remove it. Inside containers the database is reached at `postgres:5432`, which is the default.
+- **"Authentication failed"**: see the next item.
 
-**Migrate fails with "Authentication failed" after changing `POSTGRES_PASSWORD`**
+**"Authentication failed" after changing `POSTGRES_PASSWORD`**
 
 Postgres only reads the password when its volume is first created. Either put the old password back, or change it inside the database to match:
 
@@ -44,13 +45,11 @@ Email isn't working; see [Email](#email) below. Password sign-in doesn't need em
 
 **Forgot the admin password / locked out**
 
-Put `ADMIN_EMAIL` (your account email) and a new `ADMIN_PASSWORD` in `.env`, then:
+Run this with your account email and a new password:
 
 ```bash
-docker compose run --rm migrate node scripts/seed-admin.js
+docker compose exec -e ADMIN_EMAIL=you@example.com -e ADMIN_PASSWORD='new-password' web node scripts/seed-admin.js
 ```
-
-Remove `ADMIN_PASSWORD` from `.env` afterwards.
 
 **Everyone got signed out**
 

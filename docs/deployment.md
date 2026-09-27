@@ -128,7 +128,7 @@ Signed-in admins see the full diagnostics, including database, storage, email, S
 
 ## Using an external database
 
-To use managed Postgres (RDS, Neon, Supabase, etc.), set `DATABASE_URL` in `.env` to its connection string. The app and the `migrate` service will use it. The bundled `postgres` container still starts, but nothing connects to it.
+To use managed Postgres (RDS, Neon, Supabase, etc.), set `DATABASE_URL` in `.env` to its connection string. The app uses it and applies migrations to it on startup. The bundled `postgres` container still starts, but nothing connects to it.
 
 ## Running a second instance
 

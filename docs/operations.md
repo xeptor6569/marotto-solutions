@@ -62,7 +62,7 @@ docker run --rm -v "${PROJECT}_marotto_data:/data" -v /var/backups/backoffice:/i
 docker compose restart web
 ```
 
-Restore the SQL dump into an **empty** database: a fresh install before running `migrate`, or after dropping and recreating `marotto_db`.
+Restore the SQL dump into an **empty** database. Stop the app first so it doesn't create tables while you restore: `docker compose stop web`, drop and recreate `marotto_db` (`docker compose exec postgres dropdb -U marotto marotto_db && docker compose exec postgres createdb -U marotto marotto_db`), run the `psql` command above, restore the data volume, then `docker compose start web`.
 
 ## Upgrading
 
@@ -74,10 +74,7 @@ cd /path/to/backoffice
 # 2. Get the new version
 git pull
 
-# 3. Apply database changes (safe to run when there are none)
-docker compose run --rm --build migrate
-
-# 4. Rebuild and restart
+# 3. Rebuild and restart (database changes are applied automatically on startup)
 docker compose up -d --build
 ```
 

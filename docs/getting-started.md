@@ -66,28 +66,20 @@ Leave `DATABASE_URL` commented out. The containers connect to the bundled databa
 
 Every variable is explained in [Configuration](configuration.md#environment-variables).
 
-## 3. Create the database tables
-
-```bash
-docker compose run --rm --build migrate
-```
-
-This builds a small helper image, starts Postgres, applies all database migrations, and exits. The first run takes a few minutes because it downloads dependencies. You'll run the same command after every upgrade; it's safe to repeat.
-
-## 4. Start the stack
+## 3. Start the stack
 
 ```bash
 docker compose up -d --build
 ```
 
-The first build takes several minutes. Check progress with:
+The first build takes several minutes. On startup the app creates its database tables automatically (and applies any changes after future upgrades), so there's no separate database step. Check progress with:
 
 ```bash
 docker compose ps          # web should become "healthy"
 docker compose logs -f web # Ctrl+C to stop following
 ```
 
-## 5. Run the first-time setup wizard
+## 4. Run the first-time setup wizard
 
 Open **http://localhost:3081/admin** (your `NEXTAUTH_URL` followed by `/admin`). With no accounts yet, you're sent to the **setup wizard** at `/setup`, which asks for:
 
@@ -97,11 +89,11 @@ Open **http://localhost:3081/admin** (your `NEXTAUTH_URL` followed by `/admin`).
 
 Submitting signs you straight into the back-office. The wizard disables itself once an account exists.
 
-> Prefer scripting? Instead of the wizard, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `.env` and run
-> `docker compose run --rm migrate node scripts/seed-admin.js`.
+> Prefer scripting? Instead of the wizard, run
+> `docker compose exec -e ADMIN_EMAIL=you@example.com -e ADMIN_PASSWORD='new-password' web node scripts/seed-admin.js`.
 > See [Configuration](configuration.md#first-admin-account).
 
-## 6. Make it yours
+## 5. Make it yours
 
 Everything brand-specific is set in **Settings** (`/admin/settings`). A good first pass:
 
@@ -117,7 +109,7 @@ Everything brand-specific is set in **Settings** (`/admin/settings`). A good fir
 
 Then try a full loop: create a client, write an estimate, convert it to an invoice, open the invoice's share link in a private window, and record a payment from the invoice's **Payments** panel. A receipt is generated automatically.
 
-## 7. Install it on your phone
+## 6. Install it on your phone
 
 The back-office is an installable web app with a phone-friendly layout:
 

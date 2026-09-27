@@ -54,19 +54,18 @@ Without working SMTP the app still runs and password sign-in works; email featur
 | `STACK_NAME` | optional | Prefix for container names (default `marotto`), so two stacks can share a host. |
 | `NEXT_PUBLIC_SITE_URL` | optional | Public website URL when it differs from `NEXTAUTH_URL` (used in SEO metadata and sitemaps). |
 | `APP_COMMIT_SHA` | optional | Build identifier shown by `/api/health`. Set automatically by the deploy workflows. |
+| `SKIP_MIGRATIONS` | optional | Set to `1` to stop the app container from applying database migrations on startup (for setups that migrate separately). |
 
 ### First admin account
 
 | Variable | Description |
 |---|---|
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | Read by `scripts/seed-admin.js`, which creates the admin account, or resets its password if the email already exists. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | Read by `scripts/seed-admin.js`, which creates the admin account, or resets its password if the email already exists. Pass them on the command line rather than storing them in `.env`. |
 
 The setup wizard at `/setup` is the easiest way to create the first account. The script is for automation and for **password resets** when you're locked out:
 
 ```bash
-# put ADMIN_EMAIL / ADMIN_PASSWORD in .env, then:
-docker compose run --rm migrate node scripts/seed-admin.js
-# remove ADMIN_PASSWORD from .env afterwards
+docker compose exec -e ADMIN_EMAIL=you@example.com -e ADMIN_PASSWORD='new-password' web node scripts/seed-admin.js
 ```
 
 ## In-app settings
