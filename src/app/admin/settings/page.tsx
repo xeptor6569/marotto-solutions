@@ -34,7 +34,7 @@ export default async function SettingsPage({
     }
 
     return (
-        <Container size="3" p={{ initial: "4", sm: "5" }}>
+        <Container size="4" p={{ initial: "4", sm: "5" }}>
             <Flex justify="between" align="start" gap="2" mb="4">
                 <Flex direction="column">
                     <Heading size="7">Settings</Heading>

@@ -268,8 +268,12 @@ export interface BrandingConfig {
     accentColor?: string;
     /** Radix Themes gray scale name (used when themePreset is 'custom'). */
     grayColor?: string;
-    /** Radix Themes radius: none | small | medium | large | full. */
+    /** Radix Themes radius: none | small | medium | large | full (used when themePreset is 'custom'). */
     radius?: string;
+    /** Look id (see src/lib/theme-looks.ts): typography, shape, density, surfaces. */
+    look?: string;
+    /** compact | default | comfortable — nudges the Look's scaling. */
+    density?: string;
     /** Default appearance for visitors without a stored preference. */
     defaultAppearance?: ThemeAppearance;
     /** Uploaded logo file name under data/branding/, e.g. "logo.png". */

@@ -25,6 +25,7 @@ import {
     parseGrayColor,
     parseThemeRadius,
 } from '@/lib/theme-presets';
+import { parseDensity, parseLook } from '@/lib/theme-looks';
 import { requireAdminAction } from '@/lib/require-admin-session';
 import { checkConnection } from '@/lib/webdav';
 import type {
@@ -145,12 +146,16 @@ async function saveAppearanceSection(formData: FormData): Promise<SettingsAction
     const documentAccentRaw = str(formData, 'documentAccentColor');
     const documentAccentColor = /^#[0-9a-fA-F]{6}$/.test(documentAccentRaw) ? documentAccentRaw : undefined;
 
+    const look = parseLook(str(formData, 'look'));
+
     const update: Partial<AppConfig> = {
         branding: {
             themePreset: presetId,
             accentColor: preset ? preset.accentColor : parseAccentColor(str(formData, 'accentColor')),
             grayColor: preset ? preset.grayColor : parseGrayColor(str(formData, 'grayColor')),
-            radius: preset ? preset.radius : parseThemeRadius(str(formData, 'radius')),
+            radius: preset ? look.radius : parseThemeRadius(str(formData, 'radius'), look.radius),
+            look: look.id,
+            density: parseDensity(str(formData, 'density')),
             defaultAppearance: parseAppearance(str(formData, 'defaultAppearance')),
             letterheadLine1: str(formData, 'letterheadLine1'),
             letterheadLine2: str(formData, 'letterheadLine2'),

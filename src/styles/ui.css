@@ -1,0 +1,256 @@
+/* ── Shared UI primitives ────────────────────────────────────────────────
+   Class-based styles for components in src/components/ui and theme/.
+   Values come from Radix tokens and Look variables (looks.css). */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Selectable cards / chips (radio inputs inside a label) ── */
+.choice-card,
+.choice-chip {
+  position: relative;
+  display: flex;
+  cursor: pointer;
+  border-radius: var(--radius-4);
+  background: var(--color-panel-solid);
+  box-shadow: 0 0 0 1px var(--gray-a5);
+  transition: box-shadow 140ms ease, transform 140ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.choice-card {
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.choice-chip {
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border-radius: var(--radius-3);
+}
+
+@media (hover: hover) {
+  .choice-card:hover,
+  .choice-chip:hover {
+    box-shadow: 0 0 0 1px var(--gray-a8);
+  }
+}
+
+.choice-card[data-selected],
+.choice-chip[data-selected] {
+  box-shadow: 0 0 0 2px var(--accent-9);
+}
+
+.choice-card:has(input:focus-visible),
+.choice-chip:has(input:focus-visible) {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+.choice-card-check {
+  color: var(--accent-11);
+  flex-shrink: 0;
+}
+
+.look-card-sample {
+  min-height: 96px;
+  border-bottom: 1px solid var(--gray-a4);
+}
+
+.preset-swatch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 30px;
+  height: 20px;
+}
+
+.preset-swatch > span {
+  position: absolute;
+  top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--color-panel-solid), 0 0 0 3px var(--gray-a5);
+}
+
+.preset-swatch > span:first-child {
+  left: 0;
+  z-index: 1;
+}
+
+.preset-swatch > span:last-child {
+  left: 10px;
+}
+
+.preset-swatch--custom {
+  width: 20px;
+  border-radius: 50%;
+  background: conic-gradient(var(--red-9), var(--amber-9), var(--grass-9), var(--cyan-9), var(--indigo-9), var(--plum-9), var(--red-9));
+  box-shadow: 0 0 0 1px var(--gray-a5);
+}
+
+.color-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.color-input {
+  width: 64px;
+  height: 36px;
+  padding: 2px;
+  border: 1px solid var(--gray-a6);
+  border-radius: var(--radius-2);
+  background: transparent;
+  cursor: pointer;
+}
+
+.inline-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: var(--font-size-2);
+  cursor: pointer;
+}
+
+/* ── Settings ── */
+.settings-subsection {
+  border-top: 1px solid var(--gray-a5);
+  padding-top: 16px;
+}
+
+.settings-logo-preview {
+  height: 48px;
+  width: auto;
+  max-width: 200px;
+  padding: 4px;
+  border-radius: var(--radius-2);
+  background: var(--gray-3);
+}
+
+.appearance-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+
+.appearance-preview {
+  order: -1;
+}
+
+@media (min-width: 1024px) {
+  .appearance-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+
+  .appearance-preview {
+    order: 0;
+    position: sticky;
+    top: calc(var(--admin-topbar-h, 64px) + 16px);
+  }
+}
+
+/* ── Theme preview miniature ── */
+.theme-preview {
+  border-radius: var(--radius-4);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--gray-a5), 0 12px 32px -18px var(--black-a6);
+  color: var(--gray-12);
+}
+
+.theme-preview-canvas {
+  min-height: 300px;
+}
+
+.theme-preview-bar {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--look-rule, var(--gray-a5));
+  background: var(--look-chrome, var(--color-panel-solid));
+}
+
+.theme-preview-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--radius-2);
+  background: var(--accent-9);
+  color: var(--accent-contrast);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.theme-preview-nav {
+  padding: 3px 8px;
+  border-radius: var(--look-nav-radius, var(--radius-2));
+  font-size: 11px;
+  color: var(--gray-11);
+}
+
+.theme-preview-nav.is-active {
+  background: var(--look-nav-active-bg, var(--accent-a3));
+  color: var(--look-nav-active-fg, var(--accent-12));
+  box-shadow: inset 2px 0 0 var(--look-nav-indicator, transparent);
+}
+
+.theme-preview-paper-scope {
+  border-radius: var(--radius-3);
+  overflow: hidden;
+}
+
+.theme-preview-paper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  background: white;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+  border-bottom: 2px solid var(--doc-accent);
+}
+
+.theme-preview-paper-brand {
+  font-family: var(--doc-heading-font, inherit);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+
+.theme-preview-paper-sub {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.theme-preview-paper-type {
+  font-family: var(--doc-heading-font, inherit);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--doc-accent);
+}

@@ -10,6 +10,8 @@ describe('mergeAppConfig', () => {
         const config = mergeAppConfig(null);
         expect(config.business?.name).toBe('');
         expect(config.branding?.themePreset).toBe('classic-indigo');
+        expect(config.branding?.look).toBe('studio');
+        expect(config.branding?.density).toBe('default');
         expect(config.branding?.defaultAppearance).toBe('system');
         expect(config.publicSite?.enabled).toBe(true);
         expect(config.publicSite?.services).toEqual([]);
@@ -25,6 +27,7 @@ describe('mergeAppConfig', () => {
         expect(config.business?.name).toBe(LEGACY_BUSINESS.name);
         expect(config.business?.phoneDisplay).toBe(LEGACY_BUSINESS.phoneDisplay);
         expect(config.branding?.letterheadLine1).toBe('MAROTTO');
+        expect(config.branding?.look).toBe('studio');
         expect(config.publicSite?.services?.length).toBeGreaterThan(0);
         expect(config.webdavRootPath).toBe(LEGACY_WEBDAV_ROOT_PATH);
         // Existing operational settings survive the seed.

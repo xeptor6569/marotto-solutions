@@ -585,6 +585,7 @@ html.pdf-export .payment-options {
 }
 
 .print-document .doc-brand-name {
+  font-family: var(--doc-heading-font, inherit);
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -619,6 +620,7 @@ html.pdf-export .payment-options {
 }
 
 .print-document .doc-type {
+  font-family: var(--doc-heading-font, inherit);
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.12em;
