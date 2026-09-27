@@ -37,8 +37,15 @@ export async function restoreBackupAction(formData: FormData): Promise<RestoreRe
         return { success: false, error: 'No file uploaded.' };
     }
 
-    if (!file.name.endsWith('.tar.gz') && !file.name.endsWith('.tgz')) {
-        return { success: false, error: 'File must be a .tar.gz archive.' };
+    const lowerName = file.name.toLowerCase();
+    if (lowerName.endsWith('.json')) {
+        return {
+            success: false,
+            error: 'That is a JSON document export. Restore expects the .tar.gz backup archive downloaded from this page; to import individual documents from JSON, use Tools → Import instead.',
+        };
+    }
+    if (!lowerName.endsWith('.tar.gz') && !lowerName.endsWith('.tgz') && !lowerName.endsWith('.gz')) {
+        return { success: false, error: 'File must be the .tar.gz backup archive downloaded from this page.' };
     }
 
     let archivePath: string | undefined;

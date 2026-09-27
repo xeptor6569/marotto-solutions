@@ -84,17 +84,21 @@ export default function BackupPage() {
                     <Flex direction="column" gap="4">
                         <Heading size="4">Restore from Backup</Heading>
                         <Text as="p" size="2" color="gray">
-                            Upload a backup archive to restore all data. This will replace ALL existing data —
-                            clients, jobs, contracts, documents, calendar events, and settings.
+                            Upload a backup archive (the <code>.tar.gz</code> file downloaded above, e.g.{' '}
+                            <code>app-backup-2026-….tar.gz</code>) to restore all data. This will replace ALL
+                            existing data — clients, jobs, contracts, documents, calendar events, and settings.
+                            Archives from earlier versions of the app restore too.
                         </Text>
 
                         <Box>
-                            <Text as="label" size="2" weight="bold">Select Backup Archive</Text>
+                            <Text as="label" size="2" weight="bold">Select backup archive (.tar.gz)</Text>
+                            {/* Pickers key on the last extension (".gz") and iOS filters by MIME
+                                type, so list all of them or the archive can appear greyed out. */}
                             <input
                                 ref={fileRef}
                                 type="file"
                                 name="file"
-                                accept=".tar.gz,.tgz"
+                                accept=".tar.gz,.tgz,.gz,application/gzip,application/x-gzip,application/x-tar,application/x-compressed-tar"
                                 required
                                 style={{ display: 'block', marginTop: 5 }}
                             />

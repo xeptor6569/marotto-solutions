@@ -94,7 +94,7 @@ const moreMenuItems: NavItem[] = [
 const moreToolItems: NavItem[] = [
     { href: '/admin/presets', label: 'Presets', shortLabel: 'Presets', icon: Bookmark },
     { href: '/admin/import', label: 'Import', shortLabel: 'Import', icon: Upload },
-    { href: '/admin/backup', label: 'Backup', shortLabel: 'Backup', icon: Archive },
+    { href: '/admin/backup', label: 'Backup & Restore', shortLabel: 'Backup', icon: Archive },
     { href: '/admin/system', label: 'System', shortLabel: 'System', icon: Activity },
     { href: '/admin/help', label: 'Help', shortLabel: 'Help', icon: LifeBuoy },
     { href: '/admin/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },

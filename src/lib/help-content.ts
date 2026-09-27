@@ -197,9 +197,12 @@ The app uses two stores:
 
 Take a backup before upgrades, and store copies somewhere other than the server itself.
 
-## Import
+## Import vs. restore
 
-**Tools → Import** accepts a JSON array of documents (for migrating from another system) and can migrate legacy lead records into client records.
+These are different tools:
+
+- **Tools → Backup & Restore** takes the \`.tar.gz\` archive downloaded from that same page and restores *everything* (database records, documents, attachments, settings).
+- **Tools → Import** takes a JSON array of individual documents (for migrating from another system) and can migrate legacy lead records into client records. It does not read backup archives.
 `,
     },
     {
