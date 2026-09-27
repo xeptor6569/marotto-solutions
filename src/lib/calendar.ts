@@ -324,7 +324,7 @@ function toRecord(row: {
 export async function listEventsInRange(
     from: Date,
     to: Date,
-    options?: { status?: CalendarEventStatus; clientId?: string; jobId?: string },
+    options?: { status?: CalendarEventStatus | CalendarEventStatus[]; clientId?: string; jobId?: string },
 ): Promise<CalendarEventRecord[]> {
     if (!isDatabaseConfigured()) return [];
 
@@ -332,7 +332,8 @@ export async function listEventsInRange(
         start: { lte: to },
         end: { gte: from },
     };
-    if (options?.status) where.status = options.status;
+    if (Array.isArray(options?.status)) where.status = { in: options.status };
+    else if (options?.status) where.status = options.status;
     if (options?.clientId) where.clientId = options.clientId;
     if (options?.jobId) where.jobId = options.jobId;
 
@@ -470,8 +471,11 @@ export async function markReminderSent(id: string): Promise<void> {
 
 // ─── Upcoming events (for dashboard widget) ──────────────────────────
 
-export async function getUpcomingEvents(days: number = 7): Promise<CalendarEventRecord[]> {
+export async function getUpcomingEvents(
+    days: number = 7,
+    statuses: CalendarEventStatus[] = ['scheduled'],
+): Promise<CalendarEventRecord[]> {
     const now = new Date();
     const to = addDays(now, days);
-    return listEventsInRange(now, to, { status: 'scheduled' });
+    return listEventsInRange(now, to, { status: statuses });
 }

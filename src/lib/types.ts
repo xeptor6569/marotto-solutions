@@ -364,6 +364,10 @@ export interface AppConfig {
      * - full: all sections on one page with jump navigation
      */
     documentFormMode?: DocumentFormMode;
+    /** Getting-started checklist state on the dashboard. */
+    onboarding?: {
+        checklistDismissed?: boolean;
+    };
 }
 
 /** Document types that support reusable presets (excludes leads). */
