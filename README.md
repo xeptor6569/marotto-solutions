@@ -35,7 +35,7 @@ New here? Start with **[Getting started](docs/getting-started.md)**. The full gu
 - [Backups & upgrades](docs/operations.md): backup/restore, moving servers, upgrading, rollback
 - [Troubleshooting](docs/troubleshooting.md)
 
-Day-to-day usage is covered by the in-app manual at **Tools → Help**.
+The same guides are served as a website by the app itself, at `/docs` or at the root of a `docs.` subdomain (see [Deploying → Documentation site](docs/deployment.md#documentation-site-optional)). Day-to-day usage is covered by the in-app manual at **Tools → Help**.
 
 ## Quick start (Docker)
 

@@ -1,6 +1,6 @@
 # Documentation
 
-Guides for running your own copy of the back-office.
+Guides for running your own copy of the back-office. Every install also serves them as a website at `/docs`, or at the root of a `docs.` subdomain ([details](deployment.md#documentation-site-optional)).
 
 ## For business owners and self-hosters
 

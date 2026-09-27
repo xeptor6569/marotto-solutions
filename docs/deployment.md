@@ -136,6 +136,12 @@ You can run a staging copy on the same server, for example to try an upgrade aga
 
 The repository's own staging setup, which adds a mail sink so a staging copy never emails real clients, is described in [dev-environment.md](dev-environment.md).
 
+## Documentation site (optional)
+
+Every install serves these guides as a website at `/docs` (hidden from search engines there), so the docs always match the version you're running.
+
+To publish them on their own subdomain, point `docs.example.com` at the same app, exactly like the main domain: same Caddy/nginx upstream or Cloudflare Tunnel service (`http://localhost:3081`). Any hostname starting with `docs.` serves the documentation at its root, e.g. `https://docs.example.com/getting-started`, and is open to search engines. To use a different hostname, set `DOCS_HOST` (for example `DOCS_HOST=help.example.com`). No other configuration is needed; `NEXTAUTH_URL` stays on your main domain.
+
 ## Automated deploys (optional)
 
 `.github/workflows/deploy.yml` deploys `main` to a server running a [self-hosted GitHub Actions runner](https://docs.github.com/en/actions/hosting-your-own-runners). It writes `.env` from repository secrets, applies migrations, and rebuilds the stack. If you fork the repo and want push-to-deploy, register a runner on your server and configure what that workflow reads:

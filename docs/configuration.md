@@ -52,6 +52,7 @@ Without working SMTP the app still runs and password sign-in works; email featur
 |---|---|---|
 | `APP_ENV` | optional | `production` (default), `dev`, or `local`. Non-production instances show a banner, tell search engines not to index, and refuse live Stripe keys. |
 | `STACK_NAME` | optional | Prefix for container names (default `marotto`), so two stacks can share a host. |
+| `DOCS_HOST` | optional | Hostname that serves these guides as a website at its root. By default any hostname starting with `docs.` does. See [Deploying → Documentation site](deployment.md#documentation-site-optional). |
 | `NEXT_PUBLIC_SITE_URL` | optional | Public website URL when it differs from `NEXTAUTH_URL` (used in SEO metadata and sitemaps). |
 | `APP_COMMIT_SHA` | optional | Build identifier shown by `/api/health`. Set automatically by the deploy workflows. |
 | `SKIP_MIGRATIONS` | optional | Set to `1` to stop the app container from applying database migrations on startup (for setups that migrate separately). |

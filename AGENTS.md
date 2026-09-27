@@ -116,6 +116,8 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 
 Self-hoster guides live in `docs/` (index `docs/README.md`: getting-started, configuration, deployment, operations, troubleshooting). Keep them in sync when changing env vars, compose services, Settings tabs, or upgrade steps.
 
+They are also rendered as a public docs site: `src/app/docs/` (routes), `src/lib/docs.ts` (page registry, link rewriting, `docs.*` host detection), `src/proxy.ts` (rewrites the docs host's `/x` to `/docs/x`). A new guide must be added to `DOC_PAGES`; `docs.test.ts` checks every registered file exists and every cross-guide `#anchor` resolves. Relative `.md` links are rewritten to site routes, other repo files to GitHub.
+
 ## Dev instance
 
 Second isolated stack at `dev.marottosolutions.com`. Full guide: `docs/dev-environment.md`.
