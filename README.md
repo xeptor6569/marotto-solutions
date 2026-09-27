@@ -14,7 +14,7 @@ Everything brand-specific is configuration: set your business name, logo, colors
 - **Recurring contracts:** cadence-based invoice generation with auto-send, usage lines with a review queue, and printable service agreements
 - **Calendar:** timed/all-day/recurring events tied to clients and jobs, business-timezone aware, with email reminders
 - **Sharing:** every document gets an unguessable share link clients can view, print, and pay from — no client accounts needed
-- **Operations:** dashboard with money KPIs (outstanding, overdue, collected), full backup/restore as one archive, JSON import, System Health diagnostics, API reference, and an in-app manual (`/admin/help`)
+- **Operations:** dashboard with money KPIs (outstanding, overdue, collected), full backup/restore as one archive, JSON import, System Health diagnostics, API reference, an in-app user manual (`/admin/help`), and **?** help tips beside labels throughout the admin
 - **Mobile-first PWA:** installable on a phone home screen, bottom navigation, card layouts, and no iOS focus-zoom
 - **Auth:** email one-time codes or email/password; set or change your password under Settings → Account (deploys can also seed an admin via `ADMIN_EMAIL`/`ADMIN_PASSWORD` secrets)
 
@@ -35,7 +35,7 @@ New here? Start with **[Getting started](docs/getting-started.md)**. The full gu
 - [Backups & upgrades](docs/operations.md): backup/restore, moving servers, upgrading, rollback
 - [Troubleshooting](docs/troubleshooting.md)
 
-The same guides are served as a website by the app itself, at `/docs` or at the root of a `docs.` subdomain (see [Deploying → Documentation site](docs/deployment.md#documentation-site-optional)). Day-to-day usage is covered by the in-app manual at **Tools → Help**.
+The same guides are served as a website by the app itself, at `/docs` or at the root of a `docs.` subdomain (see [Deploying → Documentation site](docs/deployment.md#documentation-site-optional)). Day-to-day usage is covered by the [user manual](docs/README.md#user-manual), which is also built into the app at **Tools → Help**.
 
 ## Quick start (Docker)
 

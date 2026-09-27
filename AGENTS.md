@@ -69,7 +69,8 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 - `src/lib/calendar.ts` — calendar event logic, recurrence math (host-timezone independent)
 - `src/lib/auth.ts` — NextAuth v5 beta setup
 - `src/lib/health.ts` — diagnostics shared by `/api/health` and `/admin/system`
-- `src/lib/help-content.ts` — in-app manual content (`/admin/help`)
+- `docs/manual/*.md` — user manual, rendered by the in-app Help (`/admin/help`) and the docs site (`/docs/manual`); `src/lib/help-content.ts` is its topic registry (order, descriptions, icons; titles must match the files)
+- `src/components/HelpTip.tsx` — the "?" contextual help icon (hover on desktop, tap on touch); `Field` in settings takes `help`/`helpTopic` props
 - `src/app/setup/` — first-run wizard (only while zero users exist)
 
 ### Cron endpoints
