@@ -9,10 +9,9 @@ import { prisma, isDatabaseConfigured } from '@/lib/prisma';
 import { getDocuments, saveNewDocument } from '@/lib/data';
 import { getAppConfig, replaceAppConfig, saveAppConfig } from '@/lib/config';
 import { isProductionEnvironment } from '@/lib/app-env';
-import type { AppConfig } from '@/lib/types';
 import { listPresets, replaceAllPresets } from '@/lib/presets';
 import { readAttachmentBinary } from '@/lib/job-attachments';
-import type { DocumentData, DocumentType } from '@/lib/types';
+import type { AppConfig, DocumentData, DocumentType } from '@/lib/types';
 
 const BACKUP_VERSION = 1;
 const DOCUMENT_TYPES: DocumentType[] = ['invoice', 'estimate', 'quote', 'receipt', 'lead'];
