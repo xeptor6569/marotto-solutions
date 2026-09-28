@@ -22,7 +22,7 @@ Everything brand-specific is configuration: set your business name, logo, colors
 
 - **Business profile:** name, legal name, tagline, phone, email, address, service area, currency, number-format locale, and timezone — used everywhere
 - **Document numbering:** prefix, starting number, and digit width per document type (invoices, estimates, quotes, receipts)
-- **Appearance:** light/dark/system per visitor, six theme presets (or custom accent/gray/radius), logo upload, letterhead text, and document accent color
+- **Appearance:** five Looks (type, shape, density, surfaces) combined with color presets (or custom accent/gray/radius), light/dark/system per visitor, live preview, logo upload, letterhead text, and document accent color
 - **Public site:** optional marketing homepage with configurable hero, selling points, service catalog (each service gets its own page + quote-form option), testimonials, and SEO metadata — or switch it off for a minimal sign-in card
 
 ## Documentation
@@ -45,7 +45,7 @@ cp env.example .env           # set NEXTAUTH_SECRET, NEXTAUTH_URL, CRON_SECRET, 
 docker compose up -d --build  # database tables are created/updated automatically on startup
 ```
 
-Then open `http://localhost:3081/admin` (your `NEXTAUTH_URL` + `/admin`). You'll be sent to the **first-run wizard** (`/setup`) to create your admin account, name your business, and pick a theme. After that, fill in the rest under **Settings**. The [Getting started](docs/getting-started.md) guide walks through each step.
+Then open `http://localhost:3081/admin` (your `NEXTAUTH_URL` + `/admin`). You'll be sent to the **first-run wizard** (`/setup`) to create your admin account, name your business, and pick a Look and color. After that, fill in the rest under **Settings**. The [Getting started](docs/getting-started.md) guide walks through each step.
 
 Default compose behavior:
 
@@ -96,7 +96,7 @@ Verification order: `npm run lint` → `npm test` → `npm run build`. Note: `ne
 All business configuration lives in **Settings** (`/admin/settings`), persisted to `data/config/settings.json`:
 
 - **Business** — identity used across the app, documents, and emails; currency, number format, and timezone
-- **Appearance** — theme preset or custom colors, default light/dark, logo, letterhead, document accent
+- **Appearance** — Look, color preset or custom colors, density, default light/dark, logo, letterhead, document accent
 - **Public Site** — enable/disable, hero, SEO, selling points, services, testimonials
 - **Billing** — payment methods, order, handles/links, payment instructions
 - **Documents** — guided vs full-page editor; ID prefixes, starting numbers, and digit width

@@ -8,16 +8,26 @@ A typical job moves through: **estimate or quote → invoice → receipt.**
 - **Invoices** bill for the work. They carry payment methods, due dates, payments, and balance tracking.
 - **Receipts** confirm money received. Recording a payment on an invoice can create the receipt automatically.
 
-From an estimate or quote's actions menu (**⋯**), use **Convert** to turn it into a quote or invoice (selected options carry over), or **Deposit invoice** to bill a percentage or fixed amount up front.
+Each document page opens with a status line saying where it stands and what to do next (for example *Overdue by 4 days · $500.00 outstanding*), and one main action for that state: **Send** a draft, **Send reminder** on an unpaid invoice, **Convert to invoice** on a sent estimate or quote, or **Save PDF** once it's settled. **Edit**, **Email**, and **Copy link** sit next to it; **Deposit invoice**, other conversions, **Save as preset**, printing, and **Delete** are under **⋯** (a bottom sheet on phones).
 
 ## Creating documents
 
-Use the **Create** menu (top bar on desktop, center button on the phone nav). The editor has two layouts — pick yours in **Settings → Documents**:
+Use the **Create** menu (top bar on desktop, center button on the phone nav). On wide screens the editor shows a **live preview** of the finished document next to the form — hide it with the eye icon. On smaller screens, use **Preview** in the action bar.
 
-- **Guided flow:** one step at a time (Customer → Details → Items → Review). Best on phones.
+The editor has two layouts — pick yours in **Settings → Documents**:
+
+- **Guided flow:** one step at a time (Client → Details → Items → Review). Best on phones.
 - **Full page:** everything on one page with jump navigation. Best on desktop.
 
-**Presets** (Tools → Presets) store reusable line-item templates. On any document you can also use **Save as preset**.
+Pick the client and job from searchable lists (type a few letters), or create a job on the spot with **New job**.
+
+When you save:
+
+- **Save draft** (or **Save changes**) keeps the document private. <kbd>⌘S</kbd> / <kbd>Ctrl+S</kbd> saves from anywhere in the form.
+- **Save & send…** marks it sent and opens the send dialog on the document page: email it from the app, open your mail app, or copy the client link.
+- If something is missing, the form stays filled in, tells you what to fix, and jumps to that step. Closing the tab with unsaved changes asks first.
+
+**Presets** (Tools → Presets) store reusable line-item templates. Use **Use a preset** in the Items step — on a document that already has lines you can replace them or add the preset's lines below. On any document you can also use **Save as preset**.
 
 ## Options and approvals
 
@@ -38,5 +48,7 @@ Every amount — on screen, on printed documents, in emails, and in Stripe charg
 ## Sharing and printing
 
 Every document has an unguessable **share link** (`/d/{token}`). Use **Share** to copy or send it — clients can view, print, and (for invoices) pay online without signing in. Use **Email** to send the link from the app when email is configured, or through your own mail app.
+
+The client's page carries your logo and name, call and email buttons, and a contact footer, and always shows in light mode so it matches the printed paper. Invoices open with the amount due and a **Pay now** button (pinned to the bottom of the screen on phones); estimates and quotes offer a way to get in touch to go ahead.
 
 **Print / Save PDF** produces a clean letterhead document — your branding, no app chrome — in both light and dark mode.

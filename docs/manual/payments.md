@@ -21,5 +21,6 @@ With `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` set on the server, shared i
 
 - Clients can pay the full balance, a custom amount, a percentage, or an equal split.
 - When Stripe confirms the payment, the webhook records it on the invoice, marks it paid when the balance reaches zero, and creates a receipt — do not record the same payment again manually.
+- Back on the invoice page the client sees **Confirming your payment…** while the page checks for the webhook for about 30 seconds, then **Payment received** with the updated balance. A cancelled checkout shows a **Try again** link and no charge.
 
 Check **Tools → System** to confirm Stripe is configured (live vs test mode) and the webhook secret is present. Server setup is covered in [Deploying to production](../deployment.md#card-payments-with-stripe).

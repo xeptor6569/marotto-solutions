@@ -84,10 +84,11 @@ docker compose logs -f web # Ctrl+C to stop following
 Open **http://localhost:3081/admin** (your `NEXTAUTH_URL` followed by `/admin`). With no accounts yet, you're sent to the **setup wizard** at `/setup`, which asks for:
 
 1. **Your admin account**: name, email, and password
-2. **Your business**: name, phone, email, currency, and timezone (detected from your browser)
-3. **A theme**: pick one of the presets (changeable any time)
+2. **Your business**: name, phone, email, currency, timezone (detected from your browser), and an optional logo
+3. **A look**: one of five Looks (Studio, Ledger, Instrument, Workshop, Soft) and a color, with a live preview (changeable any time)
+4. **Review**: check the details and create the workspace
 
-Submitting signs you straight into the back-office. The wizard disables itself once an account exists.
+Finishing signs you straight into the dashboard, where a **Get set up** checklist covers email sending, payment methods, and your first client, job, and invoice. The wizard disables itself once an account exists.
 
 > Prefer scripting? Instead of the wizard, run
 > `docker compose exec -e ADMIN_EMAIL=you@example.com -e ADMIN_PASSWORD='new-password' web node scripts/seed-admin.js`.

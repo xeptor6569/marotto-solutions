@@ -2,19 +2,23 @@
 
 ## First steps
 
-1. **Sign in** at `/auth/signin` with the admin account created by the setup wizard. (Installing the app itself is covered in [the install guide](../getting-started.md).)
-2. Open **Settings → Business** and fill in your business name, phone, email, address, and service area. Everything in the app — navigation, printed documents, emails, and the public site — uses these values.
-3. Pick a look under **Settings → Appearance**: choose a theme preset, upload your logo, and set the letterhead used on printed documents.
-4. Review **Settings → Billing** to enable the payment methods you accept and set payment instructions shown on invoices.
+1. **Run the setup wizard** the first time you open the app (`/setup`). Four short steps: your admin account, your business (name, contact, currency, timezone, optional logo), a Look and color with a live preview, and a review. (Installing the app itself is covered in [the install guide](../getting-started.md).)
+2. You land on the dashboard with a **Get set up** checklist: finish your business profile, pick a look, turn on email sending, add payment methods, and create your first client, job, and invoice. Each item links straight to the right screen. Hide the checklist with **×** once you're done (it can be undone from the confirmation).
+3. After that, sign in at `/auth/signin` with your password or a 6-digit code emailed to you.
 
 ## Finding your way around
 
-- **Dashboard** is home base: what clients owe (**Outstanding**), what's past due (**Overdue**), what came in this month (**Collected**), plus recent invoices, contract cycles that need review, and the week's calendar.
+- **Dashboard** is home base:
+  - **Needs attention** lists what to act on, grouped by kind: overdue and soon-due invoices, drafts ready to send, estimates and quotes sent over a week ago, contract cycles to review, and new leads. Each row has quick call, email, and copy-link shortcuts.
+  - The money tiles (**Outstanding**, **Overdue**, **Collected** this month, and **In the pipeline**) open the matching filtered list.
+  - **Schedule** shows today and tomorrow; **Recent activity** shows the documents you touched last.
 - **Work** holds the people and projects: **Jobs**, **Clients**, **Calendar**, and **Helpers**.
 - **Documents** holds the paperwork: **Estimates**, **Quotes**, **Invoices**, **Receipts**, and recurring **Contracts**.
-- **Tools** has **Presets**, **Import**, **Backup & Restore**, **System**, **Help**, and **Settings**.
+- **Help** and **Settings** sit at the bottom of the sidebar; **Tools** expands to **Presets**, **Import**, **Backup & Restore**, and **System**. Your account menu (bottom of the sidebar) switches light/dark and signs you out.
 
-On a phone, the bottom bar shows Home, Jobs, Clients, and Invoices; everything else is under **More**. The **Create** button (top bar on desktop, center of the bottom bar on phones) starts any new client, job, document, or contract.
+The top bar shows where you are (for example *Documents › Invoices › INV-0042*); click any part to go back up. On a phone, the bottom bar shows Home, Jobs, Clients, and Invoices around a center **Create** button; everything else is under **More**, and detail pages show a back arrow at the top. **Create** (top bar on desktop) starts any new client, job, document, or contract.
+
+Lists open on filtered views straight from a link, e.g. `/admin/invoices?status=overdue` or `?status=open`.
 
 Look for the small **?** icons next to labels throughout the app — hover (or tap on a phone) for a quick explanation, with a link to the matching page of this manual.
 
