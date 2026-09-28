@@ -1,13 +1,12 @@
 'use client';
 
-import { Box, Button, Flex, Text } from "@radix-ui/themes";
-
 export interface FilterChipOption<T extends string> {
     value: T;
     label: string;
     count?: number;
 }
 
+/** Horizontally scrolling pill filters; hidden when there is only one option. */
 export default function FilterChips<T extends string>({
     label,
     options,
@@ -22,34 +21,28 @@ export default function FilterChips<T extends string>({
     if (options.length <= 1) return null;
 
     return (
-        <Box style={{ width: "100%", maxWidth: "100%" }}>
-            <Text as="label" size="2">{label}</Text>
-            <Box
-                mt="1"
-                style={{
-                    overflowX: "auto",
-                    WebkitOverflowScrolling: "touch",
-                    marginLeft: -2,
-                    paddingBottom: 4,
-                }}
-            >
-                <Flex gap="2" wrap="nowrap" pb="1" style={{ width: "max-content", maxWidth: "100%" }}>
-                    {options.map((option) => (
-                        <Button
+        <div className="filter-chips" role="group" aria-label={label}>
+            <span className="ui-eyebrow filter-chips-label">{label}</span>
+            <div className="filter-chips-track">
+                {options.map((option) => {
+                    const active = value === option.value;
+                    return (
+                        <button
                             key={option.value}
-                            size="1"
-                            variant={value === option.value ? "solid" : "soft"}
+                            type="button"
+                            className="filter-chip"
+                            data-active={active || undefined}
+                            aria-pressed={active}
                             onClick={() => onChange(option.value)}
-                            style={{ flexShrink: 0 }}
                         >
                             {option.label}
-                            {typeof option.count === "number" ? (
-                                <Text size="1" style={{ opacity: 0.75 }}>{option.count}</Text>
+                            {typeof option.count === 'number' ? (
+                                <span className="filter-chip-count ui-figure">{option.count}</span>
                             ) : null}
-                        </Button>
-                    ))}
-                </Flex>
-            </Box>
-        </Box>
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
     );
 }

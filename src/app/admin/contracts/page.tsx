@@ -1,8 +1,7 @@
 import Link from 'next/link';
-import { Badge, Box, Button, Callout, Card, Container, Table, Text } from '@radix-ui/themes';
+import { Box, Button, Callout, Card, Container, Table, Text } from '@radix-ui/themes';
 import { Plus, XCircle } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import HelpLink from '@/components/HelpLink';
 import EmptyState from '@/components/EmptyState';
 import RunSchedulerButton from '@/components/RunSchedulerButton';
@@ -11,10 +10,10 @@ import {
     summarizeContractCadence,
     summarizeRecurringTotal,
     getContractProgress,
-    type ContractRecord,
 } from '@/lib/contracts';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import { getMoneyFormatter } from '@/lib/branding';
+import StatusBadge from '@/components/ui/StatusBadge';
 
 export default async function AdminContractsPage({
     searchParams,
@@ -32,16 +31,9 @@ export default async function AdminContractsPage({
         return new Date(value).toLocaleDateString();
     };
 
-    const statusColor = (status: ContractRecord['status']) => {
-        if (status === 'active') return 'green';
-        if (status === 'paused') return 'amber';
-        if (status === 'ended') return 'gray';
-        return 'red';
-    };
-
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Service contracts"
                 actions={(
                     <>
@@ -50,7 +42,6 @@ export default async function AdminContractsPage({
                         </Button>
                         <RunSchedulerButton />
                         <HelpLink topic="contracts" />
-                        <BackButton href="/admin" />
                     </>
                 )}
             />
@@ -123,7 +114,7 @@ export default async function AdminContractsPage({
                                                 {money(summarizeRecurringTotal(contract))}
                                             </Table.Cell>
                                             <Table.Cell>
-                                                <Badge color={statusColor(contract.status)}>{contract.status}</Badge>
+                                                <StatusBadge kind="contract" status={contract.status} />
                                             </Table.Cell>
                                             <Table.Cell>
                                                 <Button asChild size="2" variant="soft">

@@ -16,8 +16,10 @@ export default function SettingsTabs({
     logoUrl,
     defaultTab = 'business',
     account,
+    timeZones,
 }: {
     config: Partial<AppConfig>;
+    timeZones: string[];
     logoUrl: string | null;
     defaultTab?: SettingsTabId;
     account?: { email: string; hasPassword: boolean };
@@ -38,7 +40,7 @@ export default function SettingsTabs({
 
             <Box pt="4">
                 <Tabs.Content value="business">
-                    <BusinessSettingsForm config={config} />
+                    <BusinessSettingsForm config={config} timeZones={timeZones} />
                 </Tabs.Content>
                 <Tabs.Content value="appearance">
                     <AppearanceSettingsForm config={config} logoUrl={logoUrl} />

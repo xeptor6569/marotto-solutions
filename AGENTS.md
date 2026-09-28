@@ -46,7 +46,9 @@ This hybrid means: document CRUD goes through `src/lib/data.ts` (filesystem/WebD
 The app is fully white-label: business identity, theme, letterhead, and public-site content are configuration, never hardcoded strings.
 
 - `src/lib/branding.ts` is the single accessor (`getBranding()`); components read brand values through it or receive them as props from a server component that did
-- `src/lib/theme-presets.ts` — theme presets + Radix color validation; per-visitor light/dark lives in an `appearance` cookie (`src/lib/appearance.ts`), SSR-applied as a class on `<html>` with `Theme appearance="inherit"`
+- `src/lib/theme-presets.ts` — color presets + Radix color validation + `resolveTheme`; per-visitor light/dark lives in an `appearance` cookie (`src/lib/appearance.ts`), SSR-applied as a class on `<html>` with `Theme appearance="inherit"`
+- `src/lib/theme-looks.ts` + `src/styles/looks.css` — Looks (Studio, Ledger, Instrument, Workshop, Soft): fonts, radius, scaling, panel/surface variables. `data-look` on `<html>` covers portaled menus; `data-look-scope` on a Theme scopes a different Look (settings/setup previews). Component CSS only reads the `--look-*` variables
+- `src/lib/branding-core.ts` holds the pure brand resolvers (safe for client components); `branding.ts` re-exports them plus the server `getBranding()`
 - `src/lib/legacy-defaults.ts` — migration-only: a settings file without a `business` section (pre-white-label install) is seeded with the original Marotto values at read time; fresh installs get neutral defaults
 - Printable documents pin a nested `<Theme appearance="light">` — paper is always light regardless of screen theme; document colors flow from `--doc-*` CSS vars
 
@@ -61,8 +63,12 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 - `src/components/settings/` — tabbed settings UI (shared by `/admin/settings`; `/settings` redirects there)
 - `src/app/admin/layout.tsx` — admin shell wrapper
 - `src/components/AdminShell.tsx` — shared admin nav (grouped sidebar + mobile bottom bar)
-- `src/components/NewInvoiceForm.tsx` — shared document editor for all doc types
-- `src/components/DocumentPreview.tsx` — preview/print layer
+- `src/components/NewInvoiceForm.tsx` — shared document editor for all doc types (sections in `src/components/document-editor/`, live preview, `useActionState` save via `createInvoiceAction`)
+- `src/components/DocumentPreview.tsx` — admin/public document page (header, state-aware actions, next-step line); the printable paper itself is `src/components/document/DocumentPaper.tsx`, shared with the editor preview. Paper context: `src/lib/document-paper.ts` (pure) / `document-paper-server.ts`
+- `src/components/client/` — client share-link shell, pay bar, Stripe return status
+- `src/lib/dashboard.ts` / `src/lib/onboarding.ts` — pure builders for the needs-attention queue and getting-started checklist
+- `src/components/ui/` — shared primitives (StatusBadge backed by `src/lib/status-display.ts`, Money, PageHeader, EmptyState, SearchSelect, Skeletons, Toaster). Toasts after a redirect: call `setFlash()` (`src/lib/flash-server.ts`) in the server action before `redirect()`
+- Styles: `src/styles/` (`looks.css`, `ui.css`, `admin-shell.css`, `editor.css`); prefer classes there over inline styles
 - `src/lib/types.ts` — shared TypeScript types (`DocumentData`, `BusinessConfig`, etc.)
 - `src/lib/branding.ts` — resolved business/branding/public-site accessor
 - `src/lib/contracts.ts` — recurring contract CRUD and scheduler logic
@@ -90,7 +96,7 @@ The app is fully white-label: business identity, theme, letterhead, and public-s
 ## Testing
 
 - Vitest in node environment, `@/` alias resolved, `TZ=UTC` pinned in `vitest.config.ts`
-- Tests live in `src/lib/__tests__/` — calendar recurrence/timezone math, Stripe amount helpers, payment links, quote intake, config merge/migration (`config.test.ts`), branding resolution (`branding.test.ts`)
+- Tests live in `src/lib/__tests__/` — calendar recurrence/timezone math, Stripe amount helpers, payment links, quote intake, config merge/migration (`config.test.ts`), branding + Look resolution (`branding.test.ts`), dashboard attention/onboarding, status display, admin breadcrumbs, flash encoding, document next-step
 - No test DB setup required; when adding tests that touch Prisma, you need a running Postgres
 
 ## Prisma notes

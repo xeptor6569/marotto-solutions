@@ -6,6 +6,7 @@ import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import HelpLink from "@/components/HelpLink";
 import SettingsTabs from "@/components/settings/SettingsTabs";
 import { parseSettingsTab } from "@/lib/settings-tabs";
+import { listTimeZones } from "@/lib/timezones";
 
 export default async function SettingsPage({
     searchParams,
@@ -34,7 +35,7 @@ export default async function SettingsPage({
     }
 
     return (
-        <Container size="3" p={{ initial: "4", sm: "5" }}>
+        <Container size="4" p={{ initial: "4", sm: "5" }}>
             <Flex justify="between" align="start" gap="2" mb="4">
                 <Flex direction="column">
                     <Heading size="7">Settings</Heading>
@@ -50,6 +51,7 @@ export default async function SettingsPage({
                     logoUrl={branding.logoUrl}
                     defaultTab={parseSettingsTab(tab)}
                     account={{ email, hasPassword }}
+                    timeZones={listTimeZones()}
                 />
             </Box>
         </Container>

@@ -8,9 +8,12 @@ import { saveAppConfig } from '@/lib/config';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import { isValidCurrencyCode } from '@/lib/money';
 import { getThemePreset } from '@/lib/theme-presets';
+import { parseLook } from '@/lib/theme-looks';
 import { isValidTimeZone } from '@/lib/timezones';
+import { handleLogoUpload } from '@/lib/logo-upload';
 
-export type SetupActionState = { error?: string };
+export type SetupStep = 'account' | 'business' | 'look' | 'review';
+export type SetupActionState = { error?: string; step?: SetupStep };
 
 /**
  * One-time first-run setup: creates the initial admin account and the core
@@ -39,22 +42,28 @@ export async function completeSetupAction(
         const phoneDisplay = ((formData.get('phoneDisplay') as string) || '').trim();
         const businessEmail = ((formData.get('businessEmail') as string) || '').trim();
         const themePreset = ((formData.get('themePreset') as string) || '').trim();
+        const look = parseLook(((formData.get('look') as string) || '').trim());
         const currencyRaw = ((formData.get('currency') as string) || '').trim().toUpperCase();
         const currency = isValidCurrencyCode(currencyRaw) ? currencyRaw : 'USD';
         const timezoneRaw = ((formData.get('businessTimezone') as string) || '').trim();
         const businessTimezone = isValidTimeZone(timezoneRaw) ? timezoneRaw : 'UTC';
 
         if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-            return { error: 'Enter a valid email address for the admin account.' };
+            return { error: 'Enter a valid email address for the admin account.', step: 'account' };
         }
         if (password.length < 8) {
-            return { error: 'The password must be at least 8 characters.' };
+            return { error: 'The password must be at least 8 characters.', step: 'account' };
         }
         if (password !== confirm) {
-            return { error: 'The passwords do not match.' };
+            return { error: 'The passwords do not match.', step: 'account' };
         }
         if (!businessName) {
-            return { error: 'Enter your business name.' };
+            return { error: 'Enter your business name.', step: 'business' };
+        }
+
+        const logo = await handleLogoUpload(formData, {});
+        if (logo.error) {
+            return { error: logo.error, step: 'business' };
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -78,7 +87,10 @@ export async function completeSetupAction(
             businessTimezone,
             branding: {
                 themePreset: getThemePreset(themePreset)?.id ?? 'classic-indigo',
+                look: look.id,
+                density: 'default',
                 defaultAppearance: 'system',
+                ...(logo.logoFileName ? { logoFileName: logo.logoFileName } : {}),
             },
         });
 
@@ -94,7 +106,7 @@ export async function completeSetupAction(
         await signIn('credentials', {
             email: ((formData.get('adminEmail') as string) || '').trim().toLowerCase(),
             password: (formData.get('adminPassword') as string) || '',
-            redirectTo: '/admin',
+            redirectTo: '/admin?welcome=1',
         });
     } catch (error) {
         // Rethrows the success redirect; anything else falls through.

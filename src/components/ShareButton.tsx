@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@radix-ui/themes";
 import { Check, Share2 } from "lucide-react";
+import { useToast } from "@/components/ui/Toaster";
 
 export default function ShareButton({
     label = "Document",
@@ -16,6 +17,7 @@ export default function ShareButton({
     businessName?: string;
 }) {
     const [copied, setCopied] = useState(false);
+    const toast = useToast();
     const canUseNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
 
     const handleShare = async () => {
@@ -37,6 +39,7 @@ export default function ShareButton({
         try {
             await navigator.clipboard.writeText(url);
             setCopied(true);
+            toast({ title: "Link copied", description: "Paste it into a text or email to the client." });
             window.setTimeout(() => setCopied(false), 2000);
         } catch {
             window.prompt("Copy this link:", url);

@@ -4,8 +4,7 @@ import { Plus, XCircle } from 'lucide-react';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import { listEventsInRange, getMonthGrid, getBusinessTimezone, expandRecurrence } from '@/lib/calendar';
 import CalendarView from '@/components/CalendarView';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
-import BackButton from '@/components/BackButton';
+import PageHeader from '@/components/ui/PageHeader';
 import RunCalendarRemindersButton from '@/components/RunCalendarRemindersButton';
 
 export default async function AdminCalendarPage({
@@ -61,7 +60,7 @@ export default async function AdminCalendarPage({
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Calendar"
                 actions={(
                     <>
@@ -69,7 +68,6 @@ export default async function AdminCalendarPage({
                             <Link href={`/admin/calendar/new?year=${year}&month=${month}`}><Plus size={14} /> New event</Link>
                         </Button>
                         <RunCalendarRemindersButton />
-                        <BackButton href="/admin" />
                     </>
                 )}
             />

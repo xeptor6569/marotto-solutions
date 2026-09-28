@@ -83,7 +83,9 @@ Business name, legal name, tagline, phone, email, address, and service area. The
 
 ### Appearance
 
-- **Theme preset**, or custom accent color, gray tone, and corner radius
+- **Look** (Studio, Ledger, Instrument, Workshop, or Soft): typefaces, corner shape, spacing, and surfaces, previewed live before saving
+- **Color** preset, or custom accent color, gray tone, and corner radius
+- **Density**: compact, default, or roomy
 - **Default appearance** for visitors (light, dark, or follow the device). Each visitor can still switch with the sun/moon toggle, and their choice is remembered.
 - **Logo** upload (PNG, JPG, WebP, SVG, or GIF, up to 2 MB), used in the header, documents, and app icon
 - **Letterhead** lines and **document accent color** for printed/PDF documents. Documents always print on a light background.

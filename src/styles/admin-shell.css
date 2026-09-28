@@ -1,0 +1,495 @@
+/* ── Admin shell: sidebar, topbar, mobile tab bar ───────────────────────
+   Surfaces read Look variables (looks.css) so each Look restyles the frame. */
+
+:root {
+  --admin-sidebar-w: 264px;
+  --admin-topbar-h: 56px;
+  --admin-bottom-nav-h: calc(68px + env(safe-area-inset-bottom, 0px));
+}
+
+.admin-shell {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.admin-shell,
+.admin-shell :where(*, *::before, *::after) {
+  box-sizing: border-box;
+}
+
+.admin-shell-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-shell-content {
+  flex: 1;
+  padding-bottom: calc(var(--admin-bottom-nav-h) + 16px);
+}
+
+/* ── Sidebar ── */
+.admin-shell-sidebar {
+  display: none;
+  flex-direction: column;
+  gap: 14px;
+  width: var(--admin-sidebar-w);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  padding: 16px 12px 12px;
+  background: var(--look-chrome, var(--gray-2));
+  border-right: 1px solid var(--look-rule, var(--gray-a5));
+  -webkit-backdrop-filter: var(--backdrop-filter-panel);
+  backdrop-filter: var(--backdrop-filter-panel);
+  scrollbar-width: thin;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 4px 6px;
+  border-radius: var(--radius-3);
+  color: inherit;
+  text-decoration: none;
+}
+
+.sidebar-brand:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+.sidebar-brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: var(--radius-3);
+  background: var(--accent-9);
+  color: var(--accent-contrast);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: var(--color-panel-solid);
+}
+
+.brand-mark-initials {
+  font-family: var(--heading-font-family);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sidebar-section-label {
+  padding: 0 10px 4px;
+  color: var(--gray-10);
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.admin-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: calc(32px * var(--scaling, 1));
+  padding: 0 10px;
+  border-radius: var(--look-nav-radius, var(--radius-2));
+  color: var(--gray-11);
+  font-size: var(--font-size-2);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.admin-nav-link svg {
+  flex-shrink: 0;
+  color: var(--gray-10);
+  transition: color 120ms ease;
+}
+
+@media (hover: hover) {
+  .admin-nav-link:hover {
+    background: var(--gray-a3);
+    color: var(--gray-12);
+  }
+}
+
+.admin-nav-link[data-active] {
+  background: var(--look-nav-active-bg, var(--accent-a3));
+  color: var(--look-nav-active-fg, var(--accent-12));
+}
+
+.admin-nav-link[data-active] svg {
+  color: var(--accent-11);
+}
+
+.admin-nav-link[data-active]::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--look-nav-indicator, transparent);
+}
+
+.admin-nav-link:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: -2px;
+}
+
+/* ── Account menu trigger ── */
+.account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-3);
+  background: var(--gray-a2);
+  box-shadow: inset 0 0 0 1px var(--gray-a4);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .account-trigger:hover {
+    background: var(--gray-a3);
+  }
+}
+
+.account-trigger:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+.account-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-a4);
+  color: var(--accent-11);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-trigger-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.25;
+}
+
+.account-trigger-chevron {
+  flex-shrink: 0;
+  color: var(--gray-10);
+}
+
+.menu-button-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Menu content is portaled, so the current-page cue is styled globally. */
+.rt-BaseMenuItem[aria-current='page'] {
+  color: var(--accent-11);
+  font-weight: 600;
+}
+
+/* ── Topbar ── */
+.admin-shell-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: color-mix(in oklab, var(--look-chrome, var(--color-background)) 82%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-bottom: 1px solid var(--look-rule, var(--gray-a5));
+}
+
+.admin-shell-topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--admin-topbar-h);
+  padding: 0 12px;
+}
+
+.topbar-brand {
+  display: inline-flex;
+  flex-shrink: 0;
+  border-radius: var(--radius-3);
+}
+
+.topbar-crumbs {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--font-size-2);
+  color: var(--gray-11);
+}
+
+.topbar-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.topbar-crumb a {
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--radius-1);
+}
+
+.topbar-crumb a:hover {
+  color: var(--gray-12);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.topbar-crumb svg {
+  color: var(--gray-8);
+  flex-shrink: 0;
+}
+
+.topbar-crumb--section {
+  color: var(--gray-10);
+}
+
+.topbar-crumb[data-last] {
+  color: var(--gray-12);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--heading-font-family);
+  font-weight: var(--look-heading-weight, 700);
+  font-size: var(--font-size-4);
+  letter-spacing: var(--heading-letter-spacing, 0);
+}
+
+.topbar-title[data-brand] {
+  font-family: var(--default-font-family);
+  font-size: var(--font-size-2);
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--gray-12);
+}
+
+.topbar-desktop-only {
+  display: none;
+}
+
+.topbar-mobile-only {
+  display: inline-flex;
+}
+
+/* ── Mobile tab bar ── */
+.admin-shell-bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--look-rule, var(--gray-a5));
+  background: color-mix(in oklab, var(--color-panel-solid) 90%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.admin-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 4px 2px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--gray-11);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-tab-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 28px;
+  border-radius: 999px;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.admin-tab:active .admin-tab-icon {
+  background: var(--gray-a4);
+}
+
+.admin-tab[data-active] {
+  color: var(--accent-11);
+  font-weight: 600;
+}
+
+.admin-tab[data-active] .admin-tab-icon {
+  background: var(--accent-a4);
+}
+
+.admin-tab--create {
+  position: relative;
+}
+
+.admin-tab-fab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-top: -18px;
+  border-radius: 50%;
+  background: var(--accent-9);
+  color: var(--accent-contrast);
+  box-shadow: 0 0 0 4px var(--color-panel-solid), 0 6px 16px -4px var(--accent-a8);
+  transition: transform 140ms ease;
+}
+
+.admin-tab--create:active .admin-tab-fab {
+  transform: scale(0.94);
+}
+
+.admin-tab:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+@media (min-width: 960px) {
+  :root {
+    --admin-topbar-h: 60px;
+    --admin-bottom-nav-h: 0px;
+  }
+
+  .admin-shell-sidebar {
+    display: flex;
+  }
+
+  .admin-shell-bottom-nav,
+  .topbar-mobile-only,
+  .topbar-title,
+  .topbar-brand,
+  .topbar-back {
+    display: none;
+  }
+
+  .admin-shell-topbar-inner {
+    padding: 0 24px;
+  }
+
+  .topbar-crumbs,
+  .topbar-desktop-only {
+    display: inline-flex;
+  }
+
+  .admin-shell-content {
+    padding-bottom: 32px;
+  }
+}
+
+/* ── Collapsible tools group ── */
+.sidebar-tools > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.sidebar-tools > summary::-webkit-details-marker {
+  display: none;
+}
+
+.sidebar-tools-chevron {
+  margin-left: auto;
+  transition: transform 140ms ease;
+}
+
+.sidebar-tools[open] .sidebar-tools-chevron {
+  transform: rotate(90deg);
+}
+
+.sidebar-tools-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 12px;
+}

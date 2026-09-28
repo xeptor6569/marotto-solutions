@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Plus, List } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import WorkflowBoard from "@/components/WorkflowBoard";
-import BackButton from "@/components/BackButton";
 
 export default async function QuotesBoardPage() {
     const quotes = await getDocuments("quote");
@@ -21,7 +20,6 @@ export default async function QuotesBoardPage() {
                     <Button asChild size="2" variant="solid">
                         <Link href="/admin/quotes/new"><Plus size={14} /> New quote</Link>
                     </Button>
-                    <BackButton href="/admin" />
                 </Flex>
             </Flex>
 

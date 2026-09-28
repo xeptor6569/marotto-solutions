@@ -2,16 +2,21 @@ import { Container, Button } from "@radix-ui/themes";
 import Link from "next/link";
 import { Plus, LayoutGrid } from "lucide-react";
 import { getDocuments } from "@/lib/data";
-import BackButton from "@/components/BackButton";
 import AdminDocumentList from "@/components/AdminDocumentList";
-import AdminListPageHeader from "@/components/AdminListPageHeader";
+import { parseDocumentStatusFilter } from "@/lib/status-display";
+import PageHeader from '@/components/ui/PageHeader';
 
-export default async function AdminEstimatesPage() {
+export default async function AdminEstimatesPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ status?: string; q?: string }>;
+}) {
+    const { status, q } = await searchParams;
     const estimates = await getDocuments("estimate");
 
     return (
         <Container size="4" p={{ initial: "3", sm: "5" }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Estimates"
                 actions={
                     <>
@@ -21,12 +26,16 @@ export default async function AdminEstimatesPage() {
                         <Button asChild size="2" variant="solid">
                             <Link href="/admin/estimates/new"><Plus size={14} /> New estimate</Link>
                         </Button>
-                        <BackButton href="/admin" />
                     </>
                 }
             />
 
-            <AdminDocumentList type="estimate" docs={estimates} />
+            <AdminDocumentList
+                type="estimate"
+                docs={estimates}
+                initialStatus={parseDocumentStatusFilter(status)}
+                initialQuery={q ?? ""}
+            />
         </Container>
     );
 }

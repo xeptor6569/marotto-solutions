@@ -24,7 +24,8 @@ import {
 import { buildConvertedDocument, canConvert } from '@/lib/convert-document';
 import { hasPendingApprovalLines } from '@/lib/pending-client-approval';
 import { createJob, getJobById, getJobOptions } from '@/lib/jobs';
-import { suggestDocumentTitle } from '@/lib/document-labels';
+import { DOC_LABEL, suggestDocumentTitle } from '@/lib/document-labels';
+import { setFlash } from '@/lib/flash-server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { isDatabaseConfigured } from '@/lib/prisma';
@@ -89,6 +90,7 @@ export async function createDepositInvoiceAction(input: {
         revalidatePath(`/admin/invoices/${doc.id}`);
         revalidatePath(`/admin/invoices/${doc.id}/edit`);
 
+        await setFlash(`Deposit invoice ${doc.id} created`, 'success', 'It is a draft. Review the amount, then issue it to the client.');
         redirect(`/admin/invoices/${doc.id}/edit`);
     } catch (error) {
         if (error && typeof error === 'object' && 'digest' in error) {
@@ -159,6 +161,7 @@ export async function createConvertedDocumentAction(input: {
         revalidatePath(`/admin/${input.targetType}s/${doc.id}`);
         revalidatePath(`/admin/${input.targetType}s/${doc.id}/edit`);
 
+        await setFlash(`Converted to ${DOC_LABEL[input.targetType].toLowerCase()} ${doc.id}`, 'success', 'It is a draft. Review it, then send it to the client.');
         redirect(`/admin/${input.targetType}s/${doc.id}/edit`);
     } catch (error) {
         if (error && typeof error === 'object' && 'digest' in error) {
@@ -173,7 +176,17 @@ export async function createConvertedDocumentAction(input: {
     }
 }
 
-export async function createInvoiceAction(formData: FormData) {
+export type DocumentSaveState = { error?: string };
+
+/**
+ * Saves a document from the editor. Used with useActionState: validation and
+ * storage failures come back as `{ error }` so the form stays filled in;
+ * success redirects (with a flash toast) to the document or `redirectTo`.
+ */
+export async function createInvoiceAction(
+    _prev: DocumentSaveState | undefined,
+    formData: FormData,
+): Promise<DocumentSaveState> {
     await requireAdminActionOrRedirect('/admin');
     const documentId = formData.get('documentId') as string | null;
     const createdAt = (formData.get('createdAt') as string) || new Date().toISOString();
@@ -225,7 +238,10 @@ export async function createInvoiceAction(formData: FormData) {
 
     const items = parseLineItemsFromFormData(formData);
     if (items.length === 0) {
-        throw new Error('Add at least one line item before saving.');
+        return { error: 'Add at least one line item before saving.' };
+    }
+    if (!((formData.get('customerName') as string) || '').trim()) {
+        return { error: 'Add the client name before saving.' };
     }
 
     let resolvedTitle = title;
@@ -288,7 +304,7 @@ export async function createInvoiceAction(formData: FormData) {
     if (type === 'invoice' && intent === 'record_payment') {
         const paymentError = validateRecordPayment(paymentAmount, existingBalanceDue, await getMoneyFormat());
         if (paymentError) {
-            throw new Error(paymentError);
+            return { error: paymentError };
         }
     }
 
@@ -357,11 +373,8 @@ export async function createInvoiceAction(formData: FormData) {
             await saveNewDocument(doc);
         }
     } catch (e: unknown) {
-        console.error("Failed to save invoice", e);
-        // In a real app we would return error state, but since we are redirecting we throw or handle differently.
-        // If we use useActionState in the form, we can return { error: ... }
-        // But for this simple form action redirect:
-        throw new Error(`Failed to save: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        console.error("Failed to save document", e);
+        return { error: `Could not save: ${e instanceof Error ? e.message : 'Unknown error'}. Your changes are still in the form.` };
     }
 
     revalidatePath('/dashboard');
@@ -375,16 +388,24 @@ export async function createInvoiceAction(formData: FormData) {
     revalidatePath(`/admin/${type}s/${doc.id}`);
     revalidatePath(`/${type}s/${doc.id}`);
 
-    let redirectTo =
-        redirectToInput && !['/admin', '/dashboard'].includes(redirectToInput)
+    const documentPath = type === 'lead' ? `/admin/leads/${doc.id}` : `/admin/${type}s/${doc.id}`;
+    let redirectTo = intent === 'save_and_send'
+        // Land on the document with the send dialog open, wherever the editor came from.
+        ? `${documentPath}?send=1`
+        : redirectToInput && !['/admin', '/dashboard'].includes(redirectToInput)
             ? redirectToInput
-            : type === 'lead'
-                ? `/admin/leads/${doc.id}`
-                : `/admin/${type}s/${doc.id}`;
+            : documentPath;
 
     if (createdReceiptId) {
         const separator = redirectTo.includes('?') ? '&' : '?';
         redirectTo = `${redirectTo}${separator}recorded=1&receipt=${encodeURIComponent(createdReceiptId)}`;
+    } else {
+        const label = DOC_LABEL[type] ?? 'Document';
+        await setFlash(
+            intent === 'save_and_send' ? `${label} ${doc.id} is ready to send` : `${label} ${doc.id} ${documentId ? 'saved' : 'created'}`,
+            'success',
+            intent === 'save_and_send' ? 'Marked as sent. Choose how to get it to the client.' : undefined,
+        );
     }
 
     redirect(redirectTo);
@@ -440,6 +461,7 @@ export async function createLeadAction(formData: FormData) {
         revalidatePath('/admin/jobs');
         revalidatePath(`/admin/jobs/${selectedJobId}`);
     }
+    await setFlash(`${name} added`);
     redirect(`/admin/leads/${doc.id}`);
 }
 
@@ -593,6 +615,7 @@ export async function deleteAdminDocumentAction(input: {
     }
 
     let redirectTo: string | undefined;
+    let deletedLabel = 'Document';
     try {
         const existing = await getDocumentById(id);
         if (!existing || !DELETABLE_DOC_TYPES.includes(existing.type)) {
@@ -600,6 +623,7 @@ export async function deleteAdminDocumentAction(input: {
         }
 
         await deleteDocument(existing.type, id);
+        deletedLabel = `${DOC_LABEL[existing.type]} ${existing.id}`;
 
         const listPath = `/admin/${existing.type}s`;
         revalidatePath('/admin');
@@ -621,6 +645,7 @@ export async function deleteAdminDocumentAction(input: {
     }
 
     if (redirectTo) {
+        await setFlash(`${deletedLabel} deleted`);
         redirect(redirectTo);
     }
     return { success: true };

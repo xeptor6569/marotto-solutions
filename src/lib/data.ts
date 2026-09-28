@@ -61,7 +61,13 @@ async function deleteDocumentLocal(type: DocumentType, id: string) {
 // For production with multiple replicas, use Redis or just rely on WebDAV if fast enough.
 // Since it's for 1 user, direct WebDAV with short cache is okay.
 const CACHE_TTL = 30 * 1000; // 30 seconds
-const cache: Record<string, { data: DocumentData[], timestamp: number }> = {};
+// Kept on globalThis: Next can load this module separately for server actions
+// and for page renders, and a per-module cache would let a page read a list
+// that a save in the other copy already invalidated.
+const cacheHolder = globalThis as typeof globalThis & {
+    __documentListCache?: Record<string, { data: DocumentData[], timestamp: number }>;
+};
+const cache = (cacheHolder.__documentListCache ??= {});
 
 export async function getDocuments(type: DocumentType): Promise<DocumentData[]> {
     // Check cache first

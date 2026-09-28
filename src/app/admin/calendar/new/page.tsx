@@ -1,6 +1,5 @@
 import { Container } from '@radix-ui/themes';
 import CalendarEventForm from '@/components/CalendarEventForm';
-import BackButton from '@/components/BackButton';
 import type { CalendarEventInput } from '@/lib/types';
 
 export default async function NewCalendarEventPage({
@@ -24,7 +23,6 @@ export default async function NewCalendarEventPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <BackButton href="/admin/calendar" />
             <CalendarEventForm mode="create" initialData={initialData} />
         </Container>
     );

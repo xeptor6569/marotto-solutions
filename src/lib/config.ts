@@ -18,6 +18,7 @@ import {
 } from './legacy-defaults';
 import { DEFAULT_NUMBER_PADDING, DEFAULT_PREFIXES, DEFAULT_START_NUMBERS } from './document-numbering';
 import { DEFAULT_THEME_PRESET_ID } from './theme-presets';
+import { DEFAULT_LOOK_ID } from './theme-looks';
 
 // Settings live under the persistent `data/` volume so the runtime user
 // (e.g. the unprivileged `nextjs` user inside Docker) can always write to it
@@ -71,6 +72,8 @@ export function getDefaultBusinessConfig(): BusinessConfig {
 export function getDefaultBrandingConfig(): BrandingConfig {
     return {
         themePreset: DEFAULT_THEME_PRESET_ID,
+        look: DEFAULT_LOOK_ID,
+        density: 'default',
         defaultAppearance: 'system',
         letterheadLine1: '',
         letterheadLine2: '',

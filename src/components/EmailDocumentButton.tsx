@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button, Dialog, Flex, Text, TextArea, TextField } from '@radix-ui/themes';
-import { Mail } from 'lucide-react';
-import { useFormState } from 'react-dom';
+import { Link2, Mail, Send } from 'lucide-react';
 import { sendDocumentEmailAction, type EmailDocumentState } from '@/app/email-document-action';
+import { useToast } from '@/components/ui/Toaster';
 
 const initialState: EmailDocumentState = { success: false };
 
@@ -29,9 +29,10 @@ function EmailSendFields({
     businessName?: string;
     onClose: () => void;
 }) {
-    const [state, formAction] = useFormState(sendDocumentEmailAction, initialState);
+    const [state, formAction, isPending] = useActionState(sendDocumentEmailAction, initialState);
     const [to, setTo] = useState(defaultTo || '');
     const [message, setMessage] = useState('');
+    const toast = useToast();
 
     // Reset fields when the target recipient changes (render-time adjustment
     // instead of a cascading setState-in-effect).
@@ -43,11 +44,12 @@ function EmailSendFields({
     }
 
     useEffect(() => {
-        if (state.success) {
-            const t = window.setTimeout(() => onClose(), 1600);
-            return () => window.clearTimeout(t);
-        }
-    }, [state.success, onClose]);
+        if (!state.success) return;
+        toast({ title: `${docTitle} ${documentId} sent`, description: to.trim() ? `Emailed to ${to.trim()}` : undefined });
+        onClose();
+        // Only react to a new successful result, not to typing in the form.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state]);
 
     const viewUrl = useMemo(() => {
         if (typeof window === 'undefined') return '';
@@ -78,11 +80,6 @@ function EmailSendFields({
                     {state.error}
                 </Text>
             ) : null}
-            {state.success ? (
-                <Text size="2" color="green" mb="3" as="p">
-                    Email sent.
-                </Text>
-            ) : null}
 
             <Flex direction="column" gap="3">
                 <BoxLabel label="To">
@@ -107,13 +104,28 @@ function EmailSendFields({
                             <input type="hidden" name="documentId" value={documentId} />
                             <input type="hidden" name="to" value={to} />
                             <input type="hidden" name="message" value={message} />
-                            <Button type="submit" disabled={state.success}>
-                                Send email
+                            <Button type="submit" loading={isPending} disabled={state.success || !to.trim()}>
+                                <Send size={14} /> Send email
                             </Button>
                         </form>
                     ) : null}
                     <Button type="button" variant="soft" asChild>
                         <a href={mailtoHref}>Open in email app</a>
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="soft"
+                        color="gray"
+                        onClick={async () => {
+                            try {
+                                await navigator.clipboard.writeText(viewUrl);
+                                toast({ title: 'Link copied', description: 'Paste it into a text or email to the client.' });
+                            } catch {
+                                toast({ title: 'Could not copy the link', description: viewUrl, tone: 'error' });
+                            }
+                        }}
+                    >
+                        <Link2 size={14} /> Copy link
                     </Button>
                 </Flex>
             </Flex>
@@ -130,6 +142,9 @@ export default function EmailDocumentButton({
     serverEmailConfigured,
     pendingApprovalSummary,
     businessName,
+    triggerLabel,
+    triggerVariant = 'soft',
+    defaultOpen = false,
 }: {
     documentId: string;
     sharePath: string;
@@ -139,8 +154,12 @@ export default function EmailDocumentButton({
     serverEmailConfigured: boolean;
     pendingApprovalSummary?: string;
     businessName?: string;
+    triggerLabel?: string;
+    triggerVariant?: 'solid' | 'soft';
+    /** Open on arrival, e.g. right after "Save & send" in the editor. */
+    defaultOpen?: boolean;
 }) {
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(defaultOpen);
     const [panelKey, setPanelKey] = useState(0);
     const showServerSend = canSendViaServer && serverEmailConfigured;
 
@@ -152,14 +171,14 @@ export default function EmailDocumentButton({
     return (
         <Dialog.Root open={open} onOpenChange={handleOpenChange}>
             <Dialog.Trigger>
-                <Button variant="soft" type="button">
-                    <Mail size={16} /> Email {docTitle}
+                <Button variant={triggerVariant} type="button" style={{ minHeight: 40 }}>
+                    {triggerVariant === 'solid' ? <Send size={16} /> : <Mail size={16} />} {triggerLabel ?? `Email ${docTitle}`}
                 </Button>
             </Dialog.Trigger>
             <Dialog.Content style={{ maxWidth: 480 }}>
-                <Dialog.Title>Email {docTitle}</Dialog.Title>
+                <Dialog.Title>Send {docTitle.toLowerCase()} {documentId}</Dialog.Title>
                 <Dialog.Description size="2" mb="4">
-                    Send a link to this page so the customer can view or print the document.
+                    The client gets a link to a branded page where they can view, print{docTitle === 'Invoice' ? ', and pay' : ''}.
                 </Dialog.Description>
 
                 <EmailSendFields

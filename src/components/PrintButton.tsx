@@ -34,9 +34,12 @@ function withPrintTitle(fileName: string, action: () => void) {
 export default function PrintButton({
     label = "Document",
     fileName,
+    emphasis = "print",
 }: {
     label?: string;
     fileName?: string;
+    /** Which of the two buttons is the solid one. */
+    emphasis?: "print" | "pdf";
 }) {
     const [saving, setSaving] = useState(false);
     const resolvedFileName = sanitizeFileName(fileName || label);
@@ -86,10 +89,10 @@ export default function PrintButton({
 
     return (
         <>
-            <Button onClick={handlePrint}>
+            <Button onClick={handlePrint} variant={emphasis === "print" ? "solid" : "soft"}>
                 <Printer size={16} /> Print
             </Button>
-            <Button onClick={handleSavePdf} variant="soft" disabled={saving}>
+            <Button onClick={handleSavePdf} variant={emphasis === "pdf" ? "solid" : "soft"} disabled={saving}>
                 <Download size={16} /> {saving ? "Saving…" : "Save PDF"}
             </Button>
         </>

@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Plus, List } from "lucide-react";
 import { getDocuments } from "@/lib/data";
 import WorkflowBoard from "@/components/WorkflowBoard";
-import BackButton from "@/components/BackButton";
 
 export default async function EstimatesBoardPage() {
     const estimates = await getDocuments("estimate");
@@ -21,7 +20,6 @@ export default async function EstimatesBoardPage() {
                     <Button asChild size="2" variant="solid">
                         <Link href="/admin/estimates/new"><Plus size={14} /> New estimate</Link>
                     </Button>
-                    <BackButton href="/admin" />
                 </Flex>
             </Flex>
 

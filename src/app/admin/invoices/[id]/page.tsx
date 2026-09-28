@@ -9,7 +9,7 @@ export default async function AdminInvoicePage({
     searchParams,
 }: {
     params: Promise<{ id: string }>;
-    searchParams?: Promise<{ fromJob?: string }>;
+    searchParams?: Promise<{ fromJob?: string; send?: string }>;
 }) {
     const { id } = await params;
     const query = (await searchParams) || {};
@@ -35,6 +35,7 @@ export default async function AdminInvoicePage({
                 showBackButton
                 backHref={backHref}
                 editHref={editHref}
+                autoOpenSend={query.send === "1"}
             />
         </>
     );

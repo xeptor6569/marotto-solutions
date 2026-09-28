@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Badge, Box, Button, Card, Container, Flex, Heading, Text } from '@radix-ui/themes';
+import { Box, Button, Card, Container, Flex, Heading, Text } from '@radix-ui/themes';
+import StatusBadge from '@/components/ui/StatusBadge';
 import { notFound } from 'next/navigation';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import JobAttachmentsPanel from '@/components/JobAttachmentsPanel';
 import JobTimePanel from '@/components/JobTimePanel';
 import HelperPayoutPanel from '@/components/HelperPayoutPanel';
@@ -46,7 +46,7 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title={job.name}
                 actions={(
                     <>
@@ -56,7 +56,6 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                             redirectTo={jobRedirect}
                             documentsOnly
                         />
-                        <BackButton href="/admin/jobs" />
                     </>
                 )}
             />
@@ -80,7 +79,7 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                                 </Text>
                             ) : null}
                         </Box>
-                        <Badge size="2">{job.status}</Badge>
+                        <StatusBadge kind="job" status={job.status} size="2" />
                     </Flex>
                 </Card>
 
@@ -141,7 +140,7 @@ export default async function AdminJobDetailPage({ params }: { params: Promise<{
                                                                 ? ` · ${formatHours(doc.estimatedHours)}`
                                                                 : ''}
                                                         </Text>
-                                                        <Badge mt="2" size="1" variant="soft">{doc.status}</Badge>
+                                                        <Box mt="2"><StatusBadge doc={doc} /></Box>
                                                     </Box>
                                                     <Flex gap="2" wrap="wrap">
                                                         <Button asChild size="2" variant="soft" style={{ minHeight: 44 }}>

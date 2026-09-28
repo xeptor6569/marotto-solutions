@@ -3,14 +3,20 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Badge, Box, Button, DropdownMenu, Flex, Separator, Text } from '@radix-ui/themes';
+import { DropdownMenu, Flex, IconButton, Text } from '@radix-ui/themes';
 import {
     Activity,
+    Archive,
+    Bookmark,
     Briefcase,
     CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    ChevronsUpDown,
     FileText,
     Gauge,
     Handshake,
+    HardHat,
     LifeBuoy,
     ListChecks,
     LogOut,
@@ -20,118 +26,155 @@ import {
     Repeat,
     Settings,
     Upload,
+    UserRound,
     Users,
-    Archive,
-    Bookmark,
-    HardHat,
+    Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
 import CreateMenu from '@/components/CreateMenu';
-import ThemeToggle from '@/components/ThemeToggle';
+import ThemeToggle, { AppearanceRadioItems, useAppearancePreference } from '@/components/ThemeToggle';
+import {
+    ADMIN_NAV_SECTIONS,
+    ADMIN_PINNED_TOOL_HREFS,
+    ADMIN_TOOL_ITEMS,
+    activeNavItem,
+    adminBreadcrumbs,
+    adminParentHref,
+    isActiveNavPath,
+    type AdminNavEntry,
+} from '@/lib/admin-nav';
+import { businessInitials } from '@/lib/branding-core';
 
-type NavItem = {
-    href: string;
-    label: string;
-    shortLabel: string;
-    icon: LucideIcon;
-    matchPrefixes?: string[];
+const NAV_ICONS: Record<string, LucideIcon> = {
+    '/admin': Gauge,
+    '/admin/jobs': Briefcase,
+    '/admin/clients': Users,
+    '/admin/calendar': CalendarDays,
+    '/admin/helpers': HardHat,
+    '/admin/estimates': ListChecks,
+    '/admin/quotes': Handshake,
+    '/admin/invoices': FileText,
+    '/admin/receipts': ReceiptText,
+    '/admin/contracts': Repeat,
+    '/admin/presets': Bookmark,
+    '/admin/import': Upload,
+    '/admin/backup': Archive,
+    '/admin/system': Activity,
+    '/admin/help': LifeBuoy,
+    '/admin/settings': Settings,
 };
 
-type NavSection = {
-    label: string | null;
-    items: NavItem[];
-};
+type NavItem = AdminNavEntry & { icon: LucideIcon };
 
-// Leads routes redirect into Clients, so Clients owns that prefix for
-// active-state highlighting and Leads has no nav entry of its own.
-const navSections: NavSection[] = [
-    {
-        label: null,
-        items: [
-            { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
-        ],
-    },
-    {
-        label: 'Work',
-        items: [
-            { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
-            { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users, matchPrefixes: ['/admin/leads'] },
-            { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
-            { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
-        ],
-    },
-    {
-        label: 'Documents',
-        items: [
-            { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
-            { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
-            { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Inv', icon: FileText },
-            { href: '/admin/receipts', label: 'Receipts', shortLabel: 'Rcpt', icon: ReceiptText },
-            { href: '/admin/contracts', label: 'Contracts', shortLabel: 'Ctr', icon: Repeat },
-        ],
-    },
-];
-
-const desktopNavItems: NavItem[] = navSections.flatMap((section) => section.items);
-
-const mobileNavItems: NavItem[] = [
-    { href: '/admin', label: 'Dashboard', shortLabel: 'Home', icon: Gauge },
-    { href: '/admin/jobs', label: 'Jobs', shortLabel: 'Jobs', icon: Briefcase },
-    { href: '/admin/clients', label: 'Clients', shortLabel: 'Clients', icon: Users, matchPrefixes: ['/admin/leads'] },
-    { href: '/admin/invoices', label: 'Invoices', shortLabel: 'Invoices', icon: FileText },
-];
-
-const moreMenuItems: NavItem[] = [
-    { href: '/admin/calendar', label: 'Calendar', shortLabel: 'Cal', icon: CalendarDays },
-    { href: '/admin/helpers', label: 'Helpers', shortLabel: 'Help', icon: HardHat },
-    { href: '/admin/estimates', label: 'Estimates', shortLabel: 'Est', icon: ListChecks },
-    { href: '/admin/quotes', label: 'Quotes', shortLabel: 'Quotes', icon: Handshake },
-    { href: '/admin/contracts', label: 'Contracts', shortLabel: 'Ctr', icon: Repeat },
-    { href: '/admin/receipts', label: 'Receipts', shortLabel: 'Rcpt', icon: ReceiptText },
-];
-
-const moreToolItems: NavItem[] = [
-    { href: '/admin/presets', label: 'Presets', shortLabel: 'Presets', icon: Bookmark },
-    { href: '/admin/import', label: 'Import', shortLabel: 'Import', icon: Upload },
-    { href: '/admin/backup', label: 'Backup & Restore', shortLabel: 'Backup', icon: Archive },
-    { href: '/admin/system', label: 'System', shortLabel: 'System', icon: Activity },
-    { href: '/admin/help', label: 'Help', shortLabel: 'Help', icon: LifeBuoy },
-    { href: '/admin/settings', label: 'Settings', shortLabel: 'Settings', icon: Settings },
-];
-
-function isActivePath(pathname: string, item: NavItem): boolean {
-    // The dashboard lives at the root of every admin path, so it only matches exactly.
-    if (item.href === '/admin' && !item.matchPrefixes?.length) return pathname === '/admin';
-    const prefixes = [item.href, ...(item.matchPrefixes || [])];
-    return prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+function withIcon(entry: AdminNavEntry): NavItem {
+    return { ...entry, icon: NAV_ICONS[entry.href] ?? FileText };
 }
 
-function NavSlotIcon({ icon: Icon }: { icon: LucideIcon }) {
+const MOBILE_PRIMARY = ['/admin', '/admin/jobs', '/admin/clients', '/admin/invoices'];
+
+const navSections = ADMIN_NAV_SECTIONS.map((section) => ({ ...section, items: section.items.map(withIcon) }));
+const toolItems = ADMIN_TOOL_ITEMS.map(withIcon);
+const pinnedToolItems = toolItems.filter((item) => ADMIN_PINNED_TOOL_HREFS.includes(item.href));
+const extraToolItems = toolItems.filter((item) => !ADMIN_PINNED_TOOL_HREFS.includes(item.href));
+const navItems = navSections.flatMap((section) => section.items);
+const mobilePrimaryItems = MOBILE_PRIMARY
+    .map((href) => navItems.find((item) => item.href === href))
+    .filter((item): item is NavItem => Boolean(item));
+const mobileMoreItems = navItems.filter((item) => !MOBILE_PRIMARY.includes(item.href));
+
+function BrandMark({ businessName, logoUrl, size = 32 }: { businessName: string; logoUrl?: string | null; size?: number }) {
     return (
-        <span className="admin-shell-nav-icon" aria-hidden>
-            <Icon size={18} />
+        <span className="brand-mark" style={{ width: size, height: size }} aria-hidden>
+            {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt="" />
+            ) : (
+                <span className="brand-mark-initials">{businessInitials(businessName)}</span>
+            )}
         </span>
     );
 }
 
-function MoreMenu({ pathname, userEmail }: { pathname: string; userEmail: string }) {
-    const sections = [moreMenuItems, moreToolItems];
-    const active = sections.some((items) => items.some((item) => isActivePath(pathname, item)));
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+    const active = isActiveNavPath(pathname, item);
+    return (
+        <Link
+            href={item.href}
+            className="admin-nav-link"
+            data-active={active || undefined}
+            aria-current={active ? 'page' : undefined}
+        >
+            <item.icon size={16} aria-hidden />
+            <span>{item.label}</span>
+        </Link>
+    );
+}
+
+function AccountMenu({ userEmail, side = 'top' }: { userEmail: string; side?: 'top' | 'bottom' }) {
+    const [appearance, setAppearance] = useAppearancePreference();
+    const initial = (userEmail.trim()[0] || 'A').toUpperCase();
+
+    return (
+        <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+                <button type="button" className="account-trigger" aria-label="Account menu">
+                    <span className="account-avatar" aria-hidden>{initial}</span>
+                    <span className="account-trigger-text">
+                        <Text as="span" size="2" weight="medium" truncate>{userEmail || 'Admin'}</Text>
+                        <Text as="span" size="1" color="gray">Administrator</Text>
+                    </span>
+                    <ChevronsUpDown size={14} className="account-trigger-chevron" aria-hidden />
+                </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start" side={side} sideOffset={6} style={{ minWidth: 220 }}>
+                {userEmail ? (
+                    <>
+                        <DropdownMenu.Label>{userEmail}</DropdownMenu.Label>
+                        <DropdownMenu.Separator />
+                    </>
+                ) : null}
+                <DropdownMenu.Item asChild>
+                    <Link href="/admin/settings?tab=account"><UserRound size={14} /> Account & password</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Item asChild>
+                    <Link href="/admin/settings?tab=appearance"><Settings size={14} /> Appearance settings</Link>
+                </DropdownMenu.Item>
+                <DropdownMenu.Separator />
+                <DropdownMenu.Label>Theme on this device</DropdownMenu.Label>
+                <AppearanceRadioItems value={appearance} onChange={setAppearance} />
+                <DropdownMenu.Separator />
+                <form action={signOutFromAdmin}>
+                    <DropdownMenu.Item color="red" asChild>
+                        <button type="submit" className="menu-button-item">
+                            <LogOut size={14} />
+                            Sign out
+                        </button>
+                    </DropdownMenu.Item>
+                </form>
+            </DropdownMenu.Content>
+        </DropdownMenu.Root>
+    );
+}
+
+function MobileMoreMenu({ pathname, userEmail }: { pathname: string; userEmail: string }) {
+    const sections = [mobileMoreItems, toolItems];
+    const active = sections.some((items) => items.some((item) => isActiveNavPath(pathname, item)));
 
     return (
         <DropdownMenu.Root>
             <DropdownMenu.Trigger>
                 <button
                     type="button"
-                    className={`admin-shell-nav-item${active ? ' is-active' : ''}`}
+                    className="admin-tab"
+                    data-active={active || undefined}
                     aria-label="More admin navigation"
                 >
-                    <NavSlotIcon icon={MoreHorizontal} />
-                    <span>More</span>
+                    <span className="admin-tab-icon" aria-hidden><MoreHorizontal size={20} /></span>
+                    <span className="admin-tab-label">More</span>
                 </button>
             </DropdownMenu.Trigger>
-            <DropdownMenu.Content align="end" side="top" sideOffset={8}>
+            <DropdownMenu.Content align="end" side="top" sideOffset={8} style={{ minWidth: 220 }}>
                 {userEmail ? (
                     <>
                         <DropdownMenu.Label>{userEmail}</DropdownMenu.Label>
@@ -145,7 +188,7 @@ function MoreMenu({ pathname, userEmail }: { pathname: string; userEmail: string
                             <DropdownMenu.Item key={item.href} asChild>
                                 <Link
                                     href={item.href}
-                                    aria-current={isActivePath(pathname, item) ? 'page' : undefined}
+                                    aria-current={isActiveNavPath(pathname, item) ? 'page' : undefined}
                                 >
                                     <item.icon size={14} aria-hidden />
                                     {item.label}
@@ -157,7 +200,7 @@ function MoreMenu({ pathname, userEmail }: { pathname: string; userEmail: string
                 <DropdownMenu.Separator />
                 <form action={signOutFromAdmin}>
                     <DropdownMenu.Item color="red" asChild>
-                        <button type="submit" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <button type="submit" className="menu-button-item">
                             <LogOut size={14} />
                             Sign out
                         </button>
@@ -180,306 +223,154 @@ export default function AdminShell({
     logoUrl?: string | null;
 }) {
     const pathname = usePathname();
-    const activeTitle =
-        [...desktopNavItems, ...moreToolItems].find((item) => isActivePath(pathname, item))?.label ?? 'Admin';
+    const crumbs = adminBreadcrumbs(pathname);
+    const parentHref = adminParentHref(pathname);
+    const current = crumbs[crumbs.length - 1];
+    const sectionLabel = ADMIN_NAV_SECTIONS.find((section) =>
+        section.items.some((item) => item === activeNavItem(pathname)),
+    )?.label;
 
     return (
-        <Box>
-            <Flex style={{ minHeight: '100dvh' }}>
-                <Box className="admin-shell-sidebar no-print">
-                    <Flex direction="column" height="100%" px="3" py="4" gap="4">
-                        <Flex align="center" gap="2">
-                            {logoUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={logoUrl}
-                                    alt=""
-                                    style={{ height: 32, width: 32, objectFit: 'contain', borderRadius: 6 }}
-                                />
-                            ) : null}
-                            <Box style={{ minWidth: 0 }}>
-                                <Text as="div" size="3" weight="bold" truncate>{businessName}</Text>
-                                <Text as="div" size="1" color="gray">Admin</Text>
-                            </Box>
-                        </Flex>
-                        <Separator size="4" />
-                        <Flex direction="column" gap="3">
-                            {navSections.map((section, sectionIndex) => (
-                                <Flex key={section.label ?? sectionIndex} direction="column" gap="1">
-                                    {section.label ? (
-                                        <Text
-                                            as="div"
-                                            size="1"
-                                            color="gray"
-                                            weight="medium"
-                                            style={{ textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 8px' }}
-                                        >
-                                            {section.label}
-                                        </Text>
-                                    ) : null}
-                                    {section.items.map((item) => {
-                                        const active = isActivePath(pathname, item);
-                                        return (
-                                            <Button
-                                                key={item.href}
-                                                asChild
-                                                size="2"
-                                                variant={active ? 'solid' : 'ghost'}
-                                                color={active ? undefined : 'gray'}
-                                                highContrast={!active}
-                                                style={{ justifyContent: 'flex-start' }}
-                                            >
-                                                <Link href={item.href} aria-current={active ? 'page' : undefined}>
-                                                    <item.icon size={16} />
-                                                    {item.label}
-                                                </Link>
-                                            </Button>
-                                        );
-                                    })}
-                                </Flex>
+        <div className="admin-shell look-canvas">
+            <aside className="admin-shell-sidebar no-print" aria-label="Admin navigation">
+                <Link href="/admin" className="sidebar-brand">
+                    <BrandMark businessName={businessName} logoUrl={logoUrl} />
+                    <span className="sidebar-brand-text">
+                        <Text as="span" size="2" weight="bold" truncate>{businessName}</Text>
+                        <span className="ui-eyebrow">Back office</span>
+                    </span>
+                </Link>
+
+                <nav className="sidebar-nav">
+                    {navSections.map((section) => (
+                        <div key={section.id} className="sidebar-section">
+                            {section.label ? <span className="ui-eyebrow sidebar-section-label">{section.label}</span> : null}
+                            {section.items.map((item) => (
+                                <NavLink key={item.href} item={item} pathname={pathname} />
                             ))}
-                        </Flex>
-                        <Box mt="auto">
-                            <Flex direction="column" gap="1">
-                                <Text
-                                    as="div"
-                                    size="1"
-                                    color="gray"
-                                    weight="medium"
-                                    style={{ textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 8px' }}
-                                >
-                                    Tools
-                                </Text>
-                                {moreToolItems.map((item) => {
-                                    const active = isActivePath(pathname, item);
+                        </div>
+                    ))}
+                </nav>
+
+                <div className="sidebar-footer">
+                    <div className="sidebar-section">
+                        <details
+                            className="sidebar-tools"
+                            open={extraToolItems.some((item) => isActiveNavPath(pathname, item)) || undefined}
+                        >
+                            <summary className="admin-nav-link">
+                                <Wrench size={16} aria-hidden />
+                                <span>Tools</span>
+                                <ChevronRight size={14} className="sidebar-tools-chevron" aria-hidden />
+                            </summary>
+                            <div className="sidebar-tools-items">
+                                {extraToolItems.map((item) => (
+                                    <NavLink key={item.href} item={item} pathname={pathname} />
+                                ))}
+                            </div>
+                        </details>
+                        {pinnedToolItems.map((item) => (
+                            <NavLink key={item.href} item={item} pathname={pathname} />
+                        ))}
+                    </div>
+                    <AccountMenu userEmail={userEmail} />
+                </div>
+            </aside>
+
+            <div className="admin-shell-main">
+                <header className="admin-shell-topbar no-print">
+                    <div className="admin-shell-topbar-inner">
+                        <Flex align="center" gap="2" style={{ minWidth: 0, flex: 1 }}>
+                            {parentHref ? (
+                                <IconButton asChild variant="ghost" color="gray" size="2" className="topbar-back">
+                                    <Link href={parentHref} aria-label="Back"><ChevronLeft size={18} /></Link>
+                                </IconButton>
+                            ) : (
+                                <Link href="/admin" className="topbar-brand" aria-label={businessName}>
+                                    <BrandMark businessName={businessName} logoUrl={logoUrl} size={28} />
+                                </Link>
+                            )}
+                            <nav aria-label="Breadcrumb" className="topbar-crumbs">
+                                {sectionLabel ? (
+                                    <span className="topbar-crumb topbar-crumb--section">
+                                        {sectionLabel}
+                                        <ChevronRight size={12} aria-hidden />
+                                    </span>
+                                ) : null}
+                                {crumbs.map((crumb, index) => {
+                                    const last = index === crumbs.length - 1;
                                     return (
-                                        <Button
-                                            key={item.href}
-                                            asChild
-                                            size="2"
-                                            variant={active ? 'solid' : 'ghost'}
-                                            color={active ? undefined : 'gray'}
-                                            highContrast={!active}
-                                            style={{ justifyContent: 'flex-start' }}
-                                        >
-                                            <Link href={item.href} aria-current={active ? 'page' : undefined}>
-                                                <item.icon size={16} />
-                                                {item.label}
-                                            </Link>
-                                        </Button>
+                                        <span key={crumb.href} className="topbar-crumb" data-last={last || undefined}>
+                                            {last ? (
+                                                <span aria-current="page">{crumb.label}</span>
+                                            ) : (
+                                                <Link href={crumb.href}>{crumb.label}</Link>
+                                            )}
+                                            {!last ? <ChevronRight size={12} aria-hidden /> : null}
+                                        </span>
                                     );
                                 })}
-                                <Separator size="4" my="2" />
-                                {userEmail ? (
-                                    <Badge color="gray" variant="soft" style={{ justifyContent: 'center' }}>
-                                        {userEmail}
-                                    </Badge>
-                                ) : null}
-                                <form action={signOutFromAdmin}>
-                                    <Button type="submit" size="2" variant="ghost" color="gray" style={{ width: '100%', justifyContent: 'flex-start' }}>
-                                        <LogOut size={16} />
-                                        Sign out
-                                    </Button>
-                                </form>
-                            </Flex>
-                        </Box>
-                    </Flex>
-                </Box>
-
-                <Flex direction="column" style={{ minWidth: 0, flex: 1 }}>
-                    <Box className="admin-shell-topbar no-print">
-                        <Flex
-                            align="center"
-                            justify="between"
-                            gap="2"
-                            px={{ initial: '3', sm: '5' }}
-                            py="2"
-                            className="admin-shell-topbar-inner"
-                        >
-                            <Flex direction="column" gap="0">
-                                <Text size="3" weight="bold">{activeTitle}</Text>
-                                <Text size="1" color="gray" className="admin-shell-topbar-subtitle">
-                                    Fast access across all documents
-                                </Text>
-                            </Flex>
-                            <Flex align="center" gap="3">
-                                <ThemeToggle />
-                                <Flex align="center" gap="2" className="admin-shell-topbar-desktop-only">
-                                    <CreateMenu />
-                                    <Button asChild size="2" variant="soft">
-                                        <Link href="/admin/settings"><Settings size={14} /> Settings</Link>
-                                    </Button>
-                                </Flex>
-                            </Flex>
+                            </nav>
+                            <span className="topbar-title" data-brand={parentHref ? undefined : true} aria-hidden>
+                                {parentHref ? current?.label : businessName}
+                            </span>
                         </Flex>
-                    </Box>
+                        <Flex align="center" gap="2">
+                            <span className="topbar-mobile-only"><ThemeToggle /></span>
+                            <span className="topbar-desktop-only">
+                                <CreateMenu />
+                            </span>
+                        </Flex>
+                    </div>
+                </header>
 
-                    <Box className="admin-shell-content">
-                        {children}
-                    </Box>
-                </Flex>
-            </Flex>
+                <main className="admin-shell-content">
+                    {children}
+                </main>
+            </div>
 
-            <Box className="admin-shell-bottom-nav no-print" role="navigation" aria-label="Admin">
-                <Flex align="stretch" gap="1">
-                    {mobileNavItems.map((item) => {
-                        const active = isActivePath(pathname, item);
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`admin-shell-nav-item${active ? ' is-active' : ''}`}
-                                aria-current={active ? 'page' : undefined}
-                            >
-                                <NavSlotIcon icon={item.icon} />
-                                <span>{item.shortLabel}</span>
-                            </Link>
-                        );
-                    })}
-                    <CreateMenu
-                        side="top"
-                        trigger={
-                            <button type="button" className="admin-shell-nav-item is-create" aria-label="Create">
-                                <span className="admin-shell-nav-icon" aria-hidden>
-                                    <Plus size={18} />
-                                </span>
-                                <span>Create</span>
-                            </button>
-                        }
-                    />
-                    <MoreMenu pathname={pathname} userEmail={userEmail} />
-                </Flex>
-            </Box>
-
-            <style>{`
-                :root {
-                    --admin-topbar-h: 52px;
-                    --admin-bottom-nav-h: calc(64px + env(safe-area-inset-bottom, 0px));
-                }
-                .admin-shell-sidebar {
-                    display: none;
-                    width: 250px;
-                    border-right: 1px solid var(--gray-6);
-                    background: var(--gray-2);
-                    position: sticky;
-                    top: 0;
-                    height: 100dvh;
-                    overflow-y: auto;
-                }
-                .admin-shell-topbar {
-                    position: sticky;
-                    top: 0;
-                    z-index: 40;
-                    padding-top: env(safe-area-inset-top, 0px);
-                    background: color-mix(in srgb, var(--color-panel-solid) 92%, transparent);
-                    backdrop-filter: blur(10px);
-                    border-bottom: 1px solid var(--gray-6);
-                }
-                .admin-shell-topbar-inner {
-                    min-height: var(--admin-topbar-h);
-                }
-                .admin-shell-topbar-subtitle {
-                    display: none;
-                }
-                .admin-shell-content {
-                    padding-bottom: calc(var(--admin-bottom-nav-h) + 16px);
-                }
-                .admin-shell-bottom-nav {
-                    position: fixed;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    z-index: 50;
-                    border-top: 1px solid var(--gray-6);
-                    background: color-mix(in srgb, var(--color-panel-solid) 94%, transparent);
-                    backdrop-filter: blur(10px);
-                    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
-                }
-                .admin-shell-nav-item {
-                    flex: 1 1 0;
-                    min-width: 0;
-                    min-height: 52px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 3px;
-                    padding: 4px 2px;
-                    border: none;
-                    border-radius: 10px;
-                    background: transparent;
-                    color: var(--gray-11);
-                    font-family: inherit;
-                    font-size: 10px;
-                    font-weight: 500;
-                    line-height: 1.1;
-                    letter-spacing: 0.01em;
-                    text-decoration: none;
-                    cursor: pointer;
-                    -webkit-tap-highlight-color: transparent;
-                }
-                .admin-shell-nav-item > span:last-child {
-                    max-width: 100%;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    white-space: nowrap;
-                }
-                .admin-shell-nav-item:active {
-                    background: var(--gray-a3);
-                }
-                .admin-shell-nav-icon {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 36px;
-                    height: 26px;
-                    border-radius: 999px;
-                    transition: background-color 120ms ease, color 120ms ease;
-                }
-                .admin-shell-nav-item.is-active {
-                    color: var(--accent-11);
-                }
-                .admin-shell-nav-item.is-active .admin-shell-nav-icon {
-                    background: var(--accent-a4);
-                }
-                .admin-shell-nav-item.is-create .admin-shell-nav-icon {
-                    background: var(--accent-9);
-                    color: var(--accent-contrast);
-                }
-                .admin-shell-nav-item:focus-visible {
-                    outline: 2px solid var(--accent-8);
-                    outline-offset: 2px;
-                }
-                .admin-shell-topbar-desktop-only {
-                    display: none !important;
-                }
-                /* Menu content is portaled, so the current-page cue is styled globally */
-                .rt-BaseMenuItem[aria-current='page'] {
-                    color: var(--accent-11);
-                    font-weight: 600;
-                }
-                @media (min-width: 960px) {
-                    :root {
-                        --admin-topbar-h: 64px;
-                        --admin-bottom-nav-h: 0px;
+            <nav className="admin-shell-bottom-nav no-print" aria-label="Admin">
+                {mobilePrimaryItems.slice(0, 2).map((item) => {
+                    const active = isActiveNavPath(pathname, item);
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className="admin-tab"
+                            data-active={active || undefined}
+                            aria-current={active ? 'page' : undefined}
+                        >
+                            <span className="admin-tab-icon" aria-hidden><item.icon size={20} /></span>
+                            <span className="admin-tab-label">{item.shortLabel}</span>
+                        </Link>
+                    );
+                })}
+                <CreateMenu
+                    side="top"
+                    trigger={
+                        <button type="button" className="admin-tab admin-tab--create" aria-label="Create">
+                            <span className="admin-tab-fab" aria-hidden><Plus size={22} /></span>
+                            <span className="admin-tab-label">Create</span>
+                        </button>
                     }
-                    .admin-shell-sidebar {
-                        display: block;
-                    }
-                    .admin-shell-bottom-nav {
-                        display: none;
-                    }
-                    .admin-shell-content {
-                        padding-bottom: 0;
-                    }
-                    .admin-shell-topbar-subtitle {
-                        display: block;
-                    }
-                    .admin-shell-topbar-desktop-only {
-                        display: inline-flex !important;
-                    }
-                }
-            `}</style>
-        </Box>
+                />
+                {mobilePrimaryItems.slice(2).map((item) => {
+                    const active = isActiveNavPath(pathname, item);
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className="admin-tab"
+                            data-active={active || undefined}
+                            aria-current={active ? 'page' : undefined}
+                        >
+                            <span className="admin-tab-icon" aria-hidden><item.icon size={20} /></span>
+                            <span className="admin-tab-label">{item.shortLabel}</span>
+                        </Link>
+                    );
+                })}
+                <MobileMoreMenu pathname={pathname} userEmail={userEmail} />
+            </nav>
+        </div>
     );
 }
