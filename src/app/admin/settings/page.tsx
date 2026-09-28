@@ -6,6 +6,7 @@ import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import HelpLink from "@/components/HelpLink";
 import SettingsTabs from "@/components/settings/SettingsTabs";
 import { parseSettingsTab } from "@/lib/settings-tabs";
+import { listTimeZones } from "@/lib/timezones";
 
 export default async function SettingsPage({
     searchParams,
@@ -50,6 +51,7 @@ export default async function SettingsPage({
                     logoUrl={branding.logoUrl}
                     defaultTab={parseSettingsTab(tab)}
                     account={{ email, hasPassword }}
+                    timeZones={listTimeZones()}
                 />
             </Box>
         </Container>

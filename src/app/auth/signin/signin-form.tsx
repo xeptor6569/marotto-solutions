@@ -1,11 +1,12 @@
 'use client';
 
-import { Box, Container, Card, Heading, Text, Flex, TextField, Button, Callout } from '@radix-ui/themes';
-import { Mail, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
+import { Box, Heading, Text, Flex, TextField, Button, Callout } from '@radix-ui/themes';
+import { Mail, ArrowLeft, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import ThemeToggle from '@/components/ThemeToggle';
+import { businessInitials } from '@/lib/branding-core';
 
 type AuthMode = 'otp' | 'password';
 
@@ -93,43 +94,55 @@ export default function SignInForm({
     };
 
     return (
-        <Container size="1" px="4" style={{ paddingTop: 'clamp(32px, 10dvh, 80px)' }}>
-            <Box style={{ position: 'absolute', top: 16, right: 16 }}>
-                <ThemeToggle size="3" />
-            </Box>
-            <Flex direction="column" align="center" gap="6">
-                <Flex direction="column" align="center" gap="3">
-                    <Link href="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                        <Flex direction="column" align="center" gap="3">
+        <div className="auth-shell look-canvas">
+            <aside className="auth-brand" aria-hidden>
+                <div className="auth-brand-inner">
+                    <span className="brand-mark auth-brand-mark">
+                        {logoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={logoUrl} alt="" />
+                        ) : (
+                            <span className="brand-mark-initials">{businessInitials(businessName)}</span>
+                        )}
+                    </span>
+                    <Heading size="8" className="auth-brand-name">{businessName}</Heading>
+                    <Text as="p" size="3" className="auth-brand-copy">
+                        Estimates, invoices, jobs, and payments — in one place.
+                    </Text>
+                </div>
+            </aside>
+
+            <main className="auth-main">
+                <Flex justify="end" className="auth-toolbar">
+                    <ThemeToggle size="2" />
+                </Flex>
+                <div className="auth-card">
+                    <Flex align="center" gap="3" mb="5" className="auth-mobile-brand">
+                        <span className="brand-mark" style={{ width: 36, height: 36 }} aria-hidden>
                             {logoUrl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={logoUrl}
-                                    alt=""
-                                    style={{ height: 56, width: 'auto', borderRadius: 10 }}
-                                />
-                            ) : null}
-                            <Heading size="8" align="center" style={{ color: 'var(--accent-11)' }}>
-                                {businessName}
-                            </Heading>
-                        </Flex>
-                    </Link>
-                    <Text color="gray" size="4">Admin Dashboard</Text>
-                </Flex>
+                                <img src={logoUrl} alt="" />
+                            ) : (
+                                <span className="brand-mark-initials">{businessInitials(businessName)}</span>
+                            )}
+                        </span>
+                        <Text size="3" weight="bold">{businessName}</Text>
+                    </Flex>
 
-                <Card size="4" style={{ width: '100%', maxWidth: '400px' }}>
                     <form onSubmit={handleSubmit}>
                         <Flex direction="column" gap="4">
-                            <Flex direction="column" gap="2">
-                                <Heading size="6">Sign in to continue</Heading>
-                                <Text color="gray" size="2">
+                            <Box>
+                                <Heading size="7">
+                                    {mode === 'otp' && awaitingOtp ? 'Check your email' : 'Sign in'}
+                                </Heading>
+                                <Text as="p" color="gray" size="2" mt="1">
                                     {mode === 'otp'
                                         ? awaitingOtp
-                                            ? 'Enter the 6-digit code we emailed you. Stay in this app — no email link needed.'
+                                            ? `We sent a 6-digit code to ${email.trim() || 'your email'}. Enter it here — no link to click.`
                                             : "Enter your email and we'll send a 6-digit sign-in code."
-                                        : 'Enter your credentials to access the admin dashboard.'}
+                                        : 'Welcome back. Sign in to your back office.'}
                                 </Text>
-                            </Flex>
+                            </Box>
 
                             {error ? (
                                 <Callout.Root color="red">
@@ -141,8 +154,10 @@ export default function SignInForm({
                             ) : null}
 
                             <Flex direction="column" gap="1">
-                                <Text as="label" size="2" weight="bold">Email Address</Text>
+                                <Text as="label" size="2" weight="medium" htmlFor="signin-email">Email</Text>
                                 <TextField.Root
+                                    id="signin-email"
+                                    name="email"
                                     type="email"
                                     placeholder="you@example.com"
                                     value={email}
@@ -160,8 +175,10 @@ export default function SignInForm({
 
                             {mode === 'password' ? (
                                 <Flex direction="column" gap="1">
-                                    <Text as="label" size="2" weight="bold">Password</Text>
+                                    <Text as="label" size="2" weight="medium" htmlFor="signin-password">Password</Text>
                                     <TextField.Root
+                                        id="signin-password"
+                                        name="password"
                                         type="password"
                                         placeholder="••••••••"
                                         value={password}
@@ -175,8 +192,10 @@ export default function SignInForm({
 
                             {mode === 'otp' && awaitingOtp ? (
                                 <Flex direction="column" gap="1">
-                                    <Text as="label" size="2" weight="bold">6-digit code</Text>
+                                    <Text as="label" size="2" weight="medium" htmlFor="signin-code">6-digit code</Text>
                                     <TextField.Root
+                                        id="signin-code"
+                                        name="code"
                                         type="text"
                                         inputMode="numeric"
                                         autoComplete="one-time-code"
@@ -186,20 +205,14 @@ export default function SignInForm({
                                         onChange={(e) => setOtp(normalizeOtp(e.target.value))}
                                         required
                                         size="3"
-                                        style={{
-                                            fontFamily: 'var(--font-geist-mono), ui-monospace, monospace',
-                                            letterSpacing: '0.35em',
-                                            fontSize: 22,
-                                            textAlign: 'center',
-                                        }}
+                                        className="auth-otp"
+                                        autoFocus
                                     >
                                         <TextField.Slot>
                                             <KeyRound size={16} />
                                         </TextField.Slot>
                                     </TextField.Root>
-                                    <Text size="1" color="gray">
-                                        Code expires in 10 minutes.
-                                    </Text>
+                                    <Text size="1" color="gray">The code expires in 10 minutes.</Text>
                                 </Flex>
                             ) : null}
 
@@ -218,7 +231,7 @@ export default function SignInForm({
                                     ? awaitingOtp
                                         ? 'Verify code'
                                         : 'Send code'
-                                    : 'Sign In'}{' '}
+                                    : 'Sign in'}{' '}
                                 <ArrowRight size={16} />
                             </Button>
 
@@ -259,36 +272,32 @@ export default function SignInForm({
                                 </Flex>
                             ) : null}
 
-                            <Flex direction="column" gap="2" pt="2" style={{ borderTop: '1px solid var(--gray-5)' }}>
-                                <Text align="center" size="2" color="gray">
-                                    {mode === 'otp' ? 'Know your password?' : "Prefer a one-time code?"}
-                                </Text>
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="2"
-                                    onClick={() => {
-                                        setMode(mode === 'otp' ? 'password' : 'otp');
-                                        setAwaitingOtp(false);
-                                        setOtp('');
-                                        setError('');
-                                    }}
-                                >
-                                    {mode === 'otp' ? 'Sign in with Password' : 'Send a sign-in code instead'}
-                                </Button>
-                            </Flex>
+                            <div className="auth-divider"><span>or</span></div>
 
-                            <Text align="center" size="1" color="gray">
-                                By signing in, you agree to our terms of service.
-                            </Text>
+                            <Button
+                                type="button"
+                                variant="soft"
+                                color="gray"
+                                size="3"
+                                onClick={() => {
+                                    setMode(mode === 'otp' ? 'password' : 'otp');
+                                    setAwaitingOtp(false);
+                                    setOtp('');
+                                    setError('');
+                                }}
+                            >
+                                {mode === 'otp' ? <><KeyRound size={16} /> Sign in with password</> : <><Mail size={16} /> Email me a sign-in code</>}
+                            </Button>
                         </Flex>
                     </form>
-                </Card>
 
-                <Link href="/" style={{ textDecoration: 'none' }}>
-                    <Text size="2" color="gray">← Back to homepage</Text>
-                </Link>
-            </Flex>
-        </Container>
+                    <Flex justify="center" mt="6">
+                        <Link href="/" className="auth-back-link">
+                            <ArrowLeft size={14} /> Back to {businessName}
+                        </Link>
+                    </Flex>
+                </div>
+            </main>
+        </div>
     );
 }

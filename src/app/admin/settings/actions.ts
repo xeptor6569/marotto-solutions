@@ -1,7 +1,5 @@
 'use server';
 
-import fs from 'fs/promises';
-import path from 'path';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { getAppConfig, saveAppConfig } from '@/lib/config';
@@ -27,6 +25,7 @@ import {
 } from '@/lib/theme-presets';
 import { parseDensity, parseLook } from '@/lib/theme-looks';
 import { requireAdminAction } from '@/lib/require-admin-session';
+import { handleLogoUpload } from '@/lib/logo-upload';
 import { checkConnection } from '@/lib/webdav';
 import type {
     AppConfig,
@@ -40,16 +39,6 @@ import type {
 } from '@/lib/types';
 
 export type SettingsActionState = { success: boolean; error?: string };
-
-const BRANDING_DIR = path.join(process.cwd(), 'data', 'branding');
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
-const LOGO_EXT_BY_MIME: Record<string, string> = {
-    'image/png': '.png',
-    'image/jpeg': '.jpg',
-    'image/webp': '.webp',
-    'image/svg+xml': '.svg',
-    'image/gif': '.gif',
-};
 
 function str(formData: FormData, key: string): string {
     return ((formData.get(key) as string) || '').trim();
@@ -96,40 +85,6 @@ async function saveBusinessSection(formData: FormData): Promise<SettingsActionSt
 }
 
 // ─── Appearance / branding ───────────────────────────────────────────
-
-async function handleLogoUpload(formData: FormData, current: Partial<AppConfig>): Promise<{ logoFileName?: string; error?: string }> {
-    const removeLogo = formData.get('removeLogo') === 'on';
-    const file = formData.get('logoFile');
-    const currentLogo = current.branding?.logoFileName?.trim() || '';
-
-    const deleteCurrent = async () => {
-        if (!currentLogo) return;
-        await fs.rm(path.join(BRANDING_DIR, path.basename(currentLogo)), { force: true }).catch(() => {});
-    };
-
-    if (removeLogo) {
-        await deleteCurrent();
-        return { logoFileName: '' };
-    }
-
-    if (!(file instanceof File) || file.size === 0) {
-        return { logoFileName: currentLogo };
-    }
-    if (file.size > MAX_LOGO_BYTES) {
-        return { error: 'Logo must be 2MB or smaller.' };
-    }
-    const ext = LOGO_EXT_BY_MIME[file.type];
-    if (!ext) {
-        return { error: 'Logo must be a PNG, JPEG, WebP, SVG, or GIF image.' };
-    }
-
-    await fs.mkdir(BRANDING_DIR, { recursive: true });
-    // Timestamped name doubles as a cache-buster for the immutable asset route.
-    const fileName = `logo-${Date.now()}${ext}`;
-    await fs.writeFile(path.join(BRANDING_DIR, fileName), Buffer.from(await file.arrayBuffer()));
-    await deleteCurrent();
-    return { logoFileName: fileName };
-}
 
 async function saveAppearanceSection(formData: FormData): Promise<SettingsActionState> {
     const current = await getAppConfig();
