@@ -1931,3 +1931,14 @@ html:has(.client-shell) {
     padding-bottom: 88px !important;
   }
 }
+
+@media (max-width: 767px) {
+  .doc-page-header .doc-toolbar-actions > .rt-BaseButton {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .doc-page-header .doc-toolbar-actions > .rt-BaseButton.rt-variant-solid {
+    flex: 1 1 auto;
+  }
+}

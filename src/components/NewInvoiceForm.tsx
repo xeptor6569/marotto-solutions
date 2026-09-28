@@ -512,7 +512,7 @@ export default function NewDocumentForm({
                                     disabled={stepIndex === 0}
                                     onClick={() => goToStep(STEPS[stepIndex - 1].id)}
                                 >
-                                    <ChevronLeft size={16} /> Back
+                                    <ChevronLeft size={16} /> <span className="editor-btn-label">Back</span>
                                 </Button>
                                 {stepIndex < STEPS.length - 1 ? (
                                     <Button type="button" variant="soft" onClick={() => goToStep(STEPS[stepIndex + 1].id)}>
@@ -528,7 +528,7 @@ export default function NewDocumentForm({
                         <Flex gap="2" align="center" className="editor-footer-actions">
                             {paper ? (
                                 <Button type="button" variant="soft" color="gray" className="editor-preview-button" onClick={() => setPreviewOpen(true)}>
-                                    <Eye size={16} /> Preview
+                                    <Eye size={16} /> <span className="editor-btn-label">Preview</span>
                                 </Button>
                             ) : null}
                             <Button
