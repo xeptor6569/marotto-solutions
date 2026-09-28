@@ -6,6 +6,8 @@ import { listPresets } from '@/lib/presets';
 import type { ClientOption } from '@/lib/clients';
 import type { LeadOption } from '@/lib/leads';
 import type { DocumentFormMode, DocumentPreset, JobOption, PaymentMethodKey } from '@/lib/types';
+import type { DocumentPaperContext } from '@/lib/document-paper';
+import { paperContextFromConfig } from '@/lib/document-paper-server';
 
 export type PaymentMethodOption = { key: PaymentMethodKey; label: string };
 
@@ -17,6 +19,8 @@ export async function getDocumentFormPickers(): Promise<{
     paymentMethods: PaymentMethodOption[];
     documentFormMode: DocumentFormMode;
     presets: DocumentPreset[];
+    /** Letterhead, billing, and Stripe state for the editor's live preview. */
+    paper: DocumentPaperContext;
 }> {
     const [clients, jobs, config, presets] = await Promise.all([
         getClientOptions(),
@@ -38,5 +42,6 @@ export async function getDocumentFormPickers(): Promise<{
         paymentMethods,
         documentFormMode: parseDocumentFormMode(config.documentFormMode ?? DEFAULT_DOCUMENT_FORM_MODE),
         presets,
+        paper: paperContextFromConfig(config),
     };
 }

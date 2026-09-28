@@ -893,6 +893,55 @@ html.pdf-export .payment-options {
   border-radius: 0 !important;
 }
 
+.print-document .doc-option-card {
+  border: 1px solid var(--gray-a5);
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.print-document .doc-option-card--choice {
+  border-style: dashed;
+}
+
+.print-document .doc-option-card[data-selected] {
+  border: 2px solid var(--doc-accent);
+}
+
+.print-document .payment-options-screen {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  column-gap: 1.25rem;
+  row-gap: 0.6rem;
+}
+
+.print-document .payment-option-card {
+  padding: 12px;
+}
+
+.print-document .payment-option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--doc-accent) 10%, white);
+  color: var(--doc-accent);
+}
+
+.print-document .payment-option-detail,
+.print-document .payment-option-note {
+  color: var(--doc-muted);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.print-document .payment-option-note {
+  margin-top: 4px;
+  white-space: pre-line;
+}
+
 .print-document .payment-options-print-row + .payment-options-print-row {
   margin-top: 2px;
 }

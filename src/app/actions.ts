@@ -176,7 +176,17 @@ export async function createConvertedDocumentAction(input: {
     }
 }
 
-export async function createInvoiceAction(formData: FormData) {
+export type DocumentSaveState = { error?: string };
+
+/**
+ * Saves a document from the editor. Used with useActionState: validation and
+ * storage failures come back as `{ error }` so the form stays filled in;
+ * success redirects (with a flash toast) to the document or `redirectTo`.
+ */
+export async function createInvoiceAction(
+    _prev: DocumentSaveState | undefined,
+    formData: FormData,
+): Promise<DocumentSaveState> {
     await requireAdminActionOrRedirect('/admin');
     const documentId = formData.get('documentId') as string | null;
     const createdAt = (formData.get('createdAt') as string) || new Date().toISOString();
@@ -228,7 +238,10 @@ export async function createInvoiceAction(formData: FormData) {
 
     const items = parseLineItemsFromFormData(formData);
     if (items.length === 0) {
-        throw new Error('Add at least one line item before saving.');
+        return { error: 'Add at least one line item before saving.' };
+    }
+    if (!((formData.get('customerName') as string) || '').trim()) {
+        return { error: 'Add the client name before saving.' };
     }
 
     let resolvedTitle = title;
@@ -291,7 +304,7 @@ export async function createInvoiceAction(formData: FormData) {
     if (type === 'invoice' && intent === 'record_payment') {
         const paymentError = validateRecordPayment(paymentAmount, existingBalanceDue, await getMoneyFormat());
         if (paymentError) {
-            throw new Error(paymentError);
+            return { error: paymentError };
         }
     }
 
@@ -360,11 +373,8 @@ export async function createInvoiceAction(formData: FormData) {
             await saveNewDocument(doc);
         }
     } catch (e: unknown) {
-        console.error("Failed to save invoice", e);
-        // In a real app we would return error state, but since we are redirecting we throw or handle differently.
-        // If we use useActionState in the form, we can return { error: ... }
-        // But for this simple form action redirect:
-        throw new Error(`Failed to save: ${e instanceof Error ? e.message : 'Unknown error'}`);
+        console.error("Failed to save document", e);
+        return { error: `Could not save: ${e instanceof Error ? e.message : 'Unknown error'}. Your changes are still in the form.` };
     }
 
     revalidatePath('/dashboard');
@@ -378,12 +388,13 @@ export async function createInvoiceAction(formData: FormData) {
     revalidatePath(`/admin/${type}s/${doc.id}`);
     revalidatePath(`/${type}s/${doc.id}`);
 
-    let redirectTo =
-        redirectToInput && !['/admin', '/dashboard'].includes(redirectToInput)
+    const documentPath = type === 'lead' ? `/admin/leads/${doc.id}` : `/admin/${type}s/${doc.id}`;
+    let redirectTo = intent === 'save_and_send'
+        // Land on the document with the send dialog open, wherever the editor came from.
+        ? `${documentPath}?send=1`
+        : redirectToInput && !['/admin', '/dashboard'].includes(redirectToInput)
             ? redirectToInput
-            : type === 'lead'
-                ? `/admin/leads/${doc.id}`
-                : `/admin/${type}s/${doc.id}`;
+            : documentPath;
 
     if (createdReceiptId) {
         const separator = redirectTo.includes('?') ? '&' : '?';
@@ -391,7 +402,9 @@ export async function createInvoiceAction(formData: FormData) {
     } else {
         const label = DOC_LABEL[type] ?? 'Document';
         await setFlash(
-            intent === 'save_and_send' ? `${label} ${doc.id} issued` : `${label} ${doc.id} ${documentId ? 'saved' : 'created'}`,
+            intent === 'save_and_send' ? `${label} ${doc.id} is ready to send` : `${label} ${doc.id} ${documentId ? 'saved' : 'created'}`,
+            'success',
+            intent === 'save_and_send' ? 'Marked as sent. Choose how to get it to the client.' : undefined,
         );
     }
 

@@ -13,11 +13,11 @@ export default async function NewEstimatePage({
     const params = (await searchParams) || {};
     const { seed, redirectTo } = parseDocumentRouteSeed(params);
     const nextNumber = await getNextNumber("estimate");
-    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets, paper } = await getDocumentFormPickers();
     const backHref = redirectTo || "/admin/estimates";
 
     return (
-        <Container size="3" p={{ initial: "3", sm: "5" }}>
+        <Container size="4" p={{ initial: "3", sm: "5" }}>
             <PageHeader title="New estimate" back={{ href: backHref, label: "Back" }} />
             <NewDocumentForm
                 nextNumber={nextNumber}
@@ -27,6 +27,7 @@ export default async function NewEstimatePage({
                 paymentMethods={paymentMethods}
                 presets={presets}
                 formMode={documentFormMode}
+                paper={paper}
                 seed={seed}
                 redirectTo={redirectTo}
             />

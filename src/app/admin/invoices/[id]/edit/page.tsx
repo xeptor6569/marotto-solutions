@@ -17,7 +17,7 @@ export default async function EditInvoicePage({
     const query = (await searchParams) || {};
     const { redirectTo: redirectFromQuery } = parseDocumentRouteSeed(query);
     const doc = await getDocumentById(id);
-    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets, paper } = await getDocumentFormPickers();
 
     if (!doc || doc.type !== "invoice") {
         notFound();
@@ -29,7 +29,7 @@ export default async function EditInvoicePage({
     const backHref = redirectFromQuery || (jobId ? `/admin/jobs/${jobId}` : defaultRedirect);
 
     return (
-        <Container size="3" p={{ initial: "3", sm: "5" }}>
+        <Container size="4" p={{ initial: "3", sm: "5" }}>
             <PageHeader
                 title="Edit invoice"
                 back={{ href: backHref, label: "Back" }}
@@ -44,6 +44,7 @@ export default async function EditInvoicePage({
                 paymentMethods={paymentMethods}
                 presets={presets}
                 formMode={documentFormMode}
+                paper={paper}
             />
         </Container>
     );

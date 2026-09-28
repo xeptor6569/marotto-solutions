@@ -1,0 +1,318 @@
+/* ── Document editor ─────────────────────────────────────────────────────
+   Form column + live preview column (from 1280px). Guided mode shows one
+   section at a time; full mode shows every section with jump links. */
+
+.document-form {
+  position: relative;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.editor-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.editor-preview-pane {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .document-form[data-preview='on'] .editor-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 46%);
+  }
+
+  .editor-preview-pane {
+    display: block;
+    position: sticky;
+    top: calc(var(--admin-topbar-h, 60px) + 16px);
+  }
+
+  .document-form[data-preview='on'] .editor-preview-button {
+    display: none;
+  }
+}
+
+@media (max-width: 1279px) {
+  .editor-show-preview {
+    display: none;
+  }
+}
+
+.editor-meta {
+  margin-bottom: 8px;
+}
+
+.editor-lede {
+  max-width: 60ch;
+  margin: 0 0 16px;
+}
+
+.editor-unsaved::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--amber-9);
+  vertical-align: middle;
+}
+
+/* ── Section steps / jump nav ── */
+.editor-steps {
+  position: sticky;
+  top: var(--admin-topbar-h, 56px);
+  z-index: 20;
+  display: flex;
+  gap: 4px;
+  margin: 0 -4px 16px;
+  padding: 8px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: color-mix(in oklab, var(--look-canvas, var(--color-background)) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.editor-steps::-webkit-scrollbar {
+  display: none;
+}
+
+.editor-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 0 12px 0 6px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--gray-11);
+  font: inherit;
+  font-size: var(--font-size-2);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.editor-step:hover {
+  background: var(--gray-a3);
+}
+
+.editor-step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--gray-a3);
+  color: var(--gray-11);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.editor-step[data-active] {
+  background: var(--accent-a3);
+  color: var(--accent-12);
+}
+
+.editor-step[data-active] .editor-step-index,
+.editor-step[data-complete] .editor-step-index {
+  background: var(--accent-9);
+  color: var(--accent-contrast);
+}
+
+.editor-step:focus-visible {
+  outline: 2px solid var(--focus-8);
+  outline-offset: 2px;
+}
+
+.document-form-section {
+  scroll-margin-top: calc(var(--admin-topbar-h, 56px) + 64px);
+}
+
+.document-form--guided .document-form-section {
+  display: none;
+}
+
+.document-form--guided .document-form-section.is-active-step {
+  display: block;
+}
+
+/* ── Sticky action bar at the bottom of the form column ── */
+.document-form-footer {
+  position: sticky;
+  bottom: calc(var(--admin-bottom-nav-h, 0px) + 12px);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding: 10px;
+  border-radius: var(--radius-4);
+  background: color-mix(in oklab, var(--color-panel-solid) 92%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 0 1px var(--gray-a5), 0 12px 32px -16px var(--black-a6);
+}
+
+.editor-footer-steps {
+  flex-shrink: 0;
+}
+
+.editor-footer-actions {
+  flex: 1;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.editor-kbd {
+  margin-left: 4px;
+}
+
+@media (pointer: coarse), (max-width: 767px) {
+  .editor-kbd {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .document-form-footer {
+    padding: 8px;
+  }
+
+  .editor-footer-steps {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .editor-footer-actions > .rt-Button {
+    flex: 1 1 auto;
+  }
+}
+
+/* ── Fields ── */
+.editor-select {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-1);
+}
+
+.editor-inline-panel {
+  padding: 12px;
+  border-radius: var(--radius-3);
+  background: var(--gray-a2);
+  box-shadow: inset 0 0 0 1px var(--gray-a4);
+}
+
+.editor-totals {
+  min-width: 220px;
+}
+
+.editor-total-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: var(--font-size-2);
+  color: var(--gray-11);
+}
+
+.editor-total-row--saving {
+  color: var(--green-11);
+}
+
+.editor-total-row--grand {
+  align-items: baseline;
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--gray-a5);
+  color: var(--gray-12);
+  font-weight: 600;
+}
+
+.editor-total-row--grand .ui-display {
+  font-size: var(--font-size-6);
+}
+
+.editor-method-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--gray-a3);
+  font-size: var(--font-size-2);
+  cursor: pointer;
+}
+
+.editor-method-chip[data-checked] {
+  background: var(--accent-a4);
+  color: var(--accent-12);
+}
+
+/* ── Live preview ── */
+.editor-preview {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-4);
+  background: var(--gray-a3);
+  box-shadow: inset 0 0 0 1px var(--gray-a4);
+  overflow: hidden;
+}
+
+.editor-preview-bar {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-a4);
+}
+
+.editor-preview-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green-9);
+  box-shadow: 0 0 0 3px var(--green-a4);
+}
+
+.editor-preview-scroll {
+  max-height: calc(100dvh - var(--admin-topbar-h, 60px) - 90px);
+  overflow: auto;
+  padding: 16px;
+}
+
+.editor-preview-paper {
+  min-width: 480px;
+}
+
+.editor-preview-paper .print-document {
+  box-shadow: 0 1px 2px var(--black-a2), 0 12px 32px -18px var(--black-a5);
+}
+
+.rt-DialogContent.editor-preview-dialog {
+  width: min(100vw - 16px, 820px);
+  max-width: none;
+  max-height: calc(100dvh - 16px);
+  padding: 16px;
+}
+
+.editor-preview-dialog .editor-preview-scroll {
+  max-height: none;
+}
+
+@media (max-width: 959px) {
+  .document-form input,
+  .document-form select,
+  .document-form textarea {
+    font-size: 16px !important;
+  }
+}
