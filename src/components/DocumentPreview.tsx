@@ -1,4 +1,4 @@
-import { Box, Container, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Button, Container, Flex, Heading, Text } from "@radix-ui/themes";
 import { AlertTriangle, CheckCircle2, Info, TriangleAlert } from "lucide-react";
 import type { DocumentData } from "@/lib/types";
 import { getAppConfig } from "@/lib/config";
@@ -31,6 +31,8 @@ import DocumentOptionSelectionForm from "@/components/DocumentOptionSelectionFor
 import InvoicePaymentsPanel from "@/components/InvoicePaymentsPanel";
 import DocumentPaper from "@/components/document/DocumentPaper";
 import StatusBadge from "@/components/ui/StatusBadge";
+import PaymentReturnStatus from "@/components/client/PaymentReturnStatus";
+import ClientPayBar from "@/components/client/ClientPayBar";
 
 function NextStepIcon({ tone }: { tone: NextStepTone }) {
     if (tone === "danger") return <TriangleAlert size={16} />;
@@ -102,28 +104,55 @@ export default async function DocumentPreview({
     );
 
     if (publicMode) {
+        const balance = documentBalance(doc);
+        const isInvoice = doc.type === "invoice";
+        const paid = isInvoice && (doc.status === "paid" || balance <= 0);
+        const canPay = isInvoice && !paid && doc.status !== "void"
+            && buildInvoicePaymentMethods(context.billing.paymentMethods, doc, context.stripeConfigured).length > 0;
+        const headlineAmount = isInvoice ? balance : doc.total;
+        const dateLabel = (iso: string) => new Date(iso).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" });
+
         return (
             <Container size="3" p={{ initial: "3", sm: "5" }} className="print-container">
-                {stripeReturn === "success" ? (
-                    <Box className="no-print notice notice--success" mb="4">
-                        <Text as="div" size="2" weight="bold">Payment submitted</Text>
-                        <Text as="div" size="2">
-                            Thanks — Stripe confirmed your payment. This invoice will update to paid once processing finishes (usually within a few seconds). Refresh if the balance still looks unpaid.
+                {stripeReturn ? <PaymentReturnStatus status={stripeReturn} paid={paid} /> : null}
+
+                <section className="client-summary no-print" aria-label={`${docTitle} summary`}>
+                    <div className="client-summary-main">
+                        <span className="ui-eyebrow">{docTitle} <span className="ui-figure">{doc.id}</span></span>
+                        <Heading size="6" as="h1" mt="1">{doc.title?.trim() || `${docTitle} for ${doc.customer.name}`}</Heading>
+                        <Text as="p" size="2" color="gray" mt="1">
+                            From {business.name} · {dateLabel(doc.date)}
+                            {doc.dueDate ? ` · ${isInvoice ? "Due" : "Valid until"} ${dateLabel(doc.dueDate)}` : ""}
                         </Text>
-                    </Box>
-                ) : null}
-                {stripeReturn === "cancelled" ? (
-                    <Box className="no-print notice notice--warning" mb="4">
-                        <Text as="div" size="2" weight="bold">Checkout cancelled</Text>
-                        <Text as="div" size="2">No charge was made. You can try Stripe again whenever you are ready.</Text>
-                    </Box>
-                ) : null}
-                <Flex justify="end" mb="4" className="no-print doc-toolbar" gap="2" wrap="wrap">
+                    </div>
+                    <div className="client-summary-amount">
+                        <span className="ui-eyebrow">
+                            {isInvoice ? (paid ? "Paid in full" : doc.status === "void" ? "Void" : "Amount due") : "Total"}
+                        </span>
+                        <div className="client-summary-figure ui-display" data-paid={paid || undefined}>{money(headlineAmount)}</div>
+                        {isInvoice && !paid && (doc.paidAmount ?? 0) > 0 ? (
+                            <Text as="div" size="1" color="gray">{money(doc.paidAmount ?? 0)} of {money(doc.total)} already paid</Text>
+                        ) : null}
+                        <Flex gap="2" mt="3" wrap="wrap" justify={{ initial: "start", sm: "end" }}>
+                            {canPay ? (
+                                <Button asChild size="3"><a href="#payment-options">Pay now</a></Button>
+                            ) : null}
+                            {!isInvoice && (business.phoneHref || business.email) ? (
+                                <Button asChild size="3">
+                                    <a href={business.phoneHref || `mailto:${business.email}`}>Ready to go ahead? Get in touch</a>
+                                </Button>
+                            ) : null}
+                        </Flex>
+                    </div>
+                </section>
+
+                <Flex justify="end" mb="3" className="no-print doc-toolbar" gap="2" wrap="wrap">
                     <Flex gap="2" className="doc-toolbar-actions" wrap="wrap">
-                        <PrintButton label={docTitle} fileName={`${docTitle} ${doc.id}`} />
+                        <PrintButton label={docTitle} fileName={`${docTitle} ${doc.id}`} emphasis="pdf" />
                     </Flex>
                 </Flex>
                 {paper}
+                {canPay ? <ClientPayBar amount={balance} /> : null}
             </Container>
         );
     }

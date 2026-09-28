@@ -371,7 +371,7 @@ export default function DocumentPaper({
                     ) : null}
 
                     {showPaymentSection ? (
-                        <Box className="doc-section payment-options">
+                        <Box className="doc-section payment-options" id="payment-options">
                             <div className="doc-section-label">Payment Options</div>
                             {activePaymentMethods.length > 0 ? (
                                 <>
