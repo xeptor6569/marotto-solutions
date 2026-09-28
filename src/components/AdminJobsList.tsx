@@ -77,7 +77,7 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
 
     return (
         <Flex direction="column" gap="4">
-            <Card size="2">
+            <Card size="2" className="list-filter-card">
                 <Flex gap="4" wrap="wrap" align="end">
                     <Box style={{ flex: 1, minWidth: "min(100%, 220px)" }}>
                         <TextField.Root

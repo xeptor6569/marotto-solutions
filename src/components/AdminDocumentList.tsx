@@ -324,7 +324,7 @@ export default function AdminDocumentList({
 
     return (
         <Flex direction="column" gap="4" className="admin-document-list">
-            <Card size="2">
+            <Card size="2" className="list-filter-card">
                 <Flex direction="column" gap="3">
                     <Flex gap="3" wrap="wrap" align="end">
                         <Box style={{ flex: 1, minWidth: "min(100%, 220px)" }}>

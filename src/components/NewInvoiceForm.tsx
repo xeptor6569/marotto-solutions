@@ -26,6 +26,7 @@ import { DOC_LABEL } from '@/lib/document-labels';
 import { emptyLineItem, recalcLineItem } from '@/components/DocumentLineItemEditor';
 import StatusBadge from '@/components/ui/StatusBadge';
 import { useToast } from '@/components/ui/Toaster';
+import { useMoney } from '@/components/MoneyProvider';
 import CustomerSection, { type CustomerFields } from '@/components/document-editor/CustomerSection';
 import DetailsSection from '@/components/document-editor/DetailsSection';
 import ItemsSection, { type PresetApplyMode } from '@/components/document-editor/ItemsSection';
@@ -75,6 +76,7 @@ export default function NewDocumentForm({
     paper?: DocumentPaperContext;
 }) {
     const toast = useToast();
+    const { format: money } = useMoney();
     const formRef = useRef<HTMLFormElement>(null);
     const saveButtonRef = useRef<HTMLButtonElement>(null);
     const [state, formAction, isPending] = useActionState(createInvoiceAction, initialSaveState);
@@ -519,6 +521,10 @@ export default function NewDocumentForm({
                                 ) : null}
                             </Flex>
                         ) : null}
+                        <div className="editor-footer-total">
+                            <span className="ui-eyebrow">{type === 'invoice' && paidAmount > 0 ? 'Balance' : 'Total'}</span>
+                            <span className="ui-display">{money(type === 'invoice' && paidAmount > 0 ? balanceDue : subtotal)}</span>
+                        </div>
                         <Flex gap="2" align="center" className="editor-footer-actions">
                             {paper ? (
                                 <Button type="button" variant="soft" color="gray" className="editor-preview-button" onClick={() => setPreviewOpen(true)}>

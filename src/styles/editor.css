@@ -316,3 +316,24 @@
     font-size: 16px !important;
   }
 }
+
+.editor-footer-total {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  padding: 0 4px;
+}
+
+.editor-footer-total .ui-display {
+  font-size: var(--font-size-4);
+}
+
+@media (max-width: 600px) {
+  .editor-footer-total {
+    flex: 1;
+  }
+
+  .editor-footer-actions {
+    flex-basis: 100%;
+  }
+}

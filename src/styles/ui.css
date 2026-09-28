@@ -1891,3 +1891,43 @@ html:has(.client-shell) {
     display: none !important;
   }
 }
+
+/* ── Phones: keep filters and the main document action within reach ── */
+@media (max-width: 767px) {
+  .list-filter-card {
+    position: sticky;
+    top: calc(var(--admin-topbar-h, 56px) + env(safe-area-inset-top, 0px) + 6px);
+    z-index: 15;
+    box-shadow: var(--base-card-surface-box-shadow), 0 10px 24px -16px var(--black-a5);
+  }
+
+  .list-filter-card .filter-chips-label {
+    display: none;
+  }
+
+  .list-filter-card .rt-TextFieldRoot {
+    min-height: 40px;
+  }
+
+  .doc-page-header .doc-toolbar-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--admin-bottom-nav-h, 0px);
+    z-index: 45;
+    flex-wrap: nowrap;
+    padding: 8px 12px;
+    background: color-mix(in oklab, var(--color-panel-solid) 94%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 -1px 0 var(--gray-a5), 0 -10px 24px -18px var(--black-a5);
+  }
+
+  .doc-page-header .doc-toolbar-actions > * {
+    min-width: 0;
+  }
+
+  .print-container:has(.doc-page-header) {
+    padding-bottom: 88px !important;
+  }
+}
