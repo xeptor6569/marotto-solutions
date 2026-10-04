@@ -8,6 +8,14 @@ This file is a running summary of recent assistant work so future chats can pick
 - Add new entries at the top.
 - Keep summaries focused on behavior changes, important files, and follow-up risks.
 
+## 2026-10-04
+
+### Packages and material choices authoring
+- Estimates and quotes still record the client's package and material picks on the document page (admin only). The editor no longer leaves every option expanded.
+- `DocumentOptionsEditor` shows each package, choice group, and choice as a summary row (label, badges, price). Open a row to edit. Rows can be reordered or duplicated. Only one package can be Recommended (`setRecommendedPackage` / `withSingleRecommended`, also enforced when the form is parsed).
+- Package, group, and choice descriptions use the same markdown editor as notes and line details, and render with `MarkdownContent` on the document and in Select options.
+- Helpers live in `src/lib/document-options.ts` (`copiedLabel`, `duplicatePackage`, `duplicateChoice`, `duplicateChoiceGroup`). Collapsed rows stay mounted so their fields still submit.
+
 ## 2026-05-09
 
 ### Recurring service contracts (Phases 1–3)

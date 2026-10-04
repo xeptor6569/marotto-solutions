@@ -29,6 +29,88 @@ export function choiceTotal(choice: DocumentChoice): number {
     return lineItemsTotal(choice.lineItems);
 }
 
+/** "Basic" → "Basic (copy)", then "Basic (copy 2)", and so on. Blank stays blank. */
+export function copiedLabel(label: string): string {
+    const trimmed = label.trim();
+    if (!trimmed) return '';
+    const match = trimmed.match(/^(.*) \(copy(?: (\d+))?\)$/);
+    if (!match) return `${trimmed} (copy)`;
+    const n = match[2] ? Number(match[2]) + 1 : 2;
+    return `${match[1]} (copy ${n})`;
+}
+
+function cloneLineItem(item: LineItem): LineItem {
+    return { ...item, id: crypto.randomUUID() };
+}
+
+function cloneChoice(choice: DocumentChoice, label: string): DocumentChoice {
+    return {
+        ...choice,
+        id: crypto.randomUUID(),
+        label,
+        lineItems: choice.lineItems.map(cloneLineItem),
+    };
+}
+
+/** Copy placed after the original. Nested lines get new ids; the copy is not recommended. */
+export function duplicatePackage(pkg: DocumentPackage): DocumentPackage {
+    const next: DocumentPackage = {
+        ...pkg,
+        id: crypto.randomUUID(),
+        label: copiedLabel(pkg.label),
+        lineItems: pkg.lineItems.map(cloneLineItem),
+    };
+    delete next.recommended;
+    return next;
+}
+
+/** Copy of one alternative. Nested lines get new ids; the label is marked as a copy. */
+export function duplicateChoice(choice: DocumentChoice): DocumentChoice {
+    return cloneChoice(choice, copiedLabel(choice.label));
+}
+
+/**
+ * Copy of a whole group. Choice labels stay the same (they are the group's content);
+ * every nested id is new.
+ */
+export function duplicateChoiceGroup(group: DocumentChoiceGroup): DocumentChoiceGroup {
+    return {
+        ...group,
+        id: crypto.randomUUID(),
+        label: copiedLabel(group.label),
+        choices: group.choices.map((choice) => cloneChoice(choice, choice.label)),
+    };
+}
+
+/** At most one package stays recommended. The first flagged package wins. */
+export function withSingleRecommended(packages: DocumentPackage[]): DocumentPackage[] {
+    let seen = false;
+    return packages.map((pkg) => {
+        if (pkg.recommended !== true) return pkg;
+        if (!seen) {
+            seen = true;
+            return pkg;
+        }
+        const next = { ...pkg };
+        delete next.recommended;
+        return next;
+    });
+}
+
+/** Mark one package recommended, or clear the flag. Any other package loses it. */
+export function setRecommendedPackage(
+    packages: DocumentPackage[],
+    packageId: string,
+    recommended: boolean,
+): DocumentPackage[] {
+    return packages.map((pkg) => {
+        const next = { ...pkg };
+        if (recommended && pkg.id === packageId) next.recommended = true;
+        else delete next.recommended;
+        return next;
+    });
+}
+
 export function documentHasOptions(doc: Pick<DocumentData, 'packages' | 'choiceGroups'>): boolean {
     return (doc.packages?.length ?? 0) > 0 || (doc.choiceGroups?.length ?? 0) > 0;
 }

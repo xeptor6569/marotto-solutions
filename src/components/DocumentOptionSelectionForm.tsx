@@ -9,6 +9,7 @@ import type {
     DocumentPackage,
 } from '@/lib/types';
 import { choiceTotal, packageTotal } from '@/lib/document-options';
+import MarkdownContent from '@/components/MarkdownContent';
 import { useMoney } from '@/components/MoneyProvider';
 
 export default function DocumentOptionSelectionForm({
@@ -69,34 +70,35 @@ export default function DocumentOptionSelectionForm({
                     <Text size="2" weight="bold" as="div" mb="2">Package</Text>
                     <Flex direction="column" gap="2">
                         {packages.map((pkg) => (
-                            <label
-                                key={pkg.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: 10,
-                                    minHeight: 44,
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <input
-                                    type="radio"
-                                    name="admin-package"
-                                    checked={packageId === pkg.id}
-                                    onChange={() => setPackageId(pkg.id)}
-                                    style={{ marginTop: 4 }}
-                                />
-                                <Box>
+                            <Box key={pkg.id}>
+                                <label
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 10,
+                                        minHeight: 44,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="admin-package"
+                                        checked={packageId === pkg.id}
+                                        onChange={() => setPackageId(pkg.id)}
+                                        style={{ marginTop: 4 }}
+                                    />
                                     <Flex align="center" gap="2" wrap="wrap">
                                         <Text size="2" weight="medium">{pkg.label}</Text>
                                         {pkg.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                         <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
                                     </Flex>
-                                    {pkg.description ? (
-                                        <Text size="1" color="gray" as="p">{pkg.description}</Text>
-                                    ) : null}
-                                </Box>
-                            </label>
+                                </label>
+                                {pkg.description ? (
+                                    <Box className="option-md option-md--compact" ml="6">
+                                        <MarkdownContent>{pkg.description}</MarkdownContent>
+                                    </Box>
+                                ) : null}
+                            </Box>
                         ))}
                     </Flex>
                 </Box>
@@ -113,39 +115,42 @@ export default function DocumentOptionSelectionForm({
                         )}
                     </Flex>
                     {group.description ? (
-                        <Text size="1" color="gray" as="p" mb="2">{group.description}</Text>
+                        <Box className="option-md option-md--compact" mb="2">
+                            <MarkdownContent>{group.description}</MarkdownContent>
+                        </Box>
                     ) : null}
                     <Flex direction="column" gap="2">
                         {group.choices.map((choice) => (
-                            <label
-                                key={choice.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'flex-start',
-                                    gap: 10,
-                                    minHeight: 44,
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                <input
-                                    type="radio"
-                                    name={`admin-choice-${group.id}`}
-                                    checked={choices[group.id] === choice.id}
-                                    onChange={() =>
-                                        setChoices((prev) => ({ ...prev, [group.id]: choice.id }))
-                                    }
-                                    style={{ marginTop: 4 }}
-                                />
-                                <Box>
+                            <Box key={choice.id}>
+                                <label
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: 10,
+                                        minHeight: 44,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <input
+                                        type="radio"
+                                        name={`admin-choice-${group.id}`}
+                                        checked={choices[group.id] === choice.id}
+                                        onChange={() =>
+                                            setChoices((prev) => ({ ...prev, [group.id]: choice.id }))
+                                        }
+                                        style={{ marginTop: 4 }}
+                                    />
                                     <Flex align="center" gap="2" wrap="wrap">
                                         <Text size="2" weight="medium">{choice.label}</Text>
                                         <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                     </Flex>
-                                    {choice.description ? (
-                                        <Text size="1" color="gray" as="p">{choice.description}</Text>
-                                    ) : null}
-                                </Box>
-                            </label>
+                                </label>
+                                {choice.description ? (
+                                    <Box className="option-md option-md--compact" ml="6">
+                                        <MarkdownContent>{choice.description}</MarkdownContent>
+                                    </Box>
+                                ) : null}
+                            </Box>
                         ))}
                     </Flex>
                 </Box>

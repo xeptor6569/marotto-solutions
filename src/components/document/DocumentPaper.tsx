@@ -304,7 +304,9 @@ export default function DocumentPaper({
                                                 <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
                                             </Flex>
                                             {pkg.description ? (
-                                                <Text size="2" color="gray" as="p" mb="2">{pkg.description}</Text>
+                                                <Box className="doc-option-description" mb="2">
+                                                    <MarkdownContent>{pkg.description}</MarkdownContent>
+                                                </Box>
                                             ) : null}
                                             <LineItemsTable items={pkg.lineItems} money={money} />
                                         </Box>
@@ -327,7 +329,9 @@ export default function DocumentPaper({
                                             ) : null}
                                         </Flex>
                                         {group.description ? (
-                                            <Text size="2" color="gray" as="p" mb="2">{group.description}</Text>
+                                            <Box className="doc-option-description" mb="2">
+                                                <MarkdownContent>{group.description}</MarkdownContent>
+                                            </Box>
                                         ) : null}
                                         <Flex direction="column" gap="3">
                                             {group.choices.map((choice) => {
@@ -344,7 +348,9 @@ export default function DocumentPaper({
                                                             <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                                         </Flex>
                                                         {choice.description ? (
-                                                            <Text size="2" color="gray" as="p" mb="2">{choice.description}</Text>
+                                                            <Box className="doc-option-description" mb="2">
+                                                                <MarkdownContent>{choice.description}</MarkdownContent>
+                                                            </Box>
                                                         ) : null}
                                                         <LineItemsTable items={choice.lineItems} money={money} />
                                                     </Box>

@@ -347,6 +347,115 @@
   font-size: var(--font-size-4);
 }
 
+/* ── Packages and material choices ── */
+.option-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.option-card {
+  border: 1px solid var(--gray-a6);
+  border-radius: var(--look-radius-3, 12px);
+  background: var(--color-panel-solid);
+}
+
+.option-card--nested {
+  border-style: dashed;
+  background: var(--gray-a2);
+}
+
+.option-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px 6px 4px;
+}
+
+.option-summary-main {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--look-radius-2, 8px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.option-summary-main:hover {
+  background: var(--gray-a3);
+}
+
+.option-summary-main:focus-visible {
+  outline: 2px solid var(--accent-8);
+  outline-offset: 2px;
+}
+
+.option-summary-title {
+  flex: 0 0 auto;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.option-summary-title[data-untitled] {
+  font-weight: 500;
+  color: var(--gray-11);
+}
+
+.option-summary-meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--gray-11);
+  font-size: var(--font-size-2);
+  white-space: nowrap;
+}
+
+.option-summary-price {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--gray-12);
+  font-size: var(--font-size-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.option-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.option-actions .rt-IconButton {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.option-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 14px 14px;
+}
+
+.option-card-body[hidden] {
+  display: none !important;
+}
+
 @media (max-width: 600px) {
   .editor-footer-total {
     flex: 1;

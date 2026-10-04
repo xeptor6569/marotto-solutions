@@ -20,7 +20,7 @@ import type { PaymentMethodOption } from '@/lib/document-form-pickers';
 import type { DocumentFormSeed } from '@/lib/document-route-seed';
 import type { DocumentPaperContext } from '@/lib/document-paper';
 import { formatPhoneInput } from '@/lib/phone-format';
-import { documentDisplayTotal } from '@/lib/document-options';
+import { documentDisplayTotal, withSingleRecommended } from '@/lib/document-options';
 import { applyPresetLineItems, presetMatchesDocumentType } from '@/lib/preset-utils';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { emptyLineItem, recalcLineItem } from '@/components/DocumentLineItemEditor';
@@ -98,7 +98,9 @@ export default function NewDocumentForm({
             ? initialData.lineItems
             : [{ id: '1', description: 'Service', details: '', quantity: 1, unitPrice: 0, total: 0, pendingClientApproval: false }],
     );
-    const [packages, setPackages] = useState<DocumentPackage[]>(initialData?.packages ?? []);
+    const [packages, setPackages] = useState<DocumentPackage[]>(() =>
+        withSingleRecommended(initialData?.packages ?? []),
+    );
     const [choiceGroups, setChoiceGroups] = useState<DocumentChoiceGroup[]>(initialData?.choiceGroups ?? []);
     const [docStatus, setDocStatus] = useState<DocumentData['status']>(initialData?.status || 'draft');
     const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | undefined>(initialData?.workflowStatus);

@@ -907,6 +907,19 @@ html.pdf-export .payment-options {
   border: 2px solid var(--doc-accent);
 }
 
+.print-document .doc-option-description {
+  color: var(--doc-muted);
+  font-size: 13px;
+}
+
+.option-md {
+  color: var(--gray-11);
+}
+
+.option-md--compact {
+  font-size: var(--font-size-1);
+}
+
 .print-document .payment-options-screen {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
