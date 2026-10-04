@@ -307,9 +307,21 @@
   max-height: calc(100dvh - var(--admin-topbar-h, 60px) - 90px);
   overflow: auto;
   padding: 16px;
+  /* Keep the content width stable when the vertical scrollbar appears. */
+  scrollbar-gutter: stable;
+}
+
+/* The paper is laid out at 720px and scaled to fit. The spacer is the
+   post-scale size; clipping it stops the unscaled box from widening the scrollport. */
+.editor-preview-scale {
+  position: relative;
+  overflow: hidden;
 }
 
 .editor-preview-paper {
+  position: absolute;
+  top: 0;
+  left: 0;
   transform-origin: top left;
 }
 

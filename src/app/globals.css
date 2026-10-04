@@ -615,7 +615,8 @@ html.pdf-export .payment-options {
 .print-document .doc-brand-address {
   margin-top: 8px;
   font-size: 11px;
-  line-height: 1.4;
+  /* Length, not a unitless multiplier: WebKit reapplies unitless line-heights under CSS zoom. */
+  line-height: 1.4em;
   color: #374151;
 }
 
@@ -674,7 +675,7 @@ html.pdf-export .payment-options {
 .print-document .doc-party-detail {
   font-size: 11px;
   color: #374151;
-  line-height: 1.4;
+  line-height: 1.4em;
   white-space: pre-line;
 }
 
@@ -748,7 +749,7 @@ html.pdf-export .payment-options {
   margin-top: 3px;
   font-size: 10px;
   color: #4b5563;
-  line-height: 1.4;
+  line-height: 1.4em;
 }
 
 .print-document .doc-section {
@@ -761,13 +762,13 @@ html.pdf-export .payment-options {
   margin-top: 4px;
   font-size: 11px;
   color: var(--doc-ink);
-  line-height: 1.45;
+  line-height: 1.45em;
 }
 
 .print-document .doc-section-note {
   font-size: 11px;
   color: #374151;
-  line-height: 1.45;
+  line-height: 1.45em;
 }
 
 .print-document .doc-term-strip {
@@ -910,6 +911,12 @@ html.pdf-export .payment-options {
 .print-document .doc-option-description {
   color: var(--doc-muted);
   font-size: 13px;
+  line-height: 1.45em;
+}
+
+.print-document .markdown-content p,
+.print-document .markdown-content li {
+  line-height: 1.45em;
 }
 
 .option-md {
@@ -946,7 +953,7 @@ html.pdf-export .payment-options {
 .print-document .payment-option-detail,
 .print-document .payment-option-note {
   color: var(--doc-muted);
-  line-height: 1.35;
+  line-height: 1.35em;
   word-break: break-word;
 }
 
