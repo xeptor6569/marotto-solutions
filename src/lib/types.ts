@@ -29,6 +29,8 @@ export interface DocumentChoice {
     id: string;
     label: string;
     description?: string;
+    /** Suggested pick for this group. At most one choice in the group is recommended. */
+    recommended?: boolean;
     lineItems: LineItem[];
 }
 

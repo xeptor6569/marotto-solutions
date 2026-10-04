@@ -43,6 +43,7 @@ export default function ItemsSection({
     onPackagesChange,
     onChoiceGroupsChange,
     totals,
+    totalCaption,
     title,
     notes,
 }: {
@@ -59,6 +60,7 @@ export default function ItemsSection({
     onPackagesChange: (packages: DocumentPackage[]) => void;
     onChoiceGroupsChange: (groups: DocumentChoiceGroup[]) => void;
     totals: ItemTotals;
+    totalCaption: string;
     title: string;
     notes: string;
 }) {
@@ -165,7 +167,7 @@ export default function ItemsSection({
                             <div className="editor-total-row"><span>Base scope</span><span className="ui-figure">{money(totals.baseSubtotal)}</span></div>
                         ) : null}
                         <div className="editor-total-row editor-total-row--grand">
-                            <span>{hasOptions ? 'From / selected' : 'Total'}</span>
+                            <span>{totalCaption}</span>
                             <span className="ui-display">{money(totals.subtotal)}</span>
                         </div>
                     </Box>

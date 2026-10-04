@@ -142,6 +142,7 @@ export default function DocumentOptionSelectionForm({
                                     />
                                     <Flex align="center" gap="2" wrap="wrap">
                                         <Text size="2" weight="medium">{choice.label}</Text>
+                                        {choice.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                         <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                     </Flex>
                                 </label>

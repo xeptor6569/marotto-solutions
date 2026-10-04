@@ -64,9 +64,11 @@ export function duplicatePackage(pkg: DocumentPackage): DocumentPackage {
     return next;
 }
 
-/** Copy of one alternative. Nested lines get new ids; the label is marked as a copy. */
+/** Copy of one alternative. Nested lines get new ids; the copy is not recommended. */
 export function duplicateChoice(choice: DocumentChoice): DocumentChoice {
-    return cloneChoice(choice, copiedLabel(choice.label));
+    const next = cloneChoice(choice, copiedLabel(choice.label));
+    delete next.recommended;
+    return next;
 }
 
 /**
@@ -82,19 +84,58 @@ export function duplicateChoiceGroup(group: DocumentChoiceGroup): DocumentChoice
     };
 }
 
-/** At most one package stays recommended. The first flagged package wins. */
-export function withSingleRecommended(packages: DocumentPackage[]): DocumentPackage[] {
+/** At most one item stays recommended. The first flagged item wins. */
+export function withSingleRecommended<T extends { recommended?: boolean }>(items: T[]): T[] {
     let seen = false;
-    return packages.map((pkg) => {
-        if (pkg.recommended !== true) return pkg;
+    return items.map((item) => {
+        if (item.recommended !== true) return item;
         if (!seen) {
             seen = true;
-            return pkg;
+            return item;
         }
-        const next = { ...pkg };
+        const next = { ...item };
         delete next.recommended;
         return next;
     });
+}
+
+/** At most one recommended choice in each group. */
+export function withSingleRecommendedChoices(groups: DocumentChoiceGroup[]): DocumentChoiceGroup[] {
+    return groups.map((group) => ({
+        ...group,
+        choices: withSingleRecommended(group.choices),
+    }));
+}
+
+/** Mark one choice in a group recommended, or clear it. Other choices in that group lose the flag. */
+export function setRecommendedChoice(
+    groups: DocumentChoiceGroup[],
+    groupId: string,
+    choiceId: string,
+    recommended: boolean,
+): DocumentChoiceGroup[] {
+    return groups.map((group) => {
+        if (group.id !== groupId) return group;
+        return {
+            ...group,
+            choices: group.choices.map((choice) => {
+                const next = { ...choice };
+                if (recommended && choice.id === choiceId) next.recommended = true;
+                else delete next.recommended;
+                return next;
+            }),
+        };
+    });
+}
+
+/** True when a package or a choice is marked recommended. */
+export function hasRecommendedDefaults(
+    doc: Pick<DocumentData, 'packages' | 'choiceGroups'>,
+): boolean {
+    if ((doc.packages ?? []).some((pkg) => pkg.recommended === true)) return true;
+    return (doc.choiceGroups ?? []).some((group) =>
+        group.choices.some((choice) => choice.recommended === true),
+    );
 }
 
 /** Mark one package recommended, or clear the flag. Any other package loses it. */
@@ -153,11 +194,23 @@ function cheapestPackage(packages: DocumentPackage[]): DocumentPackage | undefin
     );
 }
 
+function preferredPackage(packages: DocumentPackage[]): DocumentPackage | undefined {
+    return packages.find((pkg) => pkg.recommended === true) ?? cheapestPackage(packages);
+}
+
 function cheapestChoice(group: DocumentChoiceGroup): DocumentChoice | undefined {
     if (!group.choices.length) return undefined;
     return group.choices.reduce((best, choice) =>
         choiceTotal(choice) < choiceTotal(best) ? choice : best,
     );
+}
+
+/** Recommended choice when one is marked; otherwise the cheapest choice of a required group. */
+function fallbackChoice(group: DocumentChoiceGroup): DocumentChoice | undefined {
+    const recommended = group.choices.find((choice) => choice.recommended === true);
+    if (recommended) return recommended;
+    if (isChoiceGroupRequired(group)) return cheapestChoice(group);
+    return undefined;
 }
 
 function cloneLineItems(lineItems: LineItem[]): LineItem[] {
@@ -166,8 +219,8 @@ function cloneLineItems(lineItems: LineItem[]): LineItem[] {
 
 /**
  * Resolve the flat line-item list for the selected configuration.
- * When selection is incomplete, uses starting-from (cheapest package + cheapest
- * required choices) so previews and stored totals stay meaningful.
+ * Missing answers use the recommended package and recommended choices.
+ * A required group with no recommendation falls back to its cheapest choice.
  */
 export function resolveSelectedLineItems(
     doc: Pick<DocumentData, 'lineItems' | 'packages' | 'choiceGroups' | 'optionSelection'>,
@@ -184,7 +237,7 @@ export function resolveSelectedLineItems(
         const selectedPkg = selection?.packageId
             ? packages.find((pkg) => pkg.id === selection.packageId)
             : undefined;
-        const pkg = selectedPkg ?? cheapestPackage(packages);
+        const pkg = selectedPkg ?? preferredPackage(packages);
         if (pkg) resolved.push(...wrap(normalizeLineItems(pkg.lineItems)));
     }
 
@@ -193,15 +246,8 @@ export function resolveSelectedLineItems(
         const selected = selectedId
             ? group.choices.find((c) => c.id === selectedId)
             : undefined;
-        if (selected) {
-            resolved.push(...wrap(normalizeLineItems(selected.lineItems)));
-            continue;
-        }
-        // Starting-from: include cheapest for required groups when incomplete.
-        if (isChoiceGroupRequired(group)) {
-            const fallback = cheapestChoice(group);
-            if (fallback) resolved.push(...wrap(normalizeLineItems(fallback.lineItems)));
-        }
+        const choice = selected ?? fallbackChoice(group);
+        if (choice) resolved.push(...wrap(normalizeLineItems(choice.lineItems)));
     }
 
     return resolved;
@@ -213,7 +259,7 @@ export function selectedTotal(
     return lineItemsTotal(resolveSelectedLineItems(doc));
 }
 
-/** Base + cheapest package (if any) + cheapest choice per required group. */
+/** Base + recommended (or cheapest) package + recommended or required-group choices. */
 export function startingFromTotal(
     doc: Pick<DocumentData, 'lineItems' | 'packages' | 'choiceGroups'>,
 ): number {

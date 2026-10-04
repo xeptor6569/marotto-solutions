@@ -25,6 +25,7 @@ import {
 import {
     choiceTotal,
     documentHasOptions,
+    hasRecommendedDefaults,
     isOptionSelectionComplete,
     lineItemsTotal,
     packageTotal,
@@ -184,6 +185,7 @@ export default function DocumentPaper({
         : doc.total;
     const invoiceAmountDue = showInvoiceAmountDue ? balanceDue : displayTotal;
     const startingFrom = hasOptions ? startingFromTotal(doc) : displayTotal;
+    const showRecommendedTotal = hasOptions && !selectionComplete && hasRecommendedDefaults(doc);
     const jobId = doc.jobId || doc.customer?.jobId;
     const showPaymentSection = doc.type === "invoice"
         && (activePaymentMethods.length > 0 || billing.paymentInstructions || billing.checkPayableTo);
@@ -344,6 +346,7 @@ export default function DocumentPaper({
                                                     >
                                                         <Flex align="center" gap="2" wrap="wrap" mb="2">
                                                             <Text weight="medium">{choice.label}</Text>
+                                                            {choice.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                                             {selected ? <Badge size="1" color="green">Selected</Badge> : null}
                                                             <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
                                                         </Flex>
@@ -554,7 +557,7 @@ export default function DocumentPaper({
                             ) : null}
                             {hasOptions && !selectionComplete && doc.type !== "invoice" ? (
                                 <div className="doc-total-row">
-                                    <span>Starting from</span>
+                                    <span>{showRecommendedTotal ? "Recommended" : "Starting from"}</span>
                                     <span>{money(startingFrom)}</span>
                                 </div>
                             ) : null}
@@ -588,7 +591,7 @@ export default function DocumentPaper({
                                         : showSplitTotals
                                             ? "Total if all approved"
                                             : hasOptions && !selectionComplete
-                                                ? "From"
+                                                ? (showRecommendedTotal ? "Recommended total" : "From")
                                                 : hasOptions && selectionComplete
                                                     ? "Selected total"
                                                     : "Total"}
