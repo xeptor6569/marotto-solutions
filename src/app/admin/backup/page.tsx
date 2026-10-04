@@ -4,7 +4,6 @@ import { useState, useRef } from 'react';
 import { Container, Heading, Card, Button, Flex, Text, Callout, Box, Separator, Badge } from '@radix-ui/themes';
 import { Download, Upload, AlertTriangle, CheckCircle, XCircle, Info } from 'lucide-react';
 import { restoreBackupAction, type RestoreResult } from './actions';
-import BackButton from '@/components/BackButton';
 import HelpLink from '@/components/HelpLink';
 import HelpTip from '@/components/HelpTip';
 
@@ -46,7 +45,6 @@ export default function BackupPage() {
                 <Heading>Backup & Restore</Heading>
                 <Flex gap="2" align="center">
                     <HelpLink topic="storage-backups" />
-                    <BackButton />
                 </Flex>
             </Flex>
 

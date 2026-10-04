@@ -6,6 +6,7 @@ import { createJobAction } from '@/app/actions';
 import { createJobAttachment, deleteJobAttachment } from '@/lib/job-attachments';
 import { createJobTimeLog, deleteJobTimeLog } from '@/lib/job-time-logs';
 import { requireAdminAction, requireAdminActionOrRedirect } from '@/lib/require-admin-session';
+import { setFlash } from '@/lib/flash-server';
 
 export async function createJobFromFormAction(formData: FormData) {
     await requireAdminActionOrRedirect('/admin/jobs/create');
@@ -26,6 +27,7 @@ export async function createJobFromFormAction(formData: FormData) {
         });
         redirect(`/admin/jobs/create?${params.toString()}`);
     }
+    await setFlash(`Job "${result.job.name}" created`);
     redirect(`/admin/jobs/${result.job.id}`);
 }
 

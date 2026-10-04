@@ -1,8 +1,7 @@
 import { Button, Callout, Container, Flex, Text, TextArea, TextField } from '@radix-ui/themes';
 import Link from 'next/link';
 import { XCircle } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import { createJobFromFormAction } from '@/app/admin/jobs/actions';
 
 export default async function CreateJobPage({
@@ -27,14 +26,13 @@ export default async function CreateJobPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="New job"
                 actions={(
                     <>
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/jobs">All jobs</Link>
                         </Button>
-                        <BackButton href="/admin/jobs" />
                     </>
                 )}
             />

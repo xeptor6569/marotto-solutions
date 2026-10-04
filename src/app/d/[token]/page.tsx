@@ -3,6 +3,8 @@ import DocumentPreview from '@/components/DocumentPreview';
 import ContractPreview from '@/components/ContractPreview';
 import { getDocumentByShareToken } from '@/lib/data';
 import { getContractByShareToken } from '@/lib/contracts';
+import { getBranding } from '@/lib/branding';
+import ClientShell from '@/components/client/ClientShell';
 
 export default async function SharedDocumentPage({
     params,
@@ -21,14 +23,24 @@ export default async function SharedDocumentPage({
     const stripeReturn =
         query.stripe === 'success' || query.stripe === 'cancelled' ? query.stripe : null;
 
+    const { business, branding } = await getBranding();
+
     const doc = await getDocumentByShareToken(trimmed);
     if (doc) {
-        return <DocumentPreview doc={doc} publicMode stripeReturn={stripeReturn} />;
+        return (
+            <ClientShell business={business} logoUrl={branding.logoUrl}>
+                <DocumentPreview doc={doc} publicMode stripeReturn={stripeReturn} />
+            </ClientShell>
+        );
     }
 
     const contract = await getContractByShareToken(trimmed);
     if (contract) {
-        return <ContractPreview contract={contract} publicMode />;
+        return (
+            <ClientShell business={business} logoUrl={branding.logoUrl}>
+                <ContractPreview contract={contract} publicMode />
+            </ClientShell>
+        );
     }
 
     notFound();

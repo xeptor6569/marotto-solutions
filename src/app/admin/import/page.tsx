@@ -6,7 +6,6 @@ import { importDocumentsAction, migrateLeadsToClientsAction } from "./actions";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import BackButton from "@/components/BackButton";
 
 export default function ImportPage() {
     const [status, setStatus] = useState<{ success: boolean, message: string } | null>(null);
@@ -65,7 +64,6 @@ export default function ImportPage() {
         <Container size="2" p="5">
             <Flex justify="between" align="center" mb="4">
                 <Heading>Import Data</Heading>
-                <BackButton />
             </Flex>
 
             <Callout.Root color="blue" mb="4">

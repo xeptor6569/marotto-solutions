@@ -1,4 +1,4 @@
-import { Box, Button, Container, Heading, Text, Badge, Flex, Card } from '@radix-ui/themes';
+import { Box, Button, Container, Heading, Text, Flex, Card } from '@radix-ui/themes';
 import { CheckCircle2, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { getEvent, getBusinessTimezone } from '@/lib/calendar';
@@ -6,14 +6,7 @@ import { isDatabaseConfigured } from '@/lib/prisma';
 import { formatInTimeZone } from 'date-fns-tz';
 import { format } from 'date-fns';
 import CalendarEventStatusButtons from '@/components/CalendarEventStatusButtons';
-import BackButton from '@/components/BackButton';
-
-function statusColor(status: string) {
-    if (status === 'confirmed') return 'blue';
-    if (status === 'completed') return 'green';
-    if (status === 'cancelled') return 'red';
-    return 'orange';
-}
+import StatusBadge from '@/components/ui/StatusBadge';
 
 export default async function CalendarEventDetailPage({
     params,
@@ -29,7 +22,6 @@ export default async function CalendarEventDetailPage({
         return (
             <Container size="3" p="5">
                 <Text>Event not found.</Text>
-                <BackButton href="/admin/calendar" />
             </Container>
         );
     }
@@ -47,9 +39,8 @@ export default async function CalendarEventDetailPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <Flex justify="between" align="center" mb="4">
-                <BackButton href="/admin/calendar" />
-                <Flex gap="2">
+            <Flex justify="end" align="center" mb="4">
+                <Flex gap="2" wrap="wrap">
                     <CalendarEventStatusButtons eventId={event.id} status={event.status} />
                     <Button asChild size="2" variant="soft">
                         <Link href={`/admin/calendar/${event.id}/edit`}>Edit</Link>
@@ -64,7 +55,7 @@ export default async function CalendarEventDetailPage({
                             <Heading size="6">{event.title}</Heading>
                             {event.description ? <Text as="p" size="2" color="gray" mt="2" style={{ whiteSpace: 'pre-line' }}>{event.description}</Text> : null}
                         </Box>
-                        <Badge color={statusColor(event.status)} size="2">{event.status}</Badge>
+                        <StatusBadge kind="event" status={event.status} size="2" />
                     </Flex>
 
                     <Flex gap="4" wrap="wrap">

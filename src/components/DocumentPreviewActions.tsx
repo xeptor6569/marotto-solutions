@@ -2,21 +2,25 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Box, Button, Dialog, DropdownMenu, Flex } from '@radix-ui/themes';
-import { MoreHorizontal } from 'lucide-react';
+import { Box, Button, Dialog, DropdownMenu, Flex, IconButton } from '@radix-ui/themes';
+import { MoreHorizontal, Pencil } from 'lucide-react';
 import DeleteDocumentButton from '@/components/DeleteDocumentButton';
 
+/**
+ * Document page toolbar: one primary action chosen for the document's state
+ * (send a draft, chase an unpaid invoice, convert an approved quote, or save
+ * a finished one as PDF), a couple of secondaries, and everything else under
+ * More (a bottom sheet on phones).
+ */
 export default function DocumentPreviewActions({
     editHref,
     docTitle,
     documentId,
     deleteRedirectTo,
     canDelete,
-    primaryEmail,
-    primaryShare,
-    overflowDeposit,
-    overflowConvert,
-    overflowSavePreset,
+    primary,
+    secondary,
+    overflow,
     overflowPrint,
 }: {
     editHref?: string;
@@ -24,55 +28,48 @@ export default function DocumentPreviewActions({
     documentId: string;
     deleteRedirectTo?: string;
     canDelete: boolean;
-    primaryEmail: ReactNode;
-    primaryShare: ReactNode;
-    overflowDeposit?: ReactNode;
-    overflowConvert?: ReactNode;
-    overflowSavePreset?: ReactNode;
-    overflowPrint: ReactNode;
+    /** The one solid action for this state. */
+    primary: ReactNode;
+    /** Always-visible soft actions next to it (e.g. email, copy link). */
+    secondary?: ReactNode;
+    /** Less frequent actions: deposit, convert, save as preset. */
+    overflow?: ReactNode[];
+    overflowPrint?: ReactNode;
 }) {
     const [sheetOpen, setSheetOpen] = useState(false);
-    const hasOverflow = Boolean(overflowDeposit || overflowConvert || overflowSavePreset || canDelete);
+    const extra = (overflow ?? []).filter(Boolean);
+    const hasOverflow = extra.length > 0 || Boolean(overflowPrint) || canDelete;
 
     return (
         <>
-            <Flex gap="2" className="doc-toolbar-actions doc-toolbar-actions-primary" wrap="wrap">
+            <Flex gap="2" className="doc-toolbar-actions" wrap="wrap" align="center">
                 {editHref ? (
-                    <Button asChild variant="soft" style={{ minHeight: 44 }}>
-                        <Link href={editHref}>Edit {docTitle}</Link>
+                    <Button asChild variant="soft" color="gray" style={{ minHeight: 40 }}>
+                        <Link href={editHref}><Pencil size={14} /> Edit</Link>
                     </Button>
                 ) : null}
-                {primaryEmail}
-                {primaryShare}
+                <span className="doc-toolbar-secondary">{secondary}</span>
+                {primary}
 
-                {/* Desktop overflow */}
                 {hasOverflow ? (
                     <Box className="doc-actions-desktop-overflow">
                         <DropdownMenu.Root>
                             <DropdownMenu.Trigger>
-                                <Button variant="soft" style={{ minHeight: 44, minWidth: 44 }} aria-label="More actions">
+                                <IconButton variant="soft" color="gray" style={{ minHeight: 40, minWidth: 40 }} aria-label="More actions">
                                     <MoreHorizontal size={16} />
-                                </Button>
+                                </IconButton>
                             </DropdownMenu.Trigger>
-                            <DropdownMenu.Content align="end">
-                                {overflowDeposit ? (
+                            <DropdownMenu.Content align="end" style={{ minWidth: 240 }}>
+                                {extra.map((node, index) => (
+                                    <DropdownMenu.Item key={index} asChild onSelect={(e) => e.preventDefault()}>
+                                        <Box p="1" className="doc-overflow-item">{node}</Box>
+                                    </DropdownMenu.Item>
+                                ))}
+                                {overflowPrint ? (
                                     <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
-                                        <Box p="1">{overflowDeposit}</Box>
+                                        <Flex p="1" gap="2" className="doc-overflow-item">{overflowPrint}</Flex>
                                     </DropdownMenu.Item>
                                 ) : null}
-                                {overflowConvert ? (
-                                    <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
-                                        <Box p="1">{overflowConvert}</Box>
-                                    </DropdownMenu.Item>
-                                ) : null}
-                                {overflowSavePreset ? (
-                                    <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
-                                        <Box p="1">{overflowSavePreset}</Box>
-                                    </DropdownMenu.Item>
-                                ) : null}
-                                <DropdownMenu.Item asChild onSelect={(e) => e.preventDefault()}>
-                                    <Box p="1">{overflowPrint}</Box>
-                                </DropdownMenu.Item>
                                 {canDelete ? (
                                     <>
                                         <DropdownMenu.Separator />
@@ -89,54 +86,32 @@ export default function DocumentPreviewActions({
                             </DropdownMenu.Content>
                         </DropdownMenu.Root>
                     </Box>
-                ) : (
-                    <Box className="doc-actions-desktop-overflow">{overflowPrint}</Box>
-                )}
+                ) : null}
 
-                {/* Mobile: More opens bottom sheet */}
-                <Box className="doc-actions-mobile-more">
-                    <Button
-                        type="button"
-                        variant="soft"
-                        style={{ minHeight: 44 }}
-                        onClick={() => setSheetOpen(true)}
-                    >
-                        <MoreHorizontal size={16} /> More
-                    </Button>
-                </Box>
+                {hasOverflow ? (
+                    <Box className="doc-actions-mobile-more">
+                        <IconButton
+                            type="button"
+                            variant="soft"
+                            color="gray"
+                            style={{ minHeight: 40, minWidth: 40 }}
+                            onClick={() => setSheetOpen(true)}
+                            aria-label="More actions"
+                        >
+                            <MoreHorizontal size={16} />
+                        </IconButton>
+                    </Box>
+                ) : null}
             </Flex>
 
             <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
-                <Dialog.Content
-                    className="doc-actions-sheet"
-                    style={{
-                        position: 'fixed',
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        top: 'auto',
-                        maxWidth: '100%',
-                        margin: 0,
-                        borderRadius: '16px 16px 0 0',
-                        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
-                    }}
-                >
-                    <Box
-                        mb="3"
-                        style={{
-                            width: 40,
-                            height: 4,
-                            borderRadius: 999,
-                            background: 'var(--gray-7)',
-                            margin: '0 auto 12px',
-                        }}
-                    />
-                    <Dialog.Title size="3">Actions</Dialog.Title>
-                    <Flex direction="column" gap="2" mt="3">
-                        {overflowDeposit}
-                        {overflowConvert}
-                        {overflowSavePreset}
-                        {overflowPrint}
+                <Dialog.Content className="bottom-sheet" aria-describedby={undefined}>
+                    <div className="bottom-sheet-handle" aria-hidden />
+                    <Dialog.Title size="3">{docTitle} {documentId}</Dialog.Title>
+                    <Flex direction="column" gap="2" mt="3" className="bottom-sheet-actions">
+                        {secondary}
+                        {extra}
+                        {overflowPrint ? <Flex gap="2" className="bottom-sheet-row">{overflowPrint}</Flex> : null}
                         {canDelete ? (
                             <DeleteDocumentButton
                                 documentId={documentId}
@@ -153,24 +128,6 @@ export default function DocumentPreviewActions({
                     </Flex>
                 </Dialog.Content>
             </Dialog.Root>
-
-            <style>{`
-                .doc-actions-mobile-more {
-                    display: none;
-                }
-                .doc-actions-desktop-overflow {
-                    display: inline-flex;
-                }
-                @media (max-width: 768px) {
-                    .doc-actions-mobile-more {
-                        display: inline-flex;
-                        flex: 1 1 calc(50% - 8px);
-                    }
-                    .doc-actions-desktop-overflow {
-                        display: none !important;
-                    }
-                }
-            `}</style>
         </>
     );
 }

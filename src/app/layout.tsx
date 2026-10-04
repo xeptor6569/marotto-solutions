@@ -1,22 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "@radix-ui/themes/styles.css";
 import "./globals.css";
+import "@/styles/looks.css";
+import "@/styles/ui.css";
+import "@/styles/admin-shell.css";
+import "@/styles/editor.css";
 import { Theme } from "@radix-ui/themes";
 import { EnvironmentBanner } from "@/components/EnvironmentBanner";
 import MoneyProvider from "@/components/MoneyProvider";
+import { ToastProvider } from "@/components/ui/Toaster";
+import FlashToaster from "@/components/ui/FlashToaster";
+import { Suspense } from "react";
 import { getAppearancePreference } from "@/lib/appearance";
 import { getBranding, getSiteUrl } from "@/lib/branding";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { fontVariables } from "./fonts";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { business, publicSite } = await getBranding();
@@ -120,17 +117,26 @@ export default async function RootLayout({
       className={ssrClass}
       style={{ colorScheme: ssrClass }}
       data-default-appearance={theme.defaultAppearance}
+      data-look={theme.lookId}
     >
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className={fontVariables}>
         <script dangerouslySetInnerHTML={{ __html: appearanceInitScript }} />
         <Theme
           appearance="inherit"
           accentColor={theme.accentColor}
           grayColor={theme.grayColor}
           radius={theme.radius}
+          scaling={theme.scaling}
+          panelBackground={theme.panelBackground}
+          data-look-scope={theme.lookId}
         >
           <MoneyProvider format={business.money}>
-            {children}
+            <ToastProvider>
+              {children}
+              <Suspense fallback={null}>
+                <FlashToaster />
+              </Suspense>
+            </ToastProvider>
           </MoneyProvider>
           <EnvironmentBanner />
         </Theme>

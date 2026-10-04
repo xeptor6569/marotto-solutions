@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Button, Container } from '@radix-ui/themes';
-import { Plus } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import { Briefcase, Plus } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 import AdminJobsList, { type AdminJobsListItem } from '@/components/AdminJobsList';
 import EmptyState from '@/components/EmptyState';
 import { getJobDocumentCounts, getJobs } from '@/lib/jobs';
@@ -30,20 +29,20 @@ export default async function AdminJobsPage() {
 
     return (
         <Container size="4" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="Jobs"
                 actions={(
                     <>
                         <Button asChild size="2" variant="solid">
                             <Link href="/admin/jobs/create"><Plus size={14} /> New job</Link>
                         </Button>
-                        <BackButton href="/admin" />
                     </>
                 )}
             />
 
             {enriched.length === 0 ? (
                 <EmptyState
+                    icon={Briefcase}
                     title="No jobs yet"
                     description="Group related estimates, quotes, invoices, and receipts under a job to keep work organized."
                     action={(

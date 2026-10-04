@@ -1,10 +1,8 @@
 'use client';
 
-import { useMemo } from 'react';
 import { Grid, TextArea, TextField, Text, Box } from '@radix-ui/themes';
 import SettingsSectionForm, { Field } from './SettingsSectionForm';
 import { CURRENCY_OPTIONS } from '@/lib/money';
-import { listTimeZones } from '@/lib/timezones';
 import type { AppConfig } from '@/lib/types';
 
 export const nativeSelectStyle: React.CSSProperties = {
@@ -19,9 +17,15 @@ export const nativeSelectStyle: React.CSSProperties = {
     fontSize: 'var(--font-size-2)',
 };
 
-export default function BusinessSettingsForm({ config }: { config: Partial<AppConfig> }) {
+export default function BusinessSettingsForm({
+    config,
+    timeZones,
+}: {
+    config: Partial<AppConfig>;
+    /** Built on the server so SSR and the browser render the same list. */
+    timeZones: string[];
+}) {
     const business = config.business;
-    const timeZones = useMemo(() => listTimeZones(), []);
     const currentTimezone = config.businessTimezone || 'America/New_York';
     const currentCurrency = (business?.currency || 'USD').toUpperCase();
     const currencyOptions = CURRENCY_OPTIONS.some((c) => c.code === currentCurrency)

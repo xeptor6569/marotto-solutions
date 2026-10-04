@@ -1,0 +1,276 @@
+/* ── Looks ───────────────────────────────────────────────────────────────
+   A Look is the structural half of the theme (type, shape, surfaces); color
+   comes from the Radix accent/gray preset. Every Look sets the same custom
+   properties on a `.radix-themes` element, matched two ways:
+
+   - `.radix-themes[data-look-scope='x']` — the root Theme and any preview
+     scope (Settings → Appearance, setup wizard) that shows another Look.
+   - `html[data-look='x'] .radix-themes:not([data-look-scope])` — portaled
+     menus/dialogs and nested unscoped Themes (printable paper) inherit the
+     site-wide Look.
+
+   An element only ever matches one family, so the two never fight over
+   specificity. Both beat Radix's own `.radix-themes` declarations. Dark
+   overrides use the page's `html.dark` class or a Theme's own `.dark`. */
+
+body {
+  --stack-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --stack-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --stack-serif: var(--font-newsreader), 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --stack-grotesque: var(--font-bricolage), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ── Studio (default) ── */
+html[data-look='studio'] .radix-themes:not([data-look-scope]),
+.radix-themes[data-look-scope='studio'] {
+  --default-font-family: var(--stack-sans);
+  --heading-font-family: var(--stack-sans);
+  --code-font-family: var(--stack-mono);
+  --heading-letter-spacing: -0.015em;
+  --look-heading-weight: 650;
+  --look-display-font: var(--stack-sans);
+  --look-display-weight: 650;
+  --look-display-tracking: -0.03em;
+  --look-figure-font: var(--stack-sans);
+  --look-eyebrow-font: var(--stack-sans);
+  --look-eyebrow-size: calc(11px * var(--scaling));
+  --look-eyebrow-weight: 600;
+  --look-eyebrow-tracking: 0.08em;
+  --look-eyebrow-transform: uppercase;
+  --look-eyebrow-caps: normal;
+  --look-button-weight: var(--font-weight-medium);
+  --look-canvas: color-mix(in oklab, var(--gray-2) 70%, white);
+  --look-canvas-image: none;
+  --look-canvas-size: auto;
+  --look-chrome: var(--look-canvas);
+  --look-rule: var(--gray-a5);
+  --look-nav-radius: var(--radius-2);
+  --look-nav-active-bg: var(--accent-a3);
+  --look-nav-active-fg: var(--accent-12);
+  --look-nav-indicator: var(--accent-9);
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a4), 0 1px 2px -1px var(--black-a2), 0 1px 3px var(--black-a1);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a6), 0 8px 24px -12px var(--black-a4);
+  --doc-heading-font: var(--stack-sans);
+}
+html.dark[data-look='studio'] .radix-themes:not([data-look-scope]):not(.light),
+html.dark .radix-themes[data-look-scope='studio']:not(.light),
+.radix-themes.dark[data-look-scope='studio'] {
+  --look-canvas: var(--color-background);
+  --look-canvas-image: none;
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a4), 0 1px 3px var(--black-a4);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a7), 0 8px 24px -12px var(--black-a8);
+}
+
+/* ── Ledger ── */
+html[data-look='ledger'] .radix-themes:not([data-look-scope]),
+.radix-themes[data-look-scope='ledger'] {
+  --default-font-family: var(--stack-sans);
+  --heading-font-family: var(--stack-serif);
+  --code-font-family: var(--stack-mono);
+  --heading-letter-spacing: -0.01em;
+  --look-heading-weight: 500;
+  --look-display-font: var(--stack-serif);
+  --look-display-weight: 500;
+  --look-display-tracking: -0.02em;
+  --look-figure-font: var(--stack-sans);
+  --look-eyebrow-font: var(--stack-sans);
+  --look-eyebrow-size: calc(13px * var(--scaling));
+  --look-eyebrow-weight: 600;
+  --look-eyebrow-tracking: 0.06em;
+  --look-eyebrow-transform: none;
+  --look-eyebrow-caps: all-small-caps;
+  --look-button-weight: var(--font-weight-medium);
+  --look-canvas: color-mix(in oklab, var(--gray-2), #f4ead6 30%);
+  --look-canvas-image: none;
+  --look-canvas-size: auto;
+  --look-chrome: var(--look-canvas);
+  --look-rule: var(--gray-a6);
+  --look-nav-radius: var(--radius-1);
+  --look-nav-active-bg: transparent;
+  --look-nav-active-fg: var(--gray-12);
+  --look-nav-indicator: var(--accent-9);
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a6);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a9);
+  --doc-heading-font: var(--stack-serif);
+}
+html.dark[data-look='ledger'] .radix-themes:not([data-look-scope]):not(.light),
+html.dark .radix-themes[data-look-scope='ledger']:not(.light),
+.radix-themes.dark[data-look-scope='ledger'] {
+  --look-canvas: color-mix(in oklab, var(--color-background), #2b2416 22%);
+  --look-canvas-image: none;
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a6);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a9);
+}
+
+/* ── Instrument ── */
+html[data-look='instrument'] .radix-themes:not([data-look-scope]),
+.radix-themes[data-look-scope='instrument'] {
+  --default-font-family: var(--stack-sans);
+  --heading-font-family: var(--stack-sans);
+  --code-font-family: var(--stack-mono);
+  --heading-letter-spacing: -0.02em;
+  --look-heading-weight: 600;
+  --look-display-font: var(--stack-mono);
+  --look-display-weight: 500;
+  --look-display-tracking: -0.04em;
+  --look-figure-font: var(--stack-mono);
+  --look-eyebrow-font: var(--stack-mono);
+  --look-eyebrow-size: calc(10.5px * var(--scaling));
+  --look-eyebrow-weight: 500;
+  --look-eyebrow-tracking: 0.12em;
+  --look-eyebrow-transform: uppercase;
+  --look-eyebrow-caps: normal;
+  --look-button-weight: var(--font-weight-medium);
+  --look-canvas: var(--gray-1);
+  --look-canvas-image: radial-gradient(circle at 1px 1px, var(--gray-a5) 1px, transparent 0);
+  --look-canvas-size: 18px 18px;
+  --look-chrome: var(--color-background);
+  --look-rule: var(--gray-a6);
+  --look-nav-radius: var(--radius-1);
+  --look-nav-active-bg: var(--gray-a3);
+  --look-nav-active-fg: var(--gray-12);
+  --look-nav-indicator: var(--accent-9);
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a6);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--accent-a8);
+  --doc-heading-font: var(--stack-mono);
+}
+html.dark[data-look='instrument'] .radix-themes:not([data-look-scope]):not(.light),
+html.dark .radix-themes[data-look-scope='instrument']:not(.light),
+.radix-themes.dark[data-look-scope='instrument'] {
+  --look-canvas: var(--color-background);
+  --look-canvas-image: radial-gradient(circle at 1px 1px, var(--gray-a4) 1px, transparent 0);
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a6);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--accent-a8);
+}
+
+/* ── Workshop ── */
+html[data-look='workshop'] .radix-themes:not([data-look-scope]),
+.radix-themes[data-look-scope='workshop'] {
+  --default-font-family: var(--stack-sans);
+  --heading-font-family: var(--stack-grotesque);
+  --code-font-family: var(--stack-mono);
+  --heading-letter-spacing: -0.03em;
+  --look-heading-weight: 750;
+  --look-display-font: var(--stack-grotesque);
+  --look-display-weight: 700;
+  --look-display-tracking: -0.035em;
+  --look-figure-font: var(--stack-sans);
+  --look-eyebrow-font: var(--stack-sans);
+  --look-eyebrow-size: calc(11.5px * var(--scaling));
+  --look-eyebrow-weight: 700;
+  --look-eyebrow-tracking: 0.05em;
+  --look-eyebrow-transform: uppercase;
+  --look-eyebrow-caps: normal;
+  --look-button-weight: 600;
+  --look-canvas: color-mix(in oklab, var(--gray-2), var(--accent-3) 35%);
+  --look-canvas-image: none;
+  --look-canvas-size: auto;
+  --look-chrome: var(--look-canvas);
+  --look-rule: var(--gray-a5);
+  --look-nav-radius: var(--radius-3);
+  --look-nav-active-bg: var(--accent-a4);
+  --look-nav-active-fg: var(--accent-12);
+  --look-nav-indicator: transparent;
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a5), 0 2px 0 var(--gray-a4);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a7), 0 4px 0 var(--gray-a5);
+  --doc-heading-font: var(--stack-grotesque);
+}
+html.dark[data-look='workshop'] .radix-themes:not([data-look-scope]):not(.light),
+html.dark .radix-themes[data-look-scope='workshop']:not(.light),
+.radix-themes.dark[data-look-scope='workshop'] {
+  --look-canvas: color-mix(in oklab, var(--color-background), var(--accent-2) 60%);
+  --look-canvas-image: none;
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a5), 0 2px 0 var(--black-a8);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a7), 0 4px 0 var(--black-a9);
+}
+
+/* ── Soft ── */
+html[data-look='soft'] .radix-themes:not([data-look-scope]),
+.radix-themes[data-look-scope='soft'] {
+  --default-font-family: var(--stack-sans);
+  --heading-font-family: var(--stack-sans);
+  --code-font-family: var(--stack-mono);
+  --heading-letter-spacing: -0.02em;
+  --look-heading-weight: 600;
+  --look-display-font: var(--stack-sans);
+  --look-display-weight: 600;
+  --look-display-tracking: -0.03em;
+  --look-figure-font: var(--stack-sans);
+  --look-eyebrow-font: var(--stack-sans);
+  --look-eyebrow-size: calc(12.5px * var(--scaling));
+  --look-eyebrow-weight: 500;
+  --look-eyebrow-tracking: 0em;
+  --look-eyebrow-transform: none;
+  --look-eyebrow-caps: normal;
+  --look-button-weight: var(--font-weight-medium);
+  --look-canvas: var(--gray-1);
+  --look-canvas-image:
+    radial-gradient(1100px 520px at 0% -8%, var(--accent-a4), transparent 62%),
+    radial-gradient(900px 480px at 100% 0%, var(--accent-a3), transparent 60%);
+  --look-canvas-size: auto;
+  --look-chrome: color-mix(in oklab, var(--color-panel-solid) 55%, transparent);
+  --look-rule: var(--gray-a4);
+  --look-nav-radius: 999px;
+  --look-nav-active-bg: var(--accent-a3);
+  --look-nav-active-fg: var(--accent-11);
+  --look-nav-indicator: transparent;
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a3), 0 10px 30px -14px var(--black-a4), 0 2px 6px -3px var(--black-a2);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a5), 0 16px 40px -16px var(--black-a5);
+  --doc-heading-font: var(--stack-sans);
+}
+html.dark[data-look='soft'] .radix-themes:not([data-look-scope]):not(.light),
+html.dark .radix-themes[data-look-scope='soft']:not(.light),
+.radix-themes.dark[data-look-scope='soft'] {
+  --look-canvas: var(--color-background);
+  --look-canvas-image:
+    radial-gradient(1100px 520px at 0% -8%, var(--accent-a3), transparent 62%),
+    radial-gradient(900px 480px at 100% 0%, var(--accent-a2), transparent 60%);
+  --base-card-surface-box-shadow: 0 0 0 1px var(--gray-a4), 0 12px 32px -16px var(--black-a8);
+  --base-card-surface-hover-box-shadow: 0 0 0 1px var(--gray-a6), 0 16px 40px -16px var(--black-a9);
+}
+
+/* ── Consumers: component rules only read the variables ─────────────── */
+
+/* Explicit weight props (rt-r-weight-*) still win over the Look's default. */
+.radix-themes .rt-Heading:not([class*='rt-r-weight-']) {
+  font-weight: var(--look-heading-weight, var(--font-weight-bold));
+}
+
+.radix-themes .rt-BaseButton {
+  font-weight: var(--look-button-weight, var(--font-weight-medium));
+}
+
+.look-canvas {
+  background-color: var(--look-canvas, var(--color-background));
+  background-image: var(--look-canvas-image, none);
+  background-size: var(--look-canvas-size, auto);
+  background-attachment: fixed;
+}
+
+/* Small uppercase / small-caps label above a value or section. */
+.ui-eyebrow {
+  display: block;
+  font-family: var(--look-eyebrow-font, inherit);
+  font-size: var(--look-eyebrow-size, 11px);
+  font-weight: var(--look-eyebrow-weight, 600);
+  letter-spacing: var(--look-eyebrow-tracking, 0.08em);
+  text-transform: var(--look-eyebrow-transform, uppercase);
+  font-variant-caps: var(--look-eyebrow-caps, normal);
+  line-height: 1.3;
+  color: var(--gray-11);
+}
+
+/* Amounts and counts in lists and tables. */
+.ui-figure {
+  font-family: var(--look-figure-font, inherit);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Large headline numbers (KPIs, totals due). */
+.ui-display {
+  font-family: var(--look-display-font, inherit);
+  font-weight: var(--look-display-weight, 650);
+  letter-spacing: var(--look-display-tracking, -0.02em);
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1.1;
+}

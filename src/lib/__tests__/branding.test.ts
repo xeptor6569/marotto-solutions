@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
     buildServiceLabelMap,
+    businessInitials,
     FALLBACK_BUSINESS_NAME,
     resolveBusiness,
     resolveLetterhead,
     resolvePublicSite,
 } from '@/lib/branding';
-import { resolveTheme } from '@/lib/theme-presets';
+import { getThemePreset, resolveTheme } from '@/lib/theme-presets';
+import { getLook, LOOKS, scalingForDensity } from '@/lib/theme-looks';
 
 describe('resolveBusiness', () => {
     it('falls back to a neutral name when unconfigured', () => {
@@ -69,6 +71,61 @@ describe('resolveTheme', () => {
         expect(theme).toMatchObject({ accentColor: 'crimson', grayColor: 'mauve', radius: 'full' });
         const invalid = resolveTheme({ themePreset: 'custom', accentColor: 'not-a-color' });
         expect(invalid.accentColor).toBe('indigo');
+    });
+
+    it('defaults to the Studio look at 100% scaling with solid panels', () => {
+        const theme = resolveTheme(undefined);
+        expect(theme).toMatchObject({
+            lookId: 'studio',
+            density: 'default',
+            scaling: '100%',
+            panelBackground: 'solid',
+            radius: 'medium',
+        });
+    });
+
+    it('a preset takes its radius from the look', () => {
+        expect(resolveTheme({ themePreset: 'ocean-teal', look: 'ledger' }).radius).toBe('small');
+        expect(resolveTheme({ themePreset: 'ocean-teal', look: 'soft' })).toMatchObject({
+            radius: 'full',
+            panelBackground: 'translucent',
+        });
+    });
+
+    it('custom radius wins over the look, falling back to the look radius', () => {
+        expect(resolveTheme({ themePreset: 'custom', radius: 'none', look: 'workshop' }).radius).toBe('none');
+        expect(resolveTheme({ themePreset: 'custom', radius: 'bogus', look: 'workshop' }).radius).toBe('large');
+    });
+
+    it('unknown looks and densities fall back safely', () => {
+        const theme = resolveTheme({ look: 'neon', density: 'huge' });
+        expect(theme.lookId).toBe('studio');
+        expect(theme.density).toBe('default');
+    });
+});
+
+describe('scalingForDensity', () => {
+    it('steps one notch from the look scaling and clamps to the Radix range', () => {
+        const instrument = getLook('instrument')!;
+        const workshop = getLook('workshop')!;
+        expect(scalingForDensity(instrument, 'default')).toBe('95%');
+        expect(scalingForDensity(instrument, 'compact')).toBe('90%');
+        expect(scalingForDensity(workshop, 'comfortable')).toBe('110%');
+        expect(scalingForDensity({ ...workshop, scaling: '110%' }, 'comfortable')).toBe('110%');
+    });
+
+    it('every look suggests an existing color preset', () => {
+        for (const look of LOOKS) {
+            expect(getThemePreset(look.suggestedPresetId), look.id).toBeDefined();
+        }
+    });
+});
+
+describe('businessInitials', () => {
+    it('takes up to two initials with a neutral fallback', () => {
+        expect(businessInitials('Acme Plumbing Co')).toBe('AP');
+        expect(businessInitials('acme')).toBe('A');
+        expect(businessInitials('   ')).toBe('B');
     });
 });
 

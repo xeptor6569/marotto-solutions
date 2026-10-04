@@ -3,6 +3,7 @@ import { Box, Callout, Container, Flex, Heading, Text } from '@radix-ui/themes';
 import { AlertCircle } from 'lucide-react';
 import { isDatabaseConfigured, prisma } from '@/lib/prisma';
 import SetupForm from './setup-form';
+import { listTimeZones } from '@/lib/timezones';
 
 export const metadata = { title: 'Setup' };
 export const dynamic = 'force-dynamic';
@@ -27,13 +28,14 @@ export default async function SetupPage() {
     }
 
     return (
-        <Container size="2" px="4" py="7">
+        <div className="setup-shell look-canvas">
+        <Container size="3" px="4" py={{ initial: '5', sm: '8' }}>
             <Flex direction="column" gap="5">
-                <Flex direction="column" align="center" gap="2" style={{ textAlign: 'center' }}>
-                    <Heading size="8">Welcome</Heading>
-                    <Text size="3" color="gray" style={{ maxWidth: 480 }}>
-                        Let&apos;s set up your business back-office: create the admin account, name your
-                        business, and pick a look.
+                <Flex direction="column" gap="1" className="setup-intro">
+                    <span className="ui-eyebrow">First-time setup</span>
+                    <Heading size="8">Welcome — let&apos;s get you set up</Heading>
+                    <Text size="3" color="gray" style={{ maxWidth: 560 }}>
+                        Four quick steps: your account, your business, and how everything should look. It takes about two minutes.
                     </Text>
                 </Flex>
 
@@ -56,10 +58,11 @@ export default async function SetupPage() {
                     </Callout.Root>
                 ) : (
                     <Box>
-                        <SetupForm />
+                        <SetupForm timeZones={listTimeZones()} />
                     </Box>
                 )}
             </Flex>
         </Container>
+        </div>
     );
 }

@@ -1,9 +1,18 @@
 import type { ThemeAppearance } from './types';
+import {
+    parseDensity,
+    parseLook,
+    scalingForDensity,
+    type LookId,
+    type PanelBackground,
+    type ThemeDensity,
+    type ThemeScaling,
+} from './theme-looks';
 
 /**
- * Curated Radix Themes combinations selectable in Settings → Appearance.
- * A preset is the site-wide default look; light/dark stays a per-visitor
- * choice on top of it.
+ * Curated Radix Themes color combinations selectable in Settings → Appearance.
+ * A preset is the site-wide color; the Look (theme-looks.ts) decides type,
+ * shape, and density, and light/dark stays a per-visitor choice on top.
  */
 
 export type AccentColor =
@@ -33,7 +42,6 @@ export interface ThemePreset {
     description: string;
     accentColor: AccentColor;
     grayColor: GrayColor;
-    radius: ThemeRadius;
 }
 
 export const THEME_PRESETS: ThemePreset[] = [
@@ -43,7 +51,20 @@ export const THEME_PRESETS: ThemePreset[] = [
         description: 'Calm indigo with cool slate grays — the original look.',
         accentColor: 'indigo',
         grayColor: 'slate',
-        radius: 'large',
+    },
+    {
+        id: 'ledger-green',
+        label: 'Ledger Green',
+        description: 'Bookkeeping green on warm sand.',
+        accentColor: 'jade',
+        grayColor: 'sand',
+    },
+    {
+        id: 'signal',
+        label: 'Signal',
+        description: 'Graphite slate with a sharp orange signal color.',
+        accentColor: 'orange',
+        grayColor: 'slate',
     },
     {
         id: 'ocean-teal',
@@ -51,7 +72,6 @@ export const THEME_PRESETS: ThemePreset[] = [
         description: 'Fresh teal with soft sage grays.',
         accentColor: 'teal',
         grayColor: 'sage',
-        radius: 'large',
     },
     {
         id: 'forest',
@@ -59,7 +79,6 @@ export const THEME_PRESETS: ThemePreset[] = [
         description: 'Grounded greens with olive grays.',
         accentColor: 'grass',
         grayColor: 'olive',
-        radius: 'medium',
     },
     {
         id: 'sunset-amber',
@@ -67,7 +86,6 @@ export const THEME_PRESETS: ThemePreset[] = [
         description: 'Warm amber with sandy neutrals.',
         accentColor: 'amber',
         grayColor: 'sand',
-        radius: 'medium',
     },
     {
         id: 'ruby',
@@ -75,15 +93,20 @@ export const THEME_PRESETS: ThemePreset[] = [
         description: 'Bold ruby red with warm mauve grays.',
         accentColor: 'ruby',
         grayColor: 'mauve',
-        radius: 'large',
+    },
+    {
+        id: 'dusk',
+        label: 'Dusk',
+        description: 'Soft violet with rosy mauve neutrals.',
+        accentColor: 'violet',
+        grayColor: 'mauve',
     },
     {
         id: 'steel-blue',
         label: 'Steel Blue',
-        description: 'Crisp blue with pure grays and tighter corners.',
+        description: 'Crisp blue with pure neutral grays.',
         accentColor: 'blue',
         grayColor: 'gray',
-        radius: 'small',
     },
 ];
 
@@ -118,16 +141,35 @@ export interface ResolvedTheme {
     grayColor: GrayColor;
     radius: ThemeRadius;
     defaultAppearance: ThemeAppearance;
+    lookId: LookId;
+    density: ThemeDensity;
+    scaling: ThemeScaling;
+    panelBackground: PanelBackground;
 }
 
-/** Resolve a BrandingConfig-ish shape into concrete Radix Theme props. */
+/**
+ * Resolve a BrandingConfig-ish shape into concrete Radix Theme props.
+ * Corner radius follows the Look unless the Custom preset sets its own.
+ */
 export function resolveTheme(branding: {
     themePreset?: string;
     accentColor?: string;
     grayColor?: string;
     radius?: string;
     defaultAppearance?: string;
+    look?: string;
+    density?: string;
 } | undefined): ResolvedTheme {
+    const look = parseLook(branding?.look);
+    const density = parseDensity(branding?.density);
+    const structure = {
+        defaultAppearance: parseAppearance(branding?.defaultAppearance),
+        lookId: look.id,
+        density,
+        scaling: scalingForDensity(look, density),
+        panelBackground: look.panelBackground,
+    };
+
     const presetId = branding?.themePreset || DEFAULT_THEME_PRESET_ID;
     const preset = getThemePreset(presetId);
     if (preset) {
@@ -135,8 +177,8 @@ export function resolveTheme(branding: {
             presetId: preset.id,
             accentColor: preset.accentColor,
             grayColor: preset.grayColor,
-            radius: preset.radius,
-            defaultAppearance: parseAppearance(branding?.defaultAppearance),
+            radius: look.radius,
+            ...structure,
         };
     }
     // 'custom' (or unknown id): honor the raw values with safe fallbacks.
@@ -144,7 +186,7 @@ export function resolveTheme(branding: {
         presetId: CUSTOM_THEME_PRESET_ID,
         accentColor: parseAccentColor(branding?.accentColor),
         grayColor: parseGrayColor(branding?.grayColor),
-        radius: parseThemeRadius(branding?.radius),
-        defaultAppearance: parseAppearance(branding?.defaultAppearance),
+        radius: parseThemeRadius(branding?.radius, look.radius),
+        ...structure,
     };
 }

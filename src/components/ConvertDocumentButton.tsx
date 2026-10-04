@@ -18,10 +18,13 @@ export default function ConvertDocumentButton({
     sourceDocumentId,
     sourceType,
     hasPendingApproval,
+    primary = false,
 }: {
     sourceDocumentId: string;
     sourceType: DocumentType;
     hasPendingApproval: boolean;
+    /** Solid one-click "Convert to invoice" for the page's main action. */
+    primary?: boolean;
 }) {
     const targets = convertTargets(sourceType);
     const [error, setError] = useState('');
@@ -53,8 +56,16 @@ export default function ConvertDocumentButton({
         runConversion(targetType);
     };
 
+    const directToInvoice = primary && targets.includes('invoice');
+
     return (
         <>
+            {directToInvoice ? (
+                <Button size="2" loading={pending} onClick={() => handleSelect('invoice')} style={{ minHeight: 40 }}>
+                    <ArrowRightLeft size={14} aria-hidden />
+                    Convert to invoice
+                </Button>
+            ) : (
             <DropdownMenu.Root>
                 <DropdownMenu.Trigger>
                     <Button variant="soft" size="2" loading={pending}>
@@ -71,6 +82,7 @@ export default function ConvertDocumentButton({
                     ))}
                 </DropdownMenu.Content>
             </DropdownMenu.Root>
+            )}
 
             {error ? (
                 <Text size="1" color="red" role="alert">

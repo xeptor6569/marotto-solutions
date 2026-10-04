@@ -2,6 +2,7 @@
 
 import { Button } from '@radix-ui/themes';
 import type { PaymentMethodKey } from '@/lib/types';
+import { useMoney } from '@/components/MoneyProvider';
 import { paymentClickHref, paymentMethodNeedsBrowserHandoff, toMoneyAmount } from '@/lib/payment-links';
 
 /**
@@ -21,7 +22,8 @@ export default function PaymentDeepLinkButton({
     externalHref: string;
     amount: number;
 }) {
-    const label = `Pay $${toMoneyAmount(amount)}`;
+    const { format } = useMoney();
+    const label = `Pay ${format(amount)}`;
     const href = paymentClickHref(methodKey, externalHref);
 
     const onClick = async () => {

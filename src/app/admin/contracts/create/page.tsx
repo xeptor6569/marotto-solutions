@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { Button, Callout, Container } from '@radix-ui/themes';
 import { XCircle } from 'lucide-react';
-import BackButton from '@/components/BackButton';
-import AdminListPageHeader from '@/components/AdminListPageHeader';
+import PageHeader from '@/components/ui/PageHeader';
 import ContractForm from '@/components/ContractForm';
 import { getDocumentFormPickers } from '@/lib/document-form-pickers';
 import { isDatabaseConfigured } from '@/lib/prisma';
@@ -26,14 +25,13 @@ export default async function CreateContractPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <AdminListPageHeader
+            <PageHeader
                 title="New service contract"
                 actions={(
                     <>
                         <Button asChild size="2" variant="soft">
                             <Link href="/admin/contracts">All contracts</Link>
                         </Button>
-                        <BackButton href="/admin/contracts" />
                     </>
                 )}
             />

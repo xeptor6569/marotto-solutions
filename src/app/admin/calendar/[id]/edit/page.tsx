@@ -3,7 +3,6 @@ import { getEvent, getBusinessTimezone } from '@/lib/calendar';
 import { formatInTimeZone } from 'date-fns-tz';
 import { isDatabaseConfigured } from '@/lib/prisma';
 import CalendarEventForm from '@/components/CalendarEventForm';
-import BackButton from '@/components/BackButton';
 import type { CalendarEventInput } from '@/lib/types';
 
 export default async function EditCalendarEventPage({
@@ -42,7 +41,6 @@ export default async function EditCalendarEventPage({
 
     return (
         <Container size="3" p={{ initial: '3', sm: '5' }}>
-            <BackButton href={`/admin/calendar/${id}`} />
             <CalendarEventForm mode="edit" eventId={id} initialData={initialData} />
         </Container>
     );

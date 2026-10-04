@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Badge, Box, Button, Card, Flex, Table, Text, TextField } from "@radix-ui/themes";
-import { ChevronRight, Search } from "lucide-react";
+import { Box, Button, Card, Flex, IconButton, Table, Text, TextField } from "@radix-ui/themes";
+import { ChevronRight, Paperclip, Search, X } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
 import FilterChips, { type FilterChipOption } from "@/components/FilterChips";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { statusDisplay } from "@/lib/status-display";
 import type { JobDocumentCounts } from "@/lib/jobs";
 
 export interface AdminJobsListItem {
@@ -21,22 +22,21 @@ export interface AdminJobsListItem {
 
 const STATUS_ORDER = ["active", "paused", "closed"];
 
-function statusColor(status: string): "green" | "orange" | "gray" {
-    if (status === "active") return "green";
-    if (status === "paused") return "orange";
-    return "gray";
-}
-
-function statusLabel(status: string): string {
-    return status.charAt(0).toUpperCase() + status.slice(1);
-}
-
 function countsSummary(counts: JobDocumentCounts): string {
-    return `${counts.estimates} est · ${counts.quotes} quote · ${counts.invoices} inv · ${counts.receipts} rct · ${counts.leads} lead`;
+    const parts = [
+        counts.estimates ? `${counts.estimates} est` : null,
+        counts.quotes ? `${counts.quotes} quote${counts.quotes === 1 ? "" : "s"}` : null,
+        counts.invoices ? `${counts.invoices} inv` : null,
+        counts.receipts ? `${counts.receipts} rct` : null,
+    ].filter(Boolean);
+    return parts.length ? parts.join(" · ") : "No documents yet";
+}
+
+function updatedLabel(iso: string): string {
+    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
-    const router = useRouter();
     const [query, setQuery] = useState("");
     const [status, setStatus] = useState("all");
 
@@ -52,7 +52,7 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
         });
         return [
             { value: "all", label: "All", count: jobs.length },
-            ...present.map((s) => ({ value: s, label: statusLabel(s), count: counts.get(s) })),
+            ...present.map((s) => ({ value: s, label: statusDisplay("job", s).label, count: counts.get(s) })),
         ];
     }, [jobs]);
 
@@ -76,19 +76,27 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
     };
 
     return (
-        <Flex direction="column" gap="4" className="admin-jobs-list">
-            <Card>
-                <Flex gap="3" wrap="wrap" align="end">
-                    <Box style={{ flex: 1, minWidth: "min(100%, 200px)" }}>
-                        <Text as="label" size="2">Search</Text>
+        <Flex direction="column" gap="4">
+            <Card size="2" className="list-filter-card">
+                <Flex gap="4" wrap="wrap" align="end">
+                    <Box style={{ flex: 1, minWidth: "min(100%, 220px)" }}>
                         <TextField.Root
-                            placeholder="Search jobs by name, id, description…"
+                            size="3"
+                            placeholder="Search jobs by name or description…"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
+                            aria-label="Search jobs"
                         >
                             <TextField.Slot>
-                                <Search size={14} />
+                                <Search size={16} />
                             </TextField.Slot>
+                            {query ? (
+                                <TextField.Slot>
+                                    <IconButton size="1" variant="ghost" color="gray" onClick={() => setQuery("")} aria-label="Clear search">
+                                        <X size={14} />
+                                    </IconButton>
+                                </TextField.Slot>
+                            ) : null}
                         </TextField.Root>
                     </Box>
                     <FilterChips label="Status" options={statusOptions} value={status} onChange={setStatus} />
@@ -97,7 +105,7 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
 
             <Flex align="center" justify="between" gap="3" wrap="wrap">
                 <Text size="2" color="gray">
-                    Showing {filteredJobs.length} of {jobs.length} {jobs.length === 1 ? "job" : "jobs"}
+                    Showing <span className="ui-figure">{filteredJobs.length}</span> of <span className="ui-figure">{jobs.length}</span> {jobs.length === 1 ? "job" : "jobs"}
                 </Text>
                 {filtersActive ? (
                     <Button size="1" variant="ghost" color="gray" onClick={clearFilters}>Clear filters</Button>
@@ -106,118 +114,71 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
 
             {filteredJobs.length === 0 ? (
                 <EmptyState
-                    title="No jobs match your filters."
+                    compact
+                    icon={Search}
+                    title="No jobs match your filters"
                     description="Try a different search term or switch back to all statuses."
                     action={<Button size="2" variant="soft" onClick={clearFilters}>Clear filters</Button>}
                 />
             ) : (
                 <>
-                    <Flex direction="column" gap="3" className="jobs-list-mobile">
+                    <div className="list-mobile">
                         {filteredJobs.map((job) => (
-                            <Link
-                                key={job.id}
-                                href={`/admin/jobs/${job.id}`}
-                                style={{ textDecoration: "none", color: "inherit", display: "block" }}
-                            >
-                                <Card className="jobs-list-card">
-                                    <Flex direction="column" gap="3">
-                                        <Flex justify="between" align="start" gap="2" wrap="wrap">
-                                            <Box style={{ minWidth: 0, flex: "1 1 140px" }}>
-                                                <Text as="div" weight="bold">{job.name}</Text>
-                                                <Text as="div" size="1" color="gray">{job.id}</Text>
-                                                {job.description ? <Text as="div" size="2">{job.description}</Text> : null}
-                                            </Box>
-                                            <Badge color={statusColor(job.status)}>{job.status}</Badge>
-                                        </Flex>
-                                        <Box>
-                                            <Text size="1" color="gray">Docs</Text>
-                                            <Text as="div" size="2">{countsSummary(job.counts)}</Text>
-                                        </Box>
-                                        <Flex justify="between" align="center">
-                                            <Text size="2" color="gray">Attachments: {job.attachmentCount}</Text>
-                                            <Text size="2" color="gray">{new Date(job.updatedAt).toLocaleDateString()}</Text>
-                                        </Flex>
-                                        <Flex align="center" gap="1" style={{ color: "var(--accent-11)" }}>
-                                            <Text size="2" weight="medium">Open job</Text>
-                                            <ChevronRight size={14} />
-                                        </Flex>
+                            <div key={job.id} className="list-row-card">
+                                <div className="list-row-card-main">
+                                    <Link href={`/admin/jobs/${job.id}`} className="list-row-card-link">
+                                        <Text as="div" size="2" weight="bold" truncate>{job.name}</Text>
+                                    </Link>
+                                    <Text as="div" size="1" color="gray" truncate>{countsSummary(job.counts)}</Text>
+                                    <Flex align="center" gap="3" mt="1">
+                                        <Text size="1" color="gray">Updated {updatedLabel(job.updatedAt)}</Text>
+                                        {job.attachmentCount ? (
+                                            <Flex align="center" gap="1" style={{ color: "var(--gray-10)" }}>
+                                                <Paperclip size={12} aria-hidden />
+                                                <Text size="1" className="ui-figure">{job.attachmentCount}</Text>
+                                            </Flex>
+                                        ) : null}
                                     </Flex>
-                                </Card>
-                            </Link>
+                                </div>
+                                <div className="list-row-card-aside">
+                                    <StatusBadge kind="job" status={job.status} />
+                                    <ChevronRight size={16} color="var(--gray-9)" aria-hidden />
+                                </div>
+                            </div>
                         ))}
-                    </Flex>
+                    </div>
 
-                    <Card className="jobs-list-desktop" style={{ padding: 0, overflow: "hidden" }}>
-                        <Box style={{ overflowX: "auto" }}>
-                            <Table.Root style={{ minWidth: 880 }}>
+                    <Card className="list-desktop list-table-card">
+                        <div className="list-table-scroll">
+                            <Table.Root style={{ minWidth: 760 }}>
                                 <Table.Header>
                                     <Table.Row>
                                         <Table.ColumnHeaderCell>Job</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
-                                        <Table.ColumnHeaderCell>Docs</Table.ColumnHeaderCell>
-                                        <Table.ColumnHeaderCell>Attachments</Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell>Documents</Table.ColumnHeaderCell>
+                                        <Table.ColumnHeaderCell align="right">Files</Table.ColumnHeaderCell>
                                         <Table.ColumnHeaderCell>Updated</Table.ColumnHeaderCell>
-                                        <Table.ColumnHeaderCell />
                                     </Table.Row>
                                 </Table.Header>
                                 <Table.Body>
                                     {filteredJobs.map((job) => (
-                                        <Table.Row
-                                            key={job.id}
-                                            className="jobs-list-row"
-                                            onClick={() => router.push(`/admin/jobs/${job.id}`)}
-                                        >
+                                        <Table.Row key={job.id} align="center">
                                             <Table.Cell>
-                                                <Link
-                                                    href={`/admin/jobs/${job.id}`}
-                                                    style={{ textDecoration: "none", color: "inherit" }}
-                                                >
-                                                    <Text as="div" weight="bold">{job.name}</Text>
-                                                </Link>
-                                                <Text as="div" size="1" color="gray">{job.id}</Text>
-                                                {job.description ? <Text as="div" size="1">{job.description}</Text> : null}
+                                                <Link href={`/admin/jobs/${job.id}`} className="row-link">{job.name}</Link>
+                                                {job.description ? <Text as="div" size="1" color="gray" truncate style={{ maxWidth: 360 }}>{job.description}</Text> : null}
                                             </Table.Cell>
-                                            <Table.Cell>
-                                                <Badge color={statusColor(job.status)}>{job.status}</Badge>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <Text size="2">{countsSummary(job.counts)}</Text>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <Text size="2">{job.attachmentCount}</Text>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <Text size="2">{new Date(job.updatedAt).toLocaleDateString()}</Text>
-                                            </Table.Cell>
-                                            <Table.Cell>
-                                                <Flex justify="end" style={{ color: "var(--gray-9)" }}>
-                                                    <ChevronRight size={16} />
-                                                </Flex>
-                                            </Table.Cell>
+                                            <Table.Cell><StatusBadge kind="job" status={job.status} /></Table.Cell>
+                                            <Table.Cell><Text size="2" color="gray">{countsSummary(job.counts)}</Text></Table.Cell>
+                                            <Table.Cell align="right"><Text size="2" className="ui-figure">{job.attachmentCount}</Text></Table.Cell>
+                                            <Table.Cell><Text size="2" className="ui-figure">{updatedLabel(job.updatedAt)}</Text></Table.Cell>
                                         </Table.Row>
                                     ))}
                                 </Table.Body>
                             </Table.Root>
-                        </Box>
+                        </div>
                     </Card>
                 </>
             )}
-
-            <style>{`
-                .jobs-list-mobile { display: flex; }
-                .jobs-list-desktop { display: none; }
-                .jobs-list-row { cursor: pointer; }
-                .jobs-list-card { transition: box-shadow 0.15s ease, border-color 0.15s ease; }
-                a:focus-visible .jobs-list-card { outline: 2px solid var(--accent-9); outline-offset: 2px; }
-                @media (hover: hover) {
-                    a:hover .jobs-list-card { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
-                    .jobs-list-row:hover { background: var(--gray-a3); }
-                }
-                @media (min-width: 768px) {
-                    .jobs-list-mobile { display: none !important; }
-                    .jobs-list-desktop { display: block !important; }
-                }
-            `}</style>
         </Flex>
     );
 }

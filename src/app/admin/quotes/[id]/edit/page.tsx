@@ -2,9 +2,8 @@ import { Container } from "@radix-ui/themes";
 import { getDocumentById } from "@/lib/data";
 import { notFound } from "next/navigation";
 import NewDocumentForm from "@/components/NewInvoiceForm";
-import BackButton from "@/components/BackButton";
 import { getDocumentFormPickers } from "@/lib/document-form-pickers";
-import AdminListPageHeader from "@/components/AdminListPageHeader";
+import PageHeader from '@/components/ui/PageHeader';
 import { parseDocumentRouteSeed } from "@/lib/document-route-seed";
 
 export default async function EditQuotePage({
@@ -18,7 +17,7 @@ export default async function EditQuotePage({
     const query = (await searchParams) || {};
     const { redirectTo: redirectFromQuery } = parseDocumentRouteSeed(query);
     const doc = await getDocumentById(id);
-    const { clients, jobs, paymentMethods, documentFormMode, presets } = await getDocumentFormPickers();
+    const { clients, jobs, paymentMethods, documentFormMode, presets, paper } = await getDocumentFormPickers();
 
     if (!doc || doc.type !== "quote") {
         notFound();
@@ -30,10 +29,10 @@ export default async function EditQuotePage({
     const backHref = redirectFromQuery || (jobId ? `/admin/jobs/${jobId}` : defaultRedirect);
 
     return (
-        <Container size="3" p={{ initial: "3", sm: "5" }}>
-            <AdminListPageHeader
+        <Container size="4" p={{ initial: "3", sm: "5" }}>
+            <PageHeader
                 title="Edit quote"
-                actions={<BackButton href={backHref} />}
+                back={{ href: backHref, label: "Back" }}
             />
             <NewDocumentForm
                 nextNumber={doc.number}
@@ -45,6 +44,7 @@ export default async function EditQuotePage({
                 paymentMethods={paymentMethods}
                 presets={presets}
                 formMode={documentFormMode}
+                paper={paper}
             />
         </Container>
     );
