@@ -910,7 +910,9 @@ html.pdf-export .payment-options {
 
 .print-document .doc-option-description {
   color: var(--doc-muted);
-  font-size: 13px;
+  /* Same size as the notes and the line-item table. 13px made these paragraphs
+     larger than the rest of the page. */
+  font-size: 11px;
   line-height: 1.45em;
 }
 
