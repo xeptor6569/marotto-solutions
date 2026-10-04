@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Flex, IconButton, Text, Tooltip } from '@radix-ui/themes';
 import { EyeOff } from 'lucide-react';
 import { useMoney } from '@/components/MoneyProvider';
@@ -10,8 +10,14 @@ import type { DocumentData } from '@/lib/types';
 
 /** Width the paper is laid out at before being scaled to fit the column. */
 const PAPER_WIDTH = 720;
+const MIN_SCALE = 0.4;
 
-/** The printable document rendered from unsaved form state. */
+/**
+ * Fit the letter-sized paper to the preview column.
+ * Uses a transform instead of the CSS `zoom` property: WebKit multiplies a
+ * unitless line-height by the zoom factor, so on iPhone paragraphs and
+ * addresses collapse onto the lines below them.
+ */
 export default function EditorPreview({
     doc,
     context,
@@ -25,19 +31,38 @@ export default function EditorPreview({
 }) {
     const { format: money } = useMoney();
     const scrollRef = useRef<HTMLDivElement>(null);
-    const [zoom, setZoom] = useState(1);
+    const paperRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);
+    const [paperHeight, setPaperHeight] = useState(0);
 
-    // Shrink the paper to the available width, like a print preview, instead of cropping it.
-    useEffect(() => {
-        const el = scrollRef.current;
-        if (!el) return;
-        const observer = new ResizeObserver(([entry]) => {
-            const available = entry.contentRect.width;
-            setZoom(Math.min(1, Math.max(0.4, available / PAPER_WIDTH)));
-        });
-        observer.observe(el);
+    useLayoutEffect(() => {
+        const scroll = scrollRef.current;
+        const paper = paperRef.current;
+        if (!scroll || !paper) return;
+
+        const measure = () => {
+            const style = getComputedStyle(scroll);
+            const available = scroll.clientWidth
+                - parseFloat(style.paddingLeft)
+                - parseFloat(style.paddingRight);
+            if (available <= 0) return;
+            const fit = available / PAPER_WIDTH;
+            const nextScale = Math.min(1, Math.max(MIN_SCALE, fit));
+            // offsetHeight ignores transforms, so this stays the pre-scale layout height.
+            const nextHeight = paper.offsetHeight;
+            setScale((current) => (Math.abs(current - nextScale) < 0.001 ? current : nextScale));
+            setPaperHeight((current) => (Math.abs(current - nextHeight) < 1 ? current : nextHeight));
+        };
+
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(scroll);
+        observer.observe(paper);
         return () => observer.disconnect();
     }, []);
+
+    const fit = scale < 1 && scale > MIN_SCALE;
+    const scaledWidth = fit ? undefined : PAPER_WIDTH * scale;
 
     return (
         <div className="editor-preview">
@@ -55,8 +80,20 @@ export default function EditorPreview({
                 ) : null}
             </Flex>
             <div className="editor-preview-scroll" ref={scrollRef}>
-                <div className="editor-preview-paper" style={{ width: PAPER_WIDTH, zoom }}>
-                    <DocumentPaper doc={doc} context={context} money={money} preview linkedJobName={linkedJobName} />
+                <div
+                    className="editor-preview-scale"
+                    style={{
+                        width: scaledWidth ?? '100%',
+                        height: paperHeight > 0 ? paperHeight * scale : undefined,
+                    }}
+                >
+                    <div
+                        ref={paperRef}
+                        className="editor-preview-paper"
+                        style={{ width: PAPER_WIDTH, transform: `scale(${scale})` }}
+                    >
+                        <DocumentPaper doc={doc} context={context} money={money} preview linkedJobName={linkedJobName} />
+                    </div>
                 </div>
             </div>
         </div>
