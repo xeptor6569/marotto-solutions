@@ -7,14 +7,17 @@ import {
     duplicateChoice,
     duplicateChoiceGroup,
     duplicatePackage,
+    hasRecommendedDefaults,
     isOptionSelectionComplete,
     packageTotal,
     resolveSelectedLineItems,
     sanitizeOptionSelection,
+    setRecommendedChoice,
     setRecommendedPackage,
     startingFromTotal,
     stripOptionsForInvoice,
     withSingleRecommended,
+    withSingleRecommendedChoices,
 } from '@/lib/document-options';
 import type {
     DocumentChoiceGroup,
@@ -98,9 +101,10 @@ describe('option authoring helpers', () => {
     });
 
     it('duplicates a choice and a group without renaming nested choices', () => {
-        const choice = duplicateChoice(choiceGroups[0].choices[1]);
+        const choice = duplicateChoice({ ...choiceGroups[0].choices[1], recommended: true });
         expect(choice.label).toBe('Hardwood (copy)');
         expect(choice.id).not.toBe('ch-hard');
+        expect(choice.recommended).toBeUndefined();
         expect(choice.lineItems[0].id).not.toBe(choiceGroups[0].choices[1].lineItems[0].id);
 
         const group = duplicateChoiceGroup(choiceGroups[0]);
@@ -126,6 +130,28 @@ describe('option authoring helpers', () => {
         const cleared = setRecommendedPackage(switched, 'pkg-premium', false);
         expect(cleared.every((pkg) => pkg.recommended === undefined)).toBe(true);
     });
+
+    it('keeps a single recommended choice in each group', () => {
+        const both = setRecommendedChoice(
+            setRecommendedChoice(choiceGroups, 'grp-floor', 'ch-lam', true),
+            'grp-floor',
+            'ch-hard',
+            true,
+        );
+        expect(both[0].choices.map((choice) => choice.recommended)).toEqual([undefined, true]);
+
+        const normalized = withSingleRecommendedChoices([
+            {
+                ...choiceGroups[0],
+                choices: choiceGroups[0].choices.map((choice) => ({ ...choice, recommended: true })),
+            },
+        ]);
+        expect(normalized[0].choices[0].recommended).toBe(true);
+        expect(normalized[0].choices[1].recommended).toBeUndefined();
+
+        const cleared = setRecommendedChoice(both, 'grp-floor', 'ch-hard', false);
+        expect(cleared[0].choices.every((choice) => choice.recommended === undefined)).toBe(true);
+    });
 });
 
 describe('packageTotal / choiceTotal', () => {
@@ -141,11 +167,56 @@ describe('packageTotal / choiceTotal', () => {
 });
 
 describe('startingFromTotal / selectedTotal', () => {
-    it('uses cheapest package and cheapest required choice when incomplete', () => {
+    it('uses the recommended package, then the cheapest required choice', () => {
         const doc = baseDoc({ packages, choiceGroups });
-        // 1000 base + 500 cheapest package + 200 cheapest flooring
+        // 1000 base + 1200 recommended package + 200 cheapest flooring
+        expect(hasRecommendedDefaults(doc)).toBe(true);
+        expect(startingFromTotal(doc)).toBe(2400);
+        expect(documentDisplayTotal(doc)).toBe(2400);
+    });
+
+    it('uses cheapest options when nothing is recommended', () => {
+        const doc = baseDoc({
+            packages: packages.map((pkg) => {
+                const next = { ...pkg };
+                delete next.recommended;
+                return next;
+            }),
+            choiceGroups,
+        });
+        expect(hasRecommendedDefaults(doc)).toBe(false);
         expect(startingFromTotal(doc)).toBe(1700);
-        expect(documentDisplayTotal(doc)).toBe(1700);
+    });
+
+    it('includes a recommended choice, including on an optional group', () => {
+        const doc = baseDoc({
+            packages: [packages[0]],
+            choiceGroups: [
+                {
+                    ...choiceGroups[0],
+                    required: false,
+                    choices: choiceGroups[0].choices.map((choice) =>
+                        choice.id === 'ch-hard' ? { ...choice, recommended: true } : choice,
+                    ),
+                },
+            ],
+        });
+        // 1000 base + 500 only package + 800 recommended hardwood (optional group still counts)
+        expect(startingFromTotal(doc)).toBe(2300);
+        const items = resolveSelectedLineItems(doc);
+        expect(items.map((item) => item.description)).toEqual([
+            'Base labor',
+            'Basic approach',
+            'Hardwood',
+        ]);
+    });
+
+    it('leaves an optional group out of the total when nothing is recommended', () => {
+        const doc = baseDoc({
+            packages: [packages[0]],
+            choiceGroups: [{ ...choiceGroups[0], required: false }],
+        });
+        expect(startingFromTotal(doc)).toBe(1500);
     });
 
     it('uses selected package and choices when complete', () => {

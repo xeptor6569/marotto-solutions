@@ -20,7 +20,14 @@ import type { PaymentMethodOption } from '@/lib/document-form-pickers';
 import type { DocumentFormSeed } from '@/lib/document-route-seed';
 import type { DocumentPaperContext } from '@/lib/document-paper';
 import { formatPhoneInput } from '@/lib/phone-format';
-import { documentDisplayTotal, withSingleRecommended } from '@/lib/document-options';
+import {
+    documentDisplayTotal,
+    documentHasOptions,
+    hasRecommendedDefaults,
+    isOptionSelectionComplete,
+    withSingleRecommended,
+    withSingleRecommendedChoices,
+} from '@/lib/document-options';
 import { applyPresetLineItems, presetMatchesDocumentType } from '@/lib/preset-utils';
 import { DOC_LABEL } from '@/lib/document-labels';
 import { emptyLineItem, recalcLineItem } from '@/components/DocumentLineItemEditor';
@@ -101,7 +108,9 @@ export default function NewDocumentForm({
     const [packages, setPackages] = useState<DocumentPackage[]>(() =>
         withSingleRecommended(initialData?.packages ?? []),
     );
-    const [choiceGroups, setChoiceGroups] = useState<DocumentChoiceGroup[]>(initialData?.choiceGroups ?? []);
+    const [choiceGroups, setChoiceGroups] = useState<DocumentChoiceGroup[]>(() =>
+        withSingleRecommendedChoices(initialData?.choiceGroups ?? []),
+    );
     const [docStatus, setDocStatus] = useState<DocumentData['status']>(initialData?.status || 'draft');
     const [workflowStatus, setWorkflowStatus] = useState<WorkflowStatus | undefined>(initialData?.workflowStatus);
     const [selectedClientId, setSelectedClientId] = useState(seededClientId);
@@ -142,9 +151,17 @@ export default function NewDocumentForm({
     const isProposal = type === 'quote' || type === 'estimate';
     const showSendAction = type !== 'receipt' && docStatus === 'draft';
 
+    const optionSnapshot = { lineItems, packages, choiceGroups, optionSelection: initialData?.optionSelection };
     const subtotal = isProposal
-        ? documentDisplayTotal({ lineItems, packages, choiceGroups, optionSelection: initialData?.optionSelection })
+        ? documentDisplayTotal(optionSnapshot)
         : lineItems.reduce((acc, item) => acc + item.total, 0);
+    const totalCaption = !isProposal || !documentHasOptions(optionSnapshot)
+        ? 'Total'
+        : isOptionSelectionComplete(optionSnapshot)
+            ? 'Selected'
+            : hasRecommendedDefaults(optionSnapshot)
+                ? 'Recommended'
+                : 'From';
     const baseSubtotal = lineItems.reduce((acc, item) => acc + item.total, 0);
     const grossSubtotal = lineItems.reduce((acc, item) => acc + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0), 0);
     const discountSavings = Math.max(0, grossSubtotal - baseSubtotal);
@@ -481,6 +498,7 @@ export default function NewDocumentForm({
                                     onPackagesChange={(next) => { setPackages(next); markDirty(); }}
                                     onChoiceGroupsChange={(next) => { setChoiceGroups(next); markDirty(); }}
                                     totals={{ subtotal, baseSubtotal, grossSubtotal, discountSavings }}
+                                    totalCaption={totalCaption}
                                     title={docTitle}
                                     notes={notes}
                                 />

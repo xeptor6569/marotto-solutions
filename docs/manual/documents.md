@@ -32,7 +32,7 @@ When you save:
 ## Options and approvals
 
 - **Packages** are alternative versions of the whole job (Option A / Option B). **Material / method choices** are smaller either/or decisions within it (Flooring: Hardwood or Laminate). The shared document lists every option with its price.
-- In the editor, each package, group, and choice is a summary row. Open it to edit the label, a markdown description, and its lines. Reorder or duplicate from the row. Only one package can be marked **Recommended**.
+- In the editor, each package, group, and choice is a summary row. Open it to edit the label, a markdown description, and its lines. Reorder or duplicate from the row. Only one package can be marked **Recommended**, and only one choice in each group. The document shows that badge, and until you save a selection the total is the base scope plus those recommended options (a required group with no recommendation still uses its lowest price).
 - When the client decides, open the document and record their pick under **Select options** → **Save selection**. **Convert** and **Deposit invoice** bill only what's selected.
 - Tick **Needs client approval** on a line for extra work the client hasn't agreed to yet. It shows with a "Pending your approval" badge and its own subtotal, and the email mentions it. Converting to an invoice bills these lines too (you'll be asked first) — remove them if the client declines.
 

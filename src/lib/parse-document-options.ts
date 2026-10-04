@@ -28,6 +28,7 @@ type RawChoice = {
     id?: string;
     label?: string;
     description?: string;
+    recommended?: string;
     items: Map<number, RawLineRow>;
 };
 
@@ -185,6 +186,7 @@ export function parseChoiceGroupsFromFormData(formData: FormData): DocumentChoic
             if (field === 'id') choice.id = value;
             else if (field === 'label') choice.label = value;
             else if (field === 'description') choice.description = value;
+            else if (field === 'recommended') choice.recommended = value;
             group.choices.set(choiceIndex, choice);
             groups.set(groupIndex, group);
             continue;
@@ -205,14 +207,20 @@ export function parseChoiceGroupsFromFormData(formData: FormData): DocumentChoic
 
     return sortedMapValues(groups)
         .map((group) => {
-            const choices: DocumentChoice[] = sortedMapValues(group.choices)
-                .map((choice) => ({
-                    id: choice.id?.trim() || crypto.randomUUID(),
-                    label: (choice.label ?? '').trim() || 'Choice',
-                    description: (choice.description ?? '').trim() || undefined,
-                    lineItems: sortedMapValues(choice.items).map(finalizeLineItem),
-                }))
-                .filter((choice) => choice.lineItems.length > 0 || choice.label !== 'Choice');
+            const choices: DocumentChoice[] = withSingleRecommended(
+                sortedMapValues(group.choices)
+                    .map((choice) => {
+                        const recommended = choice.recommended === '1' || choice.recommended === 'on' || choice.recommended === 'true';
+                        return {
+                            id: choice.id?.trim() || crypto.randomUUID(),
+                            label: (choice.label ?? '').trim() || 'Choice',
+                            description: (choice.description ?? '').trim() || undefined,
+                            ...(recommended ? { recommended: true as const } : {}),
+                            lineItems: sortedMapValues(choice.items).map(finalizeLineItem),
+                        };
+                    })
+                    .filter((choice) => choice.lineItems.length > 0 || choice.label !== 'Choice'),
+            );
 
             const requiredRaw = group.required;
             const required = !(requiredRaw === '0' || requiredRaw === 'false' || requiredRaw === 'off');

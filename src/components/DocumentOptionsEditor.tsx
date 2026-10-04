@@ -15,6 +15,7 @@ import {
     duplicateChoiceGroup,
     duplicatePackage,
     packageTotal,
+    setRecommendedChoice,
     setRecommendedPackage,
 } from '@/lib/document-options';
 import { useMoney } from '@/components/MoneyProvider';
@@ -424,8 +425,9 @@ export default function DocumentOptionsEditor({
                             <Heading size="3">Material / method choices</Heading>
                             <HelpTip title="Material / method choices" topic="documents">
                                 Either/or decisions inside the job, such as flooring. Each group adds the chosen option
-                                on top of the base scope and the selected package. Descriptions support markdown. Open a
-                                row to edit it, or reorder and duplicate from the summary.
+                                on top of the base scope and the selected package. Mark one choice in a group as
+                                Recommended; the document total includes those choices until a selection is saved.
+                                Descriptions support markdown. Open a row to edit it, or reorder and duplicate from the summary.
                             </HelpTip>
                         </Flex>
                         <Text size="2" color="gray" as="p" mt="1">
@@ -546,6 +548,7 @@ export default function DocumentOptionsEditor({
                                                         untitled={!choice.label.trim()}
                                                         meta={countLabel(choice.lineItems.length, 'line', 'lines')}
                                                         price={money(choiceTotal(choice))}
+                                                        badge={choice.recommended ? <Badge size="1" color="blue">Recommended</Badge> : undefined}
                                                         onToggle={() => toggle(choice.id)}
                                                     >
                                                         <OptionActions
@@ -592,6 +595,7 @@ export default function DocumentOptionsEditor({
                                                     <input type="hidden" name={`choiceGroups[${groupIndex}][choices][${choiceIndex}][id]`} value={choice.id} />
                                                     <input type="hidden" name={`choiceGroups[${groupIndex}][choices][${choiceIndex}][label]`} value={choice.label} />
                                                     <input type="hidden" name={`choiceGroups[${groupIndex}][choices][${choiceIndex}][description]`} value={choice.description || ''} />
+                                                    <input type="hidden" name={`choiceGroups[${groupIndex}][choices][${choiceIndex}][recommended]`} value={choice.recommended ? '1' : '0'} />
                                                     <div className="option-card-body" hidden={!choiceOpen}>
                                                         <Box>
                                                             <Text as="label" size="2">Choice label</Text>
@@ -628,6 +632,23 @@ export default function DocumentOptionsEditor({
                                                             rows={2}
                                                             placeholder="Optional details"
                                                         />
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, minHeight: 44 }}>
+                                                            <Checkbox
+                                                                checked={choice.recommended === true}
+                                                                onCheckedChange={(value) =>
+                                                                    onChoiceGroupsChange(
+                                                                        setRecommendedChoice(
+                                                                            choiceGroups,
+                                                                            group.id,
+                                                                            choice.id,
+                                                                            value === true,
+                                                                        ),
+                                                                    )
+                                                                }
+                                                            />
+                                                            Recommended
+                                                            <Text size="1" color="gray">Suggested choice. Only one in this group can be marked.</Text>
+                                                        </label>
                                                         {choice.lineItems.map((item, itemIndex) => (
                                                             <DocumentLineItemEditor
                                                                 key={item.id}

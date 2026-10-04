@@ -75,5 +75,25 @@ describe('parseChoiceGroupsFromFormData', () => {
         expect(groups[0].choices[0].label).toBe('Hardwood');
         expect(groups[0].choices[0].description).toBe('- Solid oak\n- Site finish');
         expect(groups[0].choices[0].lineItems[0].total).toBe(800);
+        expect(groups[0].choices[0].recommended).toBeUndefined();
+    });
+
+    it('keeps only the first recommended choice in a group', () => {
+        const fd = new FormData();
+        fd.set('choiceGroups[0][label]', 'Flooring');
+        fd.set('choiceGroups[0][choices][0][label]', 'Laminate');
+        fd.set('choiceGroups[0][choices][0][recommended]', '1');
+        fd.set('choiceGroups[0][choices][0][items][0][description]', 'Laminate');
+        fd.set('choiceGroups[0][choices][0][items][0][quantity]', '1');
+        fd.set('choiceGroups[0][choices][0][items][0][unitPrice]', '200');
+        fd.set('choiceGroups[0][choices][1][label]', 'Hardwood');
+        fd.set('choiceGroups[0][choices][1][recommended]', 'true');
+        fd.set('choiceGroups[0][choices][1][items][0][description]', 'Oak');
+        fd.set('choiceGroups[0][choices][1][items][0][quantity]', '1');
+        fd.set('choiceGroups[0][choices][1][items][0][unitPrice]', '800');
+
+        const groups = parseChoiceGroupsFromFormData(fd);
+        expect(groups[0].choices[0].recommended).toBe(true);
+        expect(groups[0].choices[1].recommended).toBeUndefined();
     });
 });
