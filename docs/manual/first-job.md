@@ -16,7 +16,7 @@ Create documents *from the job page* (its **Create** button) so they're linked t
 
 From the job, **Create → Estimate** (or **Quote**). Add line items — or pick a **preset** to fill them in — and save. [Estimates, quotes, invoices & receipts](documents.md) covers the editor in detail.
 
-- Offering choices? Add **packages** (e.g. Basic vs Premium) or **material choices** (e.g. Hardwood vs Laminate). The client sees each option with its price.
+- Offering choices? Add **packages** (e.g. Basic vs Premium) or **material choices** (e.g. Hardwood vs Laminate). Each one is a row you can open, reorder, or duplicate. The client sees every option with its price.
 - Proposing extras the client hasn't agreed to? Tick **Needs client approval** on those lines; they're shown separately as "pending your approval".
 - Add **estimated hours** to compare against the time you actually log on the job.
 

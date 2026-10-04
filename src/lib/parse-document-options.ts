@@ -1,3 +1,4 @@
+import { withSingleRecommended } from '@/lib/document-options';
 import type {
     DocumentChoice,
     DocumentChoiceGroup,
@@ -127,19 +128,21 @@ export function parsePackagesFromFormData(formData: FormData): DocumentPackage[]
         packages.set(pkgIndex, pkg);
     }
 
-    return sortedMapValues(packages)
-        .map((pkg) => {
-            const lineItems = sortedMapValues(pkg.items).map(finalizeLineItem);
-            const recommended = pkg.recommended === '1' || pkg.recommended === 'on' || pkg.recommended === 'true';
-            return {
-                id: pkg.id?.trim() || crypto.randomUUID(),
-                label: (pkg.label ?? '').trim() || 'Option',
-                description: (pkg.description ?? '').trim() || undefined,
-                ...(recommended ? { recommended: true as const } : {}),
-                lineItems,
-            } satisfies DocumentPackage;
-        })
-        .filter((pkg) => pkg.lineItems.length > 0 || pkg.label !== 'Option');
+    return withSingleRecommended(
+        sortedMapValues(packages)
+            .map((pkg) => {
+                const lineItems = sortedMapValues(pkg.items).map(finalizeLineItem);
+                const recommended = pkg.recommended === '1' || pkg.recommended === 'on' || pkg.recommended === 'true';
+                return {
+                    id: pkg.id?.trim() || crypto.randomUUID(),
+                    label: (pkg.label ?? '').trim() || 'Option',
+                    description: (pkg.description ?? '').trim() || undefined,
+                    ...(recommended ? { recommended: true as const } : {}),
+                    lineItems,
+                } satisfies DocumentPackage;
+            })
+            .filter((pkg) => pkg.lineItems.length > 0 || pkg.label !== 'Option'),
+    );
 }
 
 /**

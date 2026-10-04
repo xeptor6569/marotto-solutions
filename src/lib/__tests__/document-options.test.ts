@@ -1,14 +1,20 @@
 import { describe, it, expect } from 'vitest';
 import {
     choiceTotal,
+    copiedLabel,
     documentDisplayTotal,
     documentHasOptions,
+    duplicateChoice,
+    duplicateChoiceGroup,
+    duplicatePackage,
     isOptionSelectionComplete,
     packageTotal,
     resolveSelectedLineItems,
     sanitizeOptionSelection,
+    setRecommendedPackage,
     startingFromTotal,
     stripOptionsForInvoice,
+    withSingleRecommended,
 } from '@/lib/document-options';
 import type {
     DocumentChoiceGroup,
@@ -72,6 +78,55 @@ const choiceGroups: DocumentChoiceGroup[] = [
         ],
     },
 ];
+
+describe('option authoring helpers', () => {
+    it('numbers copy labels', () => {
+        expect(copiedLabel('')).toBe('');
+        expect(copiedLabel('Basic')).toBe('Basic (copy)');
+        expect(copiedLabel('Basic (copy)')).toBe('Basic (copy 2)');
+        expect(copiedLabel('Basic (copy 2)')).toBe('Basic (copy 3)');
+    });
+
+    it('duplicates a package with new ids and no recommended flag', () => {
+        const copy = duplicatePackage(packages[1]);
+        expect(copy.id).not.toBe(packages[1].id);
+        expect(copy.label).toBe('Option B — Premium (copy)');
+        expect(copy.recommended).toBeUndefined();
+        expect(copy.lineItems[0].id).not.toBe(packages[1].lineItems[0].id);
+        expect(copy.lineItems[0].description).toBe('Premium approach');
+        expect(copy.lineItems[0].total).toBe(1200);
+    });
+
+    it('duplicates a choice and a group without renaming nested choices', () => {
+        const choice = duplicateChoice(choiceGroups[0].choices[1]);
+        expect(choice.label).toBe('Hardwood (copy)');
+        expect(choice.id).not.toBe('ch-hard');
+        expect(choice.lineItems[0].id).not.toBe(choiceGroups[0].choices[1].lineItems[0].id);
+
+        const group = duplicateChoiceGroup(choiceGroups[0]);
+        expect(group.id).not.toBe('grp-floor');
+        expect(group.label).toBe('Flooring (copy)');
+        expect(group.choices.map((entry) => entry.label)).toEqual(['Laminate', 'Hardwood']);
+        expect(group.choices[0].id).not.toBe('ch-lam');
+    });
+
+    it('keeps a single recommended package', () => {
+        const both = [
+            { ...packages[0], recommended: true },
+            { ...packages[1], recommended: true },
+        ];
+        const normalized = withSingleRecommended(both);
+        expect(normalized[0].recommended).toBe(true);
+        expect(normalized[1].recommended).toBeUndefined();
+
+        const switched = setRecommendedPackage(normalized, 'pkg-premium', true);
+        expect(switched[0].recommended).toBeUndefined();
+        expect(switched[1].recommended).toBe(true);
+
+        const cleared = setRecommendedPackage(switched, 'pkg-premium', false);
+        expect(cleared.every((pkg) => pkg.recommended === undefined)).toBe(true);
+    });
+});
 
 describe('packageTotal / choiceTotal', () => {
     it('sums package line items', () => {
