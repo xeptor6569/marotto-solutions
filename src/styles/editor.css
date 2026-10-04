@@ -400,8 +400,8 @@
 }
 
 .option-summary-title {
-  flex: 0 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
+  max-width: 14rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -424,6 +424,7 @@
 }
 
 .option-summary-price {
+  flex: 0 0 auto;
   margin-left: auto;
   color: var(--gray-12);
   font-size: var(--font-size-2);
