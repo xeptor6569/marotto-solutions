@@ -39,7 +39,7 @@ import StripeCheckoutPay from "@/components/StripeCheckoutPay";
 
 function LineItemsTable({ items, money }: { items: LineItem[]; money: MoneyFormatter }) {
     if (!items.length) {
-        return <Text size="2" color="gray">No line items.</Text>;
+        return <p className="doc-section-note">No line items.</p>;
     }
     return (
         <Box className="doc-table-wrap">
@@ -76,9 +76,9 @@ function LineItemsTable({ items, money }: { items: LineItem[]; money: MoneyForma
                             <Table.Cell align="right">
                                 {item.discountPercent ? (
                                     <Box>
-                                        <Text as="div" size="1" style={{ color: "#9ca3af", textDecoration: "line-through" }}>
+                                        <span className="doc-line-strike">
                                             {money((Number(item.unitPrice) || 0) * (Number(item.quantity) || 0))}
-                                        </Text>
+                                        </span>
                                         <span className="doc-line-title">{money(Number(item.total) || 0)}</span>
                                     </Box>
                                 ) : (
@@ -287,9 +287,9 @@ export default function DocumentPaper({
                     {packages.length > 0 ? (
                         <Box className="doc-section" mt="4">
                             <div className="doc-section-label">Project packages</div>
-                            <Text size="2" color="gray" as="p" mb="3">
+                            <p className="doc-section-note" style={{ marginBottom: 12 }}>
                                 Choose one approach for how the project can be done.
-                            </Text>
+                            </p>
                             <Flex direction="column" gap="4">
                                 {packages.map((pkg) => {
                                     const selected = doc.optionSelection?.packageId === pkg.id;
@@ -303,7 +303,7 @@ export default function DocumentPaper({
                                                 <Text weight="bold" className="doc-option-heading">{pkg.label}</Text>
                                                 {pkg.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                                 {selected ? <Badge size="1" color="green">Selected</Badge> : null}
-                                                <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
+                                                <span className="doc-option-price">{money(packageTotal(pkg))}</span>
                                             </Flex>
                                             {pkg.description ? (
                                                 <Box className="doc-option-description" mb="2">
@@ -345,10 +345,10 @@ export default function DocumentPaper({
                                                         data-selected={selected || undefined}
                                                     >
                                                         <Flex align="center" gap="2" wrap="wrap" mb="2">
-                                                            <Text weight="medium" className="doc-option-heading">{choice.label}</Text>
+                                                            <Text weight="bold" className="doc-option-heading">{choice.label}</Text>
                                                             {choice.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                                             {selected ? <Badge size="1" color="green">Selected</Badge> : null}
-                                                            <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
+                                                            <span className="doc-option-price">{money(choiceTotal(choice))}</span>
                                                         </Flex>
                                                         {choice.description ? (
                                                             <Box className="doc-option-description" mb="2">
@@ -420,9 +420,7 @@ export default function DocumentPaper({
                                                         <Flex justify="between" align="center" gap="2" wrap="wrap">
                                                             <Flex align="center" gap="2">
                                                                 <span className="payment-option-icon">{paymentMethodIcon(key)}</span>
-                                                                <Text as="div" size="2" weight="bold" style={{ color: "var(--doc-ink)" }}>
-                                                                    {method.label}
-                                                                </Text>
+                                                                <div className="doc-option-heading">{method.label}</div>
                                                             </Flex>
                                                             {method.comingSoon ? <Badge color="gray" size="1">Coming soon</Badge> : null}
                                                         </Flex>
