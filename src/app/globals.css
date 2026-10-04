@@ -908,9 +908,17 @@ html.pdf-export .payment-options {
   border: 2px solid var(--doc-accent);
 }
 
-.print-document .doc-option-description {
-  color: var(--doc-muted);
+.print-document .doc-option-heading {
   font-size: 13px;
+  line-height: 1.3em;
+  color: var(--doc-ink);
+}
+
+.print-document .doc-option-description,
+.print-document .doc-option-description .markdown-content,
+.print-document .doc-option-description .markdown-content :is(p, li) {
+  color: var(--doc-muted);
+  font-size: 11px;
   line-height: 1.45em;
 }
 

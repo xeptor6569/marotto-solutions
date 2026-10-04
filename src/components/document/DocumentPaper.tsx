@@ -300,7 +300,7 @@ export default function DocumentPaper({
                                             data-selected={selected || undefined}
                                         >
                                             <Flex align="center" gap="2" wrap="wrap" mb="2">
-                                                <Text weight="bold">{pkg.label}</Text>
+                                                <Text weight="bold" className="doc-option-heading">{pkg.label}</Text>
                                                 {pkg.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                                 {selected ? <Badge size="1" color="green">Selected</Badge> : null}
                                                 <Text size="2" color="gray">{money(packageTotal(pkg))}</Text>
@@ -325,7 +325,7 @@ export default function DocumentPaper({
                                 {choiceGroups.map((group) => (
                                     <Box key={group.id}>
                                         <Flex align="center" gap="2" wrap="wrap" mb="2">
-                                            <Text weight="bold">{group.label}</Text>
+                                            <Text weight="bold" className="doc-option-heading">{group.label}</Text>
                                             {group.required === false ? (
                                                 <Badge size="1" color="gray">Optional</Badge>
                                             ) : null}
@@ -345,7 +345,7 @@ export default function DocumentPaper({
                                                         data-selected={selected || undefined}
                                                     >
                                                         <Flex align="center" gap="2" wrap="wrap" mb="2">
-                                                            <Text weight="medium">{choice.label}</Text>
+                                                            <Text weight="medium" className="doc-option-heading">{choice.label}</Text>
                                                             {choice.recommended ? <Badge size="1" color="blue">Recommended</Badge> : null}
                                                             {selected ? <Badge size="1" color="green">Selected</Badge> : null}
                                                             <Text size="2" color="gray">{money(choiceTotal(choice))}</Text>
