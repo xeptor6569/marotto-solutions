@@ -1,11 +1,12 @@
 :root {
   /* Custom global variables if needed */
   --doc-ink: #111827;
-  --doc-muted: #6b7280;
-  --doc-rule: #e5e7eb;
+  --doc-copy: #1f2937;
+  --doc-muted: #374151;
+  --doc-rule: #9ca3af;
   --doc-accent: #1e3a5f;
-  --doc-body: 12px;
-  --doc-label: 10px;
+  --doc-body: 13px;
+  --doc-label: 11px;
 }
 
 body {
@@ -563,24 +564,26 @@ html.pdf-export .payment-options {
 /* ── Shared printable document letterhead ─────────────────────────── */
 .print-document {
   --doc-ink: #111827;
-  --doc-copy: #374151;
-  --doc-muted: #6b7280;
-  --doc-rule: #e5e7eb;
+  --doc-copy: #1f2937;
+  --doc-muted: #374151;
+  --doc-rule: #9ca3af;
   --doc-accent: #1e3a5f;
   /* One scale for the page. App UI sizes do not apply inside the paper. */
-  --doc-display: 19px;
-  --doc-kicker: 15px;
-  --doc-title: 13px;
-  --doc-body: 12px;
-  --doc-text: 11px;
-  --doc-label: 10px;
-  --doc-total: 16px;
+  --doc-display: 22px;
+  --doc-kicker: 16px;
+  --doc-title: 14px;
+  --doc-body: 13px;
+  --doc-text: 12.5px;
+  --doc-label: 11px;
+  --doc-total: 18px;
   background: white;
   color: var(--doc-ink);
   border: 1px solid #d1d5db;
   padding: 22px 24px !important;
   font-size: var(--doc-body);
   line-height: 1.45em;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .print-document .doc-header {
@@ -589,8 +592,13 @@ html.pdf-export .payment-options {
   align-items: flex-start;
   gap: 16px;
   margin-bottom: 0;
-  padding-bottom: 14px;
+  padding-bottom: 8px;
   border-bottom: 2px solid var(--doc-accent);
+}
+
+.print-document .doc-brand {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .print-document .doc-brand-name {
@@ -623,7 +631,7 @@ html.pdf-export .payment-options {
 }
 
 .print-document .doc-brand-address {
-  margin-top: 8px;
+  margin-top: 4px;
   font-size: var(--doc-text);
   line-height: 1.4em;
   color: var(--doc-copy);
@@ -637,16 +645,32 @@ html.pdf-export .payment-options {
   text-transform: uppercase;
   color: var(--doc-accent);
   line-height: 1.2em;
-  margin: 0 0 8px;
+  margin: 0 0 2px;
 }
 
 .print-document .doc-meta {
-  text-align: right;
+  flex: 0 1 auto;
+  max-width: 55%;
   min-width: 140px;
+  text-align: right;
 }
 
 .print-document .doc-meta-row {
-  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.print-document .doc-meta .doc-meta-label {
+  flex: none;
+  white-space: nowrap;
+}
+
+.print-document .doc-meta .doc-meta-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .print-document .doc-meta-label,
@@ -667,7 +691,7 @@ html.pdf-export .payment-options {
 }
 
 .print-document .doc-parties {
-  margin-top: 14px;
+  margin-top: 8px;
   margin-bottom: 14px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--doc-rule);
@@ -762,8 +786,8 @@ html.pdf-export .payment-options {
 
 .print-document .doc-line-details {
   margin-top: 3px;
-  font-size: var(--doc-label);
-  color: var(--doc-muted);
+  font-size: var(--doc-text);
+  color: var(--doc-copy);
   line-height: 1.4em;
 }
 
@@ -1072,7 +1096,13 @@ html.pdf-export .payment-options {
   }
 
   .print-document .doc-meta {
+    flex: 1 1 auto;
+    max-width: none;
     text-align: left;
+  }
+
+  .print-document .doc-meta-row {
+    justify-content: flex-start;
   }
 
   .print-document .doc-summary {
@@ -1165,6 +1195,10 @@ html.pdf-export .payment-options {
     text-align: right !important;
   }
 
+  .print-document .doc-meta-row {
+    justify-content: flex-end !important;
+  }
+
   .print-container {
     padding: 0 !important;
     max-width: none !important;
@@ -1174,7 +1208,6 @@ html.pdf-export .payment-options {
 
   .receipt-content,
   .receipt-content * {
-    color: inherit;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
