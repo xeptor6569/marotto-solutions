@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { signOutFromAdmin } from '@/app/actions';
+import AdminSearch from '@/components/AdminSearch';
 import CreateMenu from '@/components/CreateMenu';
 import ThemeToggle, { AppearanceRadioItems, useAppearancePreference } from '@/components/ThemeToggle';
 import {
@@ -316,6 +317,7 @@ export default function AdminShell({
                             </span>
                         </Flex>
                         <Flex align="center" gap="2">
+                            <AdminSearch />
                             <span className="topbar-mobile-only"><ThemeToggle /></span>
                             <span className="topbar-desktop-only">
                                 <CreateMenu />

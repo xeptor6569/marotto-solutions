@@ -22,6 +22,12 @@ Lists open on filtered views straight from a link, e.g. `/admin/invoices?status=
 
 Look for the small **?** icons next to labels throughout the app — hover (or tap on a phone) for a quick explanation, with a link to the matching page of this manual.
 
+## Search
+
+Press **⌘K** (or **Ctrl+K**) anywhere in the admin, or use **Search** in the top bar, to jump to a client, job, estimate, quote, invoice, receipt, or contract. A name, document number, phone number, or a couple of words is enough, and a small typo still matches. Clients open on the Clients page, filtered to that person; everything else opens on its own page.
+
+The same matching works in the search box on Clients, Jobs, and each document list. Document search includes line items, and job search includes the client's name.
+
 ## Install as an app on your phone
 
 The admin works best installed as an app:

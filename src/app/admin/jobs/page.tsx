@@ -4,11 +4,13 @@ import { Briefcase, Plus } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import AdminJobsList, { type AdminJobsListItem } from '@/components/AdminJobsList';
 import EmptyState from '@/components/EmptyState';
+import { getClientOptions } from '@/lib/clients';
 import { getJobDocumentCounts, getJobs } from '@/lib/jobs';
 import { listJobAttachments } from '@/lib/job-attachments';
 
 export default async function AdminJobsPage() {
-    const jobs = await getJobs();
+    const [jobs, clients] = await Promise.all([getJobs(), getClientOptions()]);
+    const clientNames = new Map(clients.map((client) => [client.id, client.name]));
     const enriched: AdminJobsListItem[] = await Promise.all(
         jobs.map(async (job) => {
             const [counts, attachments] = await Promise.all([
@@ -20,6 +22,7 @@ export default async function AdminJobsPage() {
                 name: job.name,
                 description: job.description,
                 status: job.status,
+                clientName: job.clientId ? clientNames.get(job.clientId) ?? null : null,
                 updatedAt: job.updatedAt.toISOString(),
                 counts,
                 attachmentCount: attachments.length,
