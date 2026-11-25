@@ -18,6 +18,7 @@ import { hasPendingApprovalLines } from "@/lib/pending-client-approval";
 import { WORKFLOW_STATUSES, workflowStatusLabel } from "@/lib/workflow-status";
 import { documentDisplayStatus, type DocumentStatusFilter } from "@/lib/status-display";
 import { useMoney } from '@/components/MoneyProvider';
+import { documentSmartFields, matchesSmartQuery } from "@/lib/smart-search";
 
 export type AdminDocumentListType = "invoice" | "estimate" | "quote" | "receipt" | "lead";
 
@@ -38,7 +39,7 @@ function adminBase(type: AdminDocumentListType): string {
 
 function searchPlaceholder(type: AdminDocumentListType) {
     if (type === "lead") return "Search leads by id, number, name, email, notes…";
-    return `Search by number, title, or customer…`;
+    return `Search by number, title, customer, or line item…`;
 }
 
 function typePluralLabel(type: AdminDocumentListType): string {
@@ -136,15 +137,8 @@ export default function AdminDocumentList({
     const clearSelection = () => setSelectedIds(new Set());
 
     const filteredDocs = useMemo(() => {
-        const q = query.trim().toLowerCase();
         const matched = docs.filter((doc) => {
-            const matchesQuery = !q
-                || doc.id.toLowerCase().includes(q)
-                || String(doc.number).includes(q)
-                || (doc.title || "").toLowerCase().includes(q)
-                || (doc.customer.name || "").toLowerCase().includes(q)
-                || (doc.customer.email || "").toLowerCase().includes(q)
-                || (doc.notes || "").toLowerCase().includes(q);
+            const matchesQuery = matchesSmartQuery(query, documentSmartFields(doc));
             const matchesWorkflow = workflowFilter === "all"
                 || doc.workflowStatus === workflowFilter
                 || (workflowFilter === "backlog" && !doc.workflowStatus);

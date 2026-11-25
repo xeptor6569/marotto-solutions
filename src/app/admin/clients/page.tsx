@@ -6,7 +6,12 @@ import AdminClientsList from "@/components/AdminClientsList";
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from "@/components/EmptyState";
 
-export default async function ClientsPage() {
+export default async function ClientsPage({
+    searchParams,
+}: {
+    searchParams?: Promise<{ client?: string }>;
+}) {
+    const params = (await searchParams) || {};
     const result = await getClients();
     const clients = (result.success && result.clients) ? result.clients : [];
     const prospectCount = clients.filter((c) => c.isProspect).length;
@@ -48,7 +53,11 @@ export default async function ClientsPage() {
                     )}
                 />
             ) : (
-                <AdminClientsList clients={clients} />
+                <AdminClientsList
+                    key={params.client || "all"}
+                    clients={clients}
+                    initialClientId={params.client ?? ""}
+                />
             )}
         </Container>
     );

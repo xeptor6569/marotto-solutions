@@ -8,6 +8,7 @@ import EmptyState from "@/components/EmptyState";
 import FilterChips, { type FilterChipOption } from "@/components/FilterChips";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { statusDisplay } from "@/lib/status-display";
+import { matchesSmartQuery } from "@/lib/smart-search";
 import type { JobDocumentCounts } from "@/lib/jobs";
 
 export interface AdminJobsListItem {
@@ -15,6 +16,7 @@ export interface AdminJobsListItem {
     name: string;
     description: string | null;
     status: string;
+    clientName: string | null;
     updatedAt: string;
     counts: JobDocumentCounts;
     attachmentCount: number;
@@ -57,13 +59,14 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
     }, [jobs]);
 
     const filteredJobs = useMemo(() => {
-        const q = query.trim().toLowerCase();
         return jobs.filter((job) => {
-            const matchesQuery = !q
-                || job.name.toLowerCase().includes(q)
-                || job.id.toLowerCase().includes(q)
-                || (job.description || "").toLowerCase().includes(q)
-                || job.status.toLowerCase().includes(q);
+            const matchesQuery = matchesSmartQuery(query, [
+                job.name,
+                job.id,
+                job.description,
+                job.status,
+                job.clientName,
+            ]);
             const matchesStatus = status === "all" || job.status === status;
             return matchesQuery && matchesStatus;
         });
@@ -82,7 +85,7 @@ export default function AdminJobsList({ jobs }: { jobs: AdminJobsListItem[] }) {
                     <Box style={{ flex: 1, minWidth: "min(100%, 220px)" }}>
                         <TextField.Root
                             size="3"
-                            placeholder="Search jobs by name or description…"
+                            placeholder="Search by name, client, or description…"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             aria-label="Search jobs"

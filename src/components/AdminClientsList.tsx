@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Badge, Box, Button, Card, DropdownMenu, Flex, IconButton, Table, Text, TextField } from "@radix-ui/themes";
 import { Briefcase, Edit, Mail, MapPin, MoreHorizontal, Phone, Search, X } from "lucide-react";
 import Link from "next/link";
@@ -9,6 +10,7 @@ import DeleteClientButton from "@/app/admin/clients/DeleteClientButton";
 import PromoteClientButton from "@/app/admin/clients/PromoteClientButton";
 import EmptyState from "@/components/EmptyState";
 import FilterChips, { type FilterChipOption } from "@/components/FilterChips";
+import { matchesSmartQuery } from "@/lib/smart-search";
 
 export type AdminClientRow = {
     id: string;
@@ -32,9 +34,18 @@ function telHref(phone: string): string {
     return `tel:${phone.replace(/[^+\d]/g, "")}`;
 }
 
-export default function AdminClientsList({ clients }: { clients: AdminClientRow[] }) {
+export default function AdminClientsList({
+    clients,
+    initialClientId = "",
+}: {
+    clients: AdminClientRow[];
+    /** From /admin/clients?client=, so a global-search hit opens that one record. */
+    initialClientId?: string;
+}) {
+    const router = useRouter();
     const [query, setQuery] = useState("");
     const [filter, setFilter] = useState<ClientFilter>("all");
+    const [pinnedClientId, setPinnedClientId] = useState(initialClientId);
 
     const prospectCount = clients.filter((c) => c.isProspect).length;
     const filterOptions: FilterChipOption<ClientFilter>[] = prospectCount > 0
@@ -46,21 +57,31 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
         : [];
 
     const filtered = useMemo(() => {
-        const q = query.trim().toLowerCase();
         return clients.filter((client) => {
-            const matchesQuery = !q
-                || client.name.toLowerCase().includes(q)
-                || (client.email || "").toLowerCase().includes(q)
-                || (client.phone || "").toLowerCase().includes(q)
-                || (client.address || "").toLowerCase().includes(q)
-                || (client.notes || "").toLowerCase().includes(q);
+            if (pinnedClientId && client.id !== pinnedClientId) return false;
+            const matchesQuery = matchesSmartQuery(query, [
+                client.name,
+                client.email,
+                { value: client.phone ?? "", kind: "phone" },
+                client.address,
+                client.notes,
+            ]);
             const matchesFilter = filter === "all"
                 || (filter === "prospects" ? client.isProspect : !client.isProspect);
             return matchesQuery && matchesFilter;
         });
-    }, [clients, query, filter]);
+    }, [clients, query, filter, pinnedClientId]);
 
-    const filtersActive = query.trim() !== "" || filter !== "all";
+    const filtersActive = query.trim() !== "" || filter !== "all" || pinnedClientId !== "";
+    const clearPin = () => {
+        setPinnedClientId("");
+        if (initialClientId) router.replace("/admin/clients");
+    };
+    const clearFilters = () => {
+        setQuery("");
+        setFilter("all");
+        clearPin();
+    };
 
     return (
         <Flex direction="column" gap="4">
@@ -90,6 +111,13 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                 </Flex>
             </Card>
 
+            {pinnedClientId ? (
+                <Flex align="center" justify="between" gap="3">
+                    <Text size="2" color="gray">Showing the client opened from search.</Text>
+                    <Button size="1" variant="ghost" color="gray" onClick={clearPin}>Show all clients</Button>
+                </Flex>
+            ) : null}
+
             {filtered.length === 0 ? (
                 <EmptyState
                     compact
@@ -97,7 +125,7 @@ export default function AdminClientsList({ clients }: { clients: AdminClientRow[
                     title="No clients match"
                     description="Try a different name, email, or phone number."
                     action={filtersActive ? (
-                        <Button size="2" variant="soft" onClick={() => { setQuery(""); setFilter("all"); }}>Clear filters</Button>
+                        <Button size="2" variant="soft" onClick={clearFilters}>Clear filters</Button>
                     ) : undefined}
                 />
             ) : (
